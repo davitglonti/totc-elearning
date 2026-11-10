@@ -15,6 +15,58 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import { AuthModal, VideoModal, AssessmentModal } from './components/Modals';
 import { api } from './services/api';
 
+/**
+ * Generate clean, human-readable URL slugs for courses and articles
+ */
+const slugify = (text) => {
+  if (!text) return 'course';
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-');
+};
+
+/**
+ * Maps page state to the browser's address bar URL path
+ */
+const getPathForPage = (page, course, playCourse) => {
+  switch (page) {
+    case 'home':
+      return '/';
+    case 'courses':
+      return '/courses';
+    case 'course-detail': {
+      const active = course || playCourse;
+      const slug = active ? (active.slug || slugify(active.title)) : 'overview';
+      return `/courses/${slug}`;
+    }
+    case 'course-player': {
+      const active = playCourse || course;
+      const slug = active ? (active.slug || slugify(active.title)) : 'classroom';
+      return `/learn/${slug}`;
+    }
+    case 'dashboard':
+      return '/my-courses';
+    case 'instructor-dashboard':
+      return '/instructor/studio';
+    case 'admin-dashboard':
+      return '/admin';
+    case 'membership':
+      return '/membership';
+    case 'blog':
+      return '/blog';
+    case 'blog-detail':
+      return '/blog/edtech-trends-2026';
+    case 'checkout':
+      return '/checkout';
+    default:
+      return '/';
+  }
+};
+
 export default function App() {
   const [activePage, setActivePage] = useState('home');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -29,21 +81,91 @@ export default function App() {
   const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
 
   useEffect(() => {
-    // Check local storage for existing session
+    // 1. Check local storage for existing session
     const user = api.auth.getCurrentUser();
     if (user) {
       setCurrentUser(user);
     }
 
-    const handleScroll = () => {
-      if (window.scrollY > 40) {
-        setIsScrolled(true);
+    // 2. Synchronize route and load course from browser URL on initial visit or refresh (F5)
+    const syncRouteFromUrl = async () => {
+      const path = window.location.pathname.toLowerCase();
+
+      try {
+        const coursesRes = await api.courses.getAll({ pageSize: 50 });
+        const allAvailableCourses = coursesRes.items || [];
+
+        // Route: /learn/:courseSlug (Interactive Video Classroom)
+        if (path.startsWith('/learn/')) {
+          const slug = path.replace('/learn/', '').replace(/\/$/, '');
+          const matched = allAvailableCourses.find(c => slugify(c.title) === slug || c.id === slug) || allAvailableCourses[0];
+          if (matched) {
+            setActiveCourseToPlay(matched);
+            setSelectedCourse(matched);
+          }
+          setActivePage('course-player');
+          return;
+        }
+
+        // Route: /courses/:courseSlug (Course Detail Page)
+        if (path.startsWith('/courses/')) {
+          const slug = path.replace('/courses/', '').replace(/\/$/, '');
+          if (slug && slug !== 'all' && slug !== 'catalog') {
+            const matched = allAvailableCourses.find(c => slugify(c.title) === slug || c.id === slug) || allAvailableCourses[0];
+            if (matched) {
+              setSelectedCourse(matched);
+            }
+            setActivePage('course-detail');
+            return;
+          } else {
+            setActivePage('courses');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync course from URL:', err.message);
+      }
+
+      // Standard route mappings
+      if (path === '/courses') {
+        setActivePage('courses');
+      } else if (path === '/my-courses' || path === '/dashboard') {
+        setActivePage('dashboard');
+      } else if (path.startsWith('/instructor')) {
+        setActivePage('instructor-dashboard');
+      } else if (path === '/admin') {
+        setActivePage('admin-dashboard');
+      } else if (path === '/membership') {
+        setActivePage('membership');
+      } else if (path.startsWith('/blog/')) {
+        setActivePage('blog-detail');
+      } else if (path === '/blog') {
+        setActivePage('blog');
+      } else if (path === '/checkout') {
+        setActivePage('checkout');
       } else {
-        setIsScrolled(false);
+        setActivePage('home');
       }
     };
+
+    syncRouteFromUrl();
+
+    // 3. Handle browser Back/Forward (← / →) buttons
+    const handlePopState = () => {
+      syncRouteFromUrl();
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    // 4. Glassmorphism navbar scroll listener
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const openAuthModal = (mode = 'login') => {
@@ -55,42 +177,18 @@ export default function App() {
   };
 
   /**
-   * Role-Based Redirection upon successful login or registration
-   * - Student: Redirects to Student Dashboard / My Courses
-   * - Instructor: Redirects to Instructor Studio
-   * - Admin: Redirects to Admin Console
+   * Protected Route Transition and Browser Address Bar URL Synchronization
    */
-  const handleAuthSuccess = (user) => {
-    setCurrentUser(user);
-    setSecurityNotice('');
-
-    if (!user) return;
-
-    if (user.role === 'Instructor') {
-      setActivePage('instructor-dashboard');
-    } else if (user.role === 'Admin') {
-      setActivePage('admin-dashboard');
-    } else {
-      // Default Student Flow (Udemy / Coursera / Skillshare style)
-      setActivePage('dashboard');
+  const handleSafePageTransition = (targetPage, extraData = null) => {
+    // Save relevant course payload if provided
+    if (extraData) {
+      if (targetPage === 'course-detail') {
+        setSelectedCourse(extraData);
+      } else if (targetPage === 'course-player') {
+        setActiveCourseToPlay(extraData);
+      }
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleLogout = () => {
-    api.auth.logout();
-    setCurrentUser(null);
-    setActivePage('home');
-    setSecurityNotice('');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  /**
-   * Protected Route Guards
-   * Validates access permissions before rendering sensitive pages
-   */
-  const handleSafePageTransition = (targetPage) => {
     // Guard: Student Dashboard & Course Player require authentication
     if ((targetPage === 'dashboard' || targetPage === 'course-player') && !currentUser) {
       setSecurityNotice('Please log in to access your personal courses and learning dashboard.');
@@ -128,6 +226,41 @@ export default function App() {
 
     setSecurityNotice('');
     setActivePage(targetPage);
+
+    // Update Browser Address Bar URL with clean, SEO-friendly path
+    const activeC = extraData || (targetPage === 'course-player' ? activeCourseToPlay : selectedCourse);
+    const newPath = getPathForPage(targetPage, activeC, activeC);
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({ page: targetPage, path: newPath }, '', newPath);
+    }
+  };
+
+  /**
+   * Role-Based Redirection upon successful login or registration
+   */
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+    setSecurityNotice('');
+
+    if (!user) return;
+
+    if (user.role === 'Instructor') {
+      handleSafePageTransition('instructor-dashboard');
+    } else if (user.role === 'Admin') {
+      handleSafePageTransition('admin-dashboard');
+    } else {
+      handleSafePageTransition('dashboard');
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogout = () => {
+    api.auth.logout();
+    setCurrentUser(null);
+    setSecurityNotice('');
+    handleSafePageTransition('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -165,7 +298,10 @@ export default function App() {
           <StudentDashboardPage
             currentUser={currentUser}
             setActivePage={handleSafePageTransition}
-            onSelectCourseToPlay={(course) => setActiveCourseToPlay(course)}
+            onSelectCourseToPlay={(course) => {
+              setActiveCourseToPlay(course);
+              handleSafePageTransition('course-player', course);
+            }}
           />
         )}
 
@@ -182,7 +318,10 @@ export default function App() {
           <InstructorDashboardPage
             currentUser={currentUser}
             setActivePage={handleSafePageTransition}
-            setSelectedCourse={setSelectedCourse}
+            setSelectedCourse={(course) => {
+              setSelectedCourse(course);
+              handleSafePageTransition('course-detail', course);
+            }}
           />
         )}
 
@@ -197,7 +336,10 @@ export default function App() {
         {activePage === 'courses' && (
           <CoursesPage
             setActivePage={handleSafePageTransition}
-            setSelectedCourse={setSelectedCourse}
+            setSelectedCourse={(course) => {
+              setSelectedCourse(course);
+              handleSafePageTransition('course-detail', course);
+            }}
           />
         )}
 
@@ -207,7 +349,10 @@ export default function App() {
             setActivePage={handleSafePageTransition}
             openVideoModal={() => setVideoModalOpen(true)}
             currentUser={currentUser}
-            onSelectCourseToPlay={(course) => setActiveCourseToPlay(course)}
+            onSelectCourseToPlay={(course) => {
+              setActiveCourseToPlay(course);
+              handleSafePageTransition('course-player', course);
+            }}
           />
         )}
 

@@ -131,7 +131,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
 
   const handleCourseClick = (course) => {
     if (setSelectedCourse) setSelectedCourse(course);
-    setActivePage('course-detail');
+    setActivePage('course-detail', course);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

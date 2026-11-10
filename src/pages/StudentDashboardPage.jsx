@@ -55,7 +55,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
     if (onSelectCourseToPlay) {
       onSelectCourseToPlay(course);
     }
-    setActivePage('course-player');
+    setActivePage('course-player', course);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

@@ -21,14 +21,15 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
   };
 
   const handleStartProCourse = () => {
+    const courseObj = {
+      courseId: course.id || course.courseId,
+      title: course.title,
+      instructorName: course.instructor
+    };
     if (onSelectCourseToPlay) {
-      onSelectCourseToPlay({
-        courseId: course.id || course.courseId,
-        title: course.title,
-        instructorName: course.instructor
-      });
+      onSelectCourseToPlay(courseObj);
     }
-    setActivePage('course-player');
+    setActivePage('course-player', courseObj);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
