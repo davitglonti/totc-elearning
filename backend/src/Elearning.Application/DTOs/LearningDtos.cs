@@ -40,6 +40,8 @@ public class LessonLearnDto
     public string? ContentText { get; set; }
     public bool IsFreePreview { get; set; }
     public int OrderIndex { get; set; }
+    public string LessonType { get; set; } = "Video"; // "Video", "Quiz", "Assignment"
+    public bool HasQuiz { get; set; } = false;
     public bool IsCompleted { get; set; }
     public int LastWatchedPositionSeconds { get; set; }
 }

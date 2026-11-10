@@ -21,6 +21,9 @@ public class ElearningDbContext : DbContext
     public DbSet<LessonProgress> LessonProgresses => Set<LessonProgress>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Quiz> Quizzes => Set<Quiz>();
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+    public DbSet<QuizOption> QuizOptions => Set<QuizOption>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

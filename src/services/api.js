@@ -198,4 +198,18 @@ export const api = {
       return request('/subscriptions/status');
     },
   },
+
+  // Interactive Lesson Quizzes & Knowledge Checks
+  quizzes: {
+    async getByLesson(lessonId) {
+      return request(`/quizzes/lesson/${lessonId}`);
+    },
+
+    async submit(quizId, answers) {
+      return request(`/quizzes/${quizId}/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ answers }),
+      });
+    },
+  },
 };

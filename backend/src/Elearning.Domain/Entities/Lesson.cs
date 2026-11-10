@@ -15,7 +15,9 @@ public class Lesson
     public string? ContentText { get; set; }
     public bool IsFreePreview { get; set; } = false;
     public int OrderIndex { get; set; }
+    public string LessonType { get; set; } = "Video"; // "Video", "Quiz", "Assignment"
 
     // Navigation properties
+    public Quiz? Quiz { get; set; }
     public ICollection<LessonProgress> Progresses { get; set; } = new List<LessonProgress>();
 }

@@ -109,6 +109,7 @@ public class EnrollmentService : IEnrollmentService
         var course = await _context.Courses
             .Include(c => c.Sections.OrderBy(s => s.OrderIndex))
                 .ThenInclude(s => s.Lessons.OrderBy(l => l.OrderIndex))
+                    .ThenInclude(l => l.Quiz)
             .FirstOrDefaultAsync(c => c.Id == courseId);
 
         if (course == null)
@@ -147,6 +148,8 @@ public class EnrollmentService : IEnrollmentService
                         ContentText = canAccess ? l.ContentText : "Enroll to view this lesson content.",
                         IsFreePreview = l.IsFreePreview,
                         OrderIndex = l.OrderIndex,
+                        LessonType = l.LessonType ?? "Video",
+                        HasQuiz = l.Quiz != null,
                         IsCompleted = hasProgress && lp!.IsCompleted,
                         LastWatchedPositionSeconds = hasProgress ? lp!.LastWatchedPositionSeconds : 0
                     };

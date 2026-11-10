@@ -95,24 +95,92 @@ public static class SeedData
 
         // Course 1 Sections & Lessons
         var awsSection1 = new Section { Course = courseAws, Title = "Module 1: Introduction to Cloud Infrastructure", OrderIndex = 1 };
-        awsSection1.Lessons.Add(new Lesson
+        
+        var lessonAws1 = new Lesson
         {
             Title = "Welcome to AWS Cloud Fundamentals",
             VideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             DurationMinutes = 15,
             ContentText = "Welcome to the cloud solutions architect curriculum. In this lesson we establish the core paradigms.",
             IsFreePreview = true,
-            OrderIndex = 1
-        });
-        awsSection1.Lessons.Add(new Lesson
+            OrderIndex = 1,
+            LessonType = "Video"
+        };
+
+        // Attach Knowledge Check Quiz to Lesson 1
+        var quizLesson1 = new Quiz
+        {
+            Title = "Knowledge Check: Cloud Fundamentals",
+            Description = "Test your understanding of core compute, networking, and high availability principles.",
+            PassingScorePercentage = 70,
+            Lesson = lessonAws1
+        };
+
+        var q1 = new QuizQuestion
+        {
+            QuestionText = "Which AWS core service provides resizable, secure compute capacity in the cloud?",
+            Explanation = "Amazon EC2 (Elastic Compute Cloud) provides virtual server capacity on demand.",
+            OrderIndex = 1,
+            Quiz = quizLesson1
+        };
+        q1.Options.Add(new QuizOption { OptionText = "Amazon S3", IsCorrect = false });
+        q1.Options.Add(new QuizOption { OptionText = "Amazon EC2 (Elastic Compute Cloud)", IsCorrect = true });
+        q1.Options.Add(new QuizOption { OptionText = "AWS IAM", IsCorrect = false });
+        q1.Options.Add(new QuizOption { OptionText = "Amazon SNS", IsCorrect = false });
+
+        var q2 = new QuizQuestion
+        {
+            QuestionText = "Which component enables communication between instances in your VPC and the public internet?",
+            Explanation = "An Internet Gateway (IGW) is horizontally scaled and redundant, connecting VPC route tables to the internet.",
+            OrderIndex = 2,
+            Quiz = quizLesson1
+        };
+        q2.Options.Add(new QuizOption { OptionText = "Internet Gateway (IGW)", IsCorrect = true });
+        q2.Options.Add(new QuizOption { OptionText = "Security Group Ingress Rule", IsCorrect = false });
+        q2.Options.Add(new QuizOption { OptionText = "AWS Direct Connect Terminal", IsCorrect = false });
+        q2.Options.Add(new QuizOption { OptionText = "EBS Snapshot", IsCorrect = false });
+
+        var q3 = new QuizQuestion
+        {
+            QuestionText = "What is the primary architectural purpose of a Multi-AZ deployment in AWS?",
+            Explanation = "Multi-AZ architectures place synchronous replicas in separate physical data centers for seamless fault tolerance.",
+            OrderIndex = 3,
+            Quiz = quizLesson1
+        };
+        q3.Options.Add(new QuizOption { OptionText = "Reducing cloud billing costs by 50%", IsCorrect = false });
+        q3.Options.Add(new QuizOption { OptionText = "High availability and automatic failover protection", IsCorrect = true });
+        q3.Options.Add(new QuizOption { OptionText = "Compressing static assets on disk", IsCorrect = false });
+        q3.Options.Add(new QuizOption { OptionText = "Eliminating the need for IAM users", IsCorrect = false });
+
+        quizLesson1.Questions.Add(q1);
+        quizLesson1.Questions.Add(q2);
+        quizLesson1.Questions.Add(q3);
+        lessonAws1.Quiz = quizLesson1;
+
+        awsSection1.Lessons.Add(lessonAws1);
+
+        var lessonAws2 = new Lesson
         {
             Title = "Designing Scalable VPCs and Subnets",
             VideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
             DurationMinutes = 25,
             ContentText = "Understanding CIDR blocks, route tables, and internet gateways.",
             IsFreePreview = false,
-            OrderIndex = 2
-        });
+            OrderIndex = 2,
+            LessonType = "Video"
+        };
+        awsSection1.Lessons.Add(lessonAws2);
+
+        var lessonAwsLab = new Lesson
+        {
+            Title = "Hands-on Lab: Configure Multi-AZ Subnets & Route Tables",
+            DurationMinutes = 40,
+            ContentText = "Practical deployment task: Build an isolated 2-tier VPC architecture with public and private subnets.",
+            IsFreePreview = false,
+            OrderIndex = 3,
+            LessonType = "Assignment"
+        };
+        awsSection1.Lessons.Add(lessonAwsLab);
 
         var awsSection2 = new Section { Course = courseAws, Title = "Module 2: Real-time Gradebook & Webhook Pipelines", OrderIndex = 2 };
         awsSection2.Lessons.Add(new Lesson
@@ -122,8 +190,20 @@ public static class SeedData
             DurationMinutes = 30,
             ContentText = "High-throughput real-time database architecture for millions of connected students.",
             IsFreePreview = false,
-            OrderIndex = 1
+            OrderIndex = 1,
+            LessonType = "Video"
         });
+
+        var awsSectionQuiz = new Lesson
+        {
+            Title = "Module Quiz: Distributed Systems & Gradebook Architecture",
+            DurationMinutes = 20,
+            ContentText = "Comprehensive module evaluation covering NoSQL scaling, webhooks, and attendance tracking.",
+            IsFreePreview = false,
+            OrderIndex = 2,
+            LessonType = "Quiz"
+        };
+        awsSection2.Lessons.Add(awsSectionQuiz);
 
         courseAws.Sections.Add(awsSection1);
         courseAws.Sections.Add(awsSection2);
