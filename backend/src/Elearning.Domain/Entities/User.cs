@@ -16,6 +16,11 @@ public class User
     public string? Bio { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Subscription & Pro Membership
+    public bool IsSubscribed { get; set; } = false;
+    public string? SubscriptionPlan { get; set; } // "Pro", "Enterprise"
+    public DateTime? SubscriptionExpiresAt { get; set; }
+
     // Navigation properties
     public ICollection<Course> AuthoredCourses { get; set; } = new List<Course>();
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();

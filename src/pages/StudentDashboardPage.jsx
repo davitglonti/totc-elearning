@@ -66,10 +66,19 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
         {/* Welcome Header */}
         <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-totc-teal-light text-totc-teal text-xs font-bold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              Student Learning Space
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-totc-teal-light text-totc-teal text-xs font-bold tracking-wide uppercase">
+                <Sparkles className="w-3.5 h-3.5" />
+                Student Learning Space
+              </div>
+
+              {currentUser?.isSubscribed && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black tracking-wide uppercase shadow-sm border border-amber-200">
+                  <span>⭐ {currentUser.subscriptionPlan || 'PRO'} ALL-ACCESS ACTIVE</span>
+                </div>
+              )}
             </div>
+
             <h1 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-navy">
               Welcome back, {currentUser?.fullName || 'Student'}! 👋
             </h1>
@@ -256,12 +265,17 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     alt={course.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {course.isCompleted && (
+                  {course.isCompleted ? (
                     <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center gap-1">
                       <CheckCircle className="w-3.5 h-3.5" />
                       Completed
                     </div>
-                  )}
+                  ) : course.isProAccess ? (
+                    <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-amber-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Pro Unlocked
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Body Content */}

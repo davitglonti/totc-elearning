@@ -11,8 +11,10 @@ public class Order
     public Guid UserId { get; set; }
     public User? User { get; set; }
 
-    public Guid CourseId { get; set; }
+    public Guid? CourseId { get; set; }
     public Course? Course { get; set; }
+
+    public string? OrderType { get; set; } = "CoursePurchase"; // "CoursePurchase" or "Subscription"
 
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "USD";

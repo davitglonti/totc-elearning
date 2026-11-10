@@ -133,8 +133,15 @@ export default function Navbar({
                   <div className="text-xs font-bold text-totc-navy leading-tight truncate max-w-[120px]">
                     {currentUser.fullName}
                   </div>
-                  <div className="text-[10px] text-totc-gray uppercase font-semibold">
-                    {currentUser.role}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-totc-gray uppercase font-semibold">
+                      {currentUser.role}
+                    </span>
+                    {currentUser.isSubscribed && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[9px] font-black uppercase tracking-wide">
+                        PRO
+                      </span>
+                    )}
                   </div>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-totc-gray group-hover:text-totc-navy transition-transform duration-200 ${userDropdownOpen ? 'rotate-180' : ''}`} />
@@ -148,9 +155,16 @@ export default function Navbar({
                     <p className="text-xs text-totc-gray font-medium">Signed in as</p>
                     <p className="text-sm font-bold text-totc-navy truncate">{currentUser.fullName}</p>
                     <p className="text-xs text-totc-gray truncate">{currentUser.email}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-totc-teal-light text-totc-teal text-[10px] font-bold uppercase">
-                      {currentUser.role} Account
-                    </span>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="px-2 py-0.5 rounded-full bg-totc-teal-light text-totc-teal text-[10px] font-bold uppercase">
+                        {currentUser.role}
+                      </span>
+                      {currentUser.isSubscribed && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wide">
+                          ⭐ PRO ALL-ACCESS
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Navigation Links */}

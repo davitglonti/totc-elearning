@@ -23,3 +23,20 @@ public class PaymentWebhookDto
     public string EventType { get; set; } = "payment.succeeded";
     public string Status { get; set; } = "Paid";
 }
+
+public class SubscribeRequestDto
+{
+    public string Plan { get; set; } = "Pro"; // "Pro" or "Enterprise"
+    public string BillingCycle { get; set; } = "monthly"; // "monthly" or "annual"
+    public string? PaymentMethod { get; set; } = "card";
+}
+
+public class SubscribeResponseDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string Plan { get; set; } = string.Empty;
+    public DateTime? ExpiresAt { get; set; }
+    public UserProfileDto User { get; set; } = null!;
+    public int UnlockedCoursesCount { get; set; }
+}

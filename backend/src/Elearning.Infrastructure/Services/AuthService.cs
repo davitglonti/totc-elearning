@@ -115,6 +115,9 @@ public class AuthService : IAuthService
             Role = user.Role.ToString(),
             AvatarUrl = user.AvatarUrl,
             Bio = user.Bio,
+            IsSubscribed = user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow),
+            SubscriptionPlan = user.SubscriptionPlan,
+            SubscriptionExpiresAt = user.SubscriptionExpiresAt,
             CreatedAt = user.CreatedAt
         };
     }

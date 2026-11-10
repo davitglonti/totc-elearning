@@ -206,6 +206,8 @@ export default function App() {
             selectedCourse={selectedCourse}
             setActivePage={handleSafePageTransition}
             openVideoModal={() => setVideoModalOpen(true)}
+            currentUser={currentUser}
+            onSelectCourseToPlay={(course) => setActiveCourseToPlay(course)}
           />
         )}
 
@@ -221,6 +223,8 @@ export default function App() {
           <MembershipPage
             setActivePage={handleSafePageTransition}
             openAuthModal={openAuthModal}
+            currentUser={currentUser}
+            onSubscriptionUpdated={(updatedUser) => setCurrentUser(updatedUser)}
           />
         )}
 

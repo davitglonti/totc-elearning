@@ -81,8 +81,11 @@ public class PaymentService : IPaymentService
         {
             order.PaymentStatus = PaymentStatus.Paid;
 
-            // Automatically grant enrollment to user
-            await _enrollmentService.EnrollUserAsync(order.UserId, order.CourseId);
+            // Automatically grant enrollment to user if order is for a specific course
+            if (order.CourseId.HasValue)
+            {
+                await _enrollmentService.EnrollUserAsync(order.UserId, order.CourseId.Value);
+            }
             await _context.SaveChangesAsync();
             return true;
         }

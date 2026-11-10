@@ -11,6 +11,7 @@ public class MyCourseDto
     public int TotalLessonsCount { get; set; }
     public int ProgressPercentage { get; set; }
     public bool IsCompleted { get; set; }
+    public bool IsProAccess { get; set; }
 }
 
 public class CourseLearnDto

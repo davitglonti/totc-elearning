@@ -20,6 +20,9 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<List<MyCourseDto>> GetUserCoursesAsync(Guid userId)
     {
+        var user = await _context.Users.FindAsync(userId);
+        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
+
         var enrollments = await _context.Enrollments
             .Include(e => e.Course).ThenInclude(c => c!.Instructor)
             .Include(e => e.Course).ThenInclude(c => c!.Sections).ThenInclude(s => s.Lessons)
@@ -33,10 +36,12 @@ public class EnrollmentService : IEnrollmentService
             .ToListAsync();
 
         var result = new List<MyCourseDto>();
+        var enrolledCourseIds = new HashSet<Guid>();
 
         foreach (var e in enrollments)
         {
             if (e.Course == null) continue;
+            enrolledCourseIds.Add(e.CourseId);
 
             var allLessonIds = e.Course.Sections.SelectMany(s => s.Lessons).Select(l => l.Id).ToList();
             var totalLessons = allLessonIds.Count;
@@ -53,8 +58,41 @@ public class EnrollmentService : IEnrollmentService
                 CompletedLessonsCount = completedCount,
                 TotalLessonsCount = totalLessons,
                 ProgressPercentage = percentage,
-                IsCompleted = e.IsCompleted || (totalLessons > 0 && completedCount == totalLessons)
+                IsCompleted = e.IsCompleted || (totalLessons > 0 && completedCount == totalLessons),
+                IsProAccess = isSubscribed
             });
+        }
+
+        // If user is a Pro Subscriber, automatically include all other published courses!
+        if (isSubscribed)
+        {
+            var otherCourses = await _context.Courses
+                .Include(c => c.Instructor)
+                .Include(c => c.Sections).ThenInclude(s => s.Lessons)
+                .Where(c => c.IsPublished && !enrolledCourseIds.Contains(c.Id))
+                .ToListAsync();
+
+            foreach (var c in otherCourses)
+            {
+                var allLessonIds = c.Sections.SelectMany(s => s.Lessons).Select(l => l.Id).ToList();
+                var totalLessons = allLessonIds.Count;
+                var completedCount = allLessonIds.Count(id => userLessonProgresses.Contains(id));
+                var percentage = totalLessons > 0 ? (int)Math.Round((double)completedCount / totalLessons * 100) : 0;
+
+                result.Add(new MyCourseDto
+                {
+                    CourseId = c.Id,
+                    Title = c.Title,
+                    ThumbnailUrl = c.ThumbnailUrl,
+                    InstructorName = c.Instructor?.FullName ?? string.Empty,
+                    EnrolledAt = DateTime.UtcNow,
+                    CompletedLessonsCount = completedCount,
+                    TotalLessonsCount = totalLessons,
+                    ProgressPercentage = percentage,
+                    IsCompleted = totalLessons > 0 && completedCount == totalLessons,
+                    IsProAccess = true
+                });
+            }
         }
 
         return result;
@@ -62,7 +100,11 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<CourseLearnDto> GetCourseLearningContentAsync(Guid courseId, Guid userId)
     {
-        var isEnrolled = await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
+        var user = await _context.Users.FindAsync(userId);
+        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
+
+        // Access is granted if user is individually enrolled OR has an active Pro subscription!
+        var isEnrolled = isSubscribed || await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
 
         var course = await _context.Courses
             .Include(c => c.Sections.OrderBy(s => s.OrderIndex))

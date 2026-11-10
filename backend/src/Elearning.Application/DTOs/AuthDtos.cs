@@ -40,6 +40,9 @@ public class UserProfileDto
     public string Role { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public string? Bio { get; set; }
+    public bool IsSubscribed { get; set; }
+    public string? SubscriptionPlan { get; set; }
+    public DateTime? SubscriptionExpiresAt { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

@@ -139,6 +139,7 @@ public class ElearningDbContext : DbContext
             entity.HasOne(o => o.Course)
                   .WithMany(c => c.Orders)
                   .HasForeignKey(o => o.CourseId)
+                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }

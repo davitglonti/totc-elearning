@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Star, Play, CheckCircle, Clock, BookOpen, Award, ShieldCheck, ArrowRight, User } from 'lucide-react';
 
-export default function CourseDetailPage({ selectedCourse, setActivePage, openVideoModal }) {
+export default function CourseDetailPage({ selectedCourse, setActivePage, openVideoModal, currentUser, onSelectCourseToPlay }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   const course = selectedCourse || {
+    id: 'a027e9f8-f06e-48c6-8fab-58222f839625',
+    courseId: 'a027e9f8-f06e-48c6-8fab-58222f839625',
     title: 'AWS Certified Solutions Architect & Cloud Operations',
     category: 'Cloud Architecture & DevOps',
     instructor: 'Lina Wilson',
@@ -16,6 +18,18 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
     price: '$450',
     oldPrice: '$600',
     image: '/assets/explore_row_1.png'
+  };
+
+  const handleStartProCourse = () => {
+    if (onSelectCourseToPlay) {
+      onSelectCourseToPlay({
+        courseId: course.id || course.courseId,
+        title: course.title,
+        instructorName: course.instructor
+      });
+    }
+    setActivePage('course-player');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const curriculum = [
@@ -226,28 +240,47 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
           {/* Sticky Purchase Card Right (4 cols) */}
           <div className="lg:col-span-4 sticky top-28 space-y-6">
             <div className="bg-white rounded-[28px] p-8 border border-gray-100 shadow-xl space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-3">
-                  <span className="font-poppins font-bold text-4xl text-totc-purple">
-                    {course.price}
-                  </span>
-                  <span className="text-lg text-gray-400 line-through">
-                    {course.oldPrice}
-                  </span>
-                  <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
-                    25% Off
-                  </span>
-                </div>
-                <p className="text-xs text-red-500 font-medium">Limited time discount ends in 2 days</p>
-              </div>
+              {currentUser?.isSubscribed ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-2 text-emerald-800 text-xs font-bold">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Included with your {currentUser.subscriptionPlan || 'Pro'} All-Access Membership</span>
+                  </div>
 
-              <button
-                onClick={handleBuyNow}
-                className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-lg transition-colors shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2"
-              >
-                <span>Enroll Now</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
+                  <button
+                    onClick={handleStartProCourse}
+                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group"
+                  >
+                    <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+                    <span>Start Learning (Pro Access)</span>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <span className="font-poppins font-bold text-4xl text-totc-purple">
+                        {course.price}
+                      </span>
+                      <span className="text-lg text-gray-400 line-through">
+                        {course.oldPrice}
+                      </span>
+                      <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
+                        25% Off
+                      </span>
+                    </div>
+                    <p className="text-xs text-red-500 font-medium">Limited time discount ends in 2 days</p>
+                  </div>
+
+                  <button
+                    onClick={handleBuyNow}
+                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-lg transition-colors shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2"
+                  >
+                    <span>Enroll Now</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
 
               <div className="space-y-4 pt-4 border-t border-gray-100 text-sm text-totc-gray">
                 <div className="font-semibold text-totc-navy">This course includes:</div>

@@ -173,4 +173,29 @@ export const api = {
       });
     },
   },
+
+  // Pro & Enterprise Subscriptions (All-Access Pass)
+  subscriptions: {
+    async subscribe(plan = 'Pro', billingCycle = 'monthly', paymentMethod = 'card') {
+      const result = await request('/subscriptions/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ plan, billingCycle, paymentMethod }),
+      });
+
+      if (result.user) {
+        localStorage.setItem('totc_user', JSON.stringify(result.user));
+      }
+      return result;
+    },
+
+    async cancel() {
+      return request('/subscriptions/cancel', {
+        method: 'POST',
+      });
+    },
+
+    async getStatus() {
+      return request('/subscriptions/status');
+    },
+  },
 };

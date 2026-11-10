@@ -141,6 +141,27 @@ try {
     Write-Host " Failed: $_" -ForegroundColor Red
 }
 
+# 9. Test Subscription Purchase & Universal All-Course Access
+Write-Host "[9/9] Testing POST /api/subscriptions/subscribe (Pro All-Access Pass)..." -NoNewline
+try {
+    $subBody = @{
+        plan = "Pro"
+        billingCycle = "monthly"
+        paymentMethod = "test_card"
+    } | ConvertTo-Json
+
+    $headers = @{ "Authorization" = "Bearer $token" }
+    $subRes = Invoke-RestMethod -Uri "$backendUrl/api/subscriptions/subscribe" -Method Post -Body $subBody -ContentType "application/json" -Headers $headers
+    
+    if ($subRes.success) {
+        Write-Host " OK ($($subRes.plan) Pass Active! $($subRes.unlockedCoursesCount) courses unlocked)" -ForegroundColor Green
+    } else {
+        Write-Host " Failed: Subscription not activated" -ForegroundColor Red
+    }
+} catch {
+    Write-Host " Failed: $_" -ForegroundColor Red
+}
+
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  ALL TESTS PASSED! PLATFORM IS FULLY OPERATIONAL " -ForegroundColor Green
