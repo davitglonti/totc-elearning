@@ -1,0 +1,31 @@
+using Elearning.Domain.Enums;
+
+namespace Elearning.Domain.Entities;
+
+/// <summary>
+/// Represents an online course created by an instructor.
+/// </summary>
+public class Course
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? ThumbnailUrl { get; set; }
+    public decimal Price { get; set; }
+    public CourseLevel Level { get; set; } = CourseLevel.Beginner;
+    public bool IsPublished { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Foreign keys
+    public Guid CategoryId { get; set; }
+    public Category? Category { get; set; }
+
+    public Guid InstructorId { get; set; }
+    public User? Instructor { get; set; }
+
+    // Navigation properties
+    public ICollection<Section> Sections { get; set; } = new List<Section>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<Order> Orders { get; set; } = new List<Order>();
+}
