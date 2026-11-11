@@ -1,3 +1,5 @@
+@import 'plyr/dist/plyr.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -24,4 +26,83 @@
 
 .animate-float-delay {
   animation: float 4.5s ease-in-out 1.5s infinite;
+}
+
+/* =========================================================================
+   Bunny Stream Player Custom Theme & Plyr Overrides
+   Matches Bunny Stream's sleek dark UI with vibrant teal highlights
+   ========================================================================= */
+:root {
+  --plyr-color-main: #00CBB8;
+  --plyr-video-control-background-hover: #00CBB8;
+  --plyr-video-controls-background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --plyr-control-radius: 8px;
+  --plyr-control-spacing: 12px;
+  --plyr-video-control-color: #F8FAFC;
+  --plyr-video-control-color-hover: #FFFFFF;
+  --plyr-menu-background: rgba(30, 41, 59, 0.96);
+  --plyr-menu-color: #F8FAFC;
+  --plyr-menu-radius: 12px;
+  --plyr-menu-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --plyr-tooltip-background: #0F172A;
+  --plyr-tooltip-color: #F8FAFC;
+  --plyr-tooltip-radius: 6px;
+  --plyr-range-track-height: 6px;
+  --plyr-range-thumb-height: 14px;
+  --plyr-video-range-track-background: rgba(255, 255, 255, 0.25);
+  --plyr-video-progress-buffered-background: rgba(255, 255, 255, 0.35);
+}
+
+.bunny-stream-player .plyr {
+  font-family: inherit;
+  border-radius: 24px;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  background: #000;
+}
+
+.bunny-stream-player .plyr__video-wrapper {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.bunny-stream-player .plyr__control--overlaid {
+  background: #00CBB8;
+  box-shadow: 0 0 35px rgba(0, 203, 184, 0.65);
+  padding: 20px;
+  border-radius: 9999px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.bunny-stream-player .plyr__control--overlaid:hover {
+  background: #00b3a2;
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 0 50px rgba(0, 203, 184, 0.9);
+}
+
+.bunny-stream-player .plyr__control--overlaid svg {
+  width: 26px;
+  height: 26px;
+  fill: #FFFFFF;
+}
+
+.bunny-stream-player .plyr__controls {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 16px;
+  padding-top: 36px;
+}
+
+.bunny-stream-player .plyr__menu__container {
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bunny-stream-player .plyr__menu__container .plyr__control[role="menuitemradio"][aria-checked="true"]::before {
+  background: #00CBB8;
 }

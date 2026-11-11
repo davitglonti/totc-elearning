@@ -7,6 +7,7 @@ import {
   Video, ExternalLink, Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
+import BunnyPlayer from '../components/BunnyPlayer';
 
 export default function CoursePlayerPage({ activeCourse, setActivePage }) {
   const [courseContent, setCourseContent] = useState(null);
@@ -489,37 +490,19 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         {/* Left Column: Player & Interactive Tabs (8 Cols) */}
         <div className="lg:col-span-8 p-6 lg:p-8 flex flex-col space-y-6">
           
-          {/* Video Container with Bunny Stream / HTML5 Player */}
-          <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center group border border-slate-800">
-            {activeLesson?.videoUrl && (activeLesson.videoUrl.includes('iframe.mediadelivery.net') || activeLesson.videoUrl.includes('embed')) ? (
-              <iframe
-                key={activeLesson.id || activeLesson.videoUrl}
-                src={activeLesson.videoUrl}
-                loading="lazy"
-                className="w-full h-full border-0 absolute inset-0"
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                allowFullScreen={true}
-                title={activeLesson.title || 'Lecture Video Stream'}
-              />
-            ) : activeLesson?.videoUrl ? (
-              <video
-                key={activeLesson.id || activeLesson.videoUrl}
-                src={resolveVideoUrl(activeLesson.videoUrl)}
-                controls
-                className="w-full h-full object-contain absolute inset-0 bg-black"
-                playsInline
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-slate-900 absolute inset-0">
-                <div className="w-16 h-16 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">
-                  <Video className="w-8 h-8 text-totc-teal" />
-                </div>
-                <h4 className="font-bold text-base text-white">No Video Uploaded Yet</h4>
-                <p className="text-xs text-slate-400 max-w-sm">
-                  The instructor has not attached a video file to this lecture ({activeLesson?.title || 'Lecture'}).
-                </p>
-              </div>
-            )}
+          {/* Video Container with Bunny Stream Player */}
+          <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center border border-slate-800">
+            <BunnyPlayer
+              key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
+              src={activeLesson?.videoUrl}
+              title={activeLesson?.title}
+              onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
+              onEnded={() => {
+                if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
+                  handleCompleteCurrentLesson();
+                }
+              }}
+            />
           </div>
 
           {/* Active Lecture Header Bar */}
