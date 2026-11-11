@@ -50,6 +50,7 @@ public class CreateFullCourseDto
 
 public class CreateFullSectionDto
 {
+    public Guid? Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public int OrderIndex { get; set; }
     public List<CreateFullLessonDto> Lessons { get; set; } = new();
@@ -57,6 +58,7 @@ public class CreateFullSectionDto
 
 public class CreateFullLessonDto
 {
+    public Guid? Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? VideoUrl { get; set; }
     public int DurationMinutes { get; set; } = 15;
@@ -64,4 +66,25 @@ public class CreateFullLessonDto
     public bool IsFreePreview { get; set; } = false;
     public string LessonType { get; set; } = "Video";
     public int OrderIndex { get; set; }
+}
+
+public class UpdateFullCourseDto : CreateFullCourseDto
+{
+    public bool ResubmitForReview { get; set; } = true;
+}
+
+public class InstructorCourseEditDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string? ThumbnailUrl { get; set; }
+    public decimal Price { get; set; }
+    public string Level { get; set; } = "Beginner";
+    public Guid CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public bool IsPublished { get; set; }
+    public string ApprovalStatus { get; set; } = "Approved";
+    public string? RejectionReason { get; set; }
+    public List<CreateFullSectionDto> Sections { get; set; } = new();
 }

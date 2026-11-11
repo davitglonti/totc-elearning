@@ -55,6 +55,8 @@ const getPathForPage = (page, course, playCourse) => {
       return '/instructor/studio';
     case 'create-course':
       return '/instructor/courses/new';
+    case 'edit-course':
+      return '/instructor/courses/edit';
     case 'admin-dashboard':
       return '/admin';
     case 'membership':
@@ -75,6 +77,7 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [activeCourseToPlay, setActiveCourseToPlay] = useState(null);
+  const [courseToEdit, setCourseToEdit] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [securityNotice, setSecurityNotice] = useState('');
 
@@ -202,7 +205,7 @@ export default function App() {
     }
 
     // Guard: Instructor Studio & Course Creation require Instructor or Admin role
-    if (targetPage === 'instructor-dashboard' || targetPage === 'create-course') {
+    if (targetPage === 'instructor-dashboard' || targetPage === 'create-course' || targetPage === 'edit-course') {
       if (!currentUser) {
         setSecurityNotice('Instructor credentials required to access the Instructor Studio.');
         openAuthModal('login');
@@ -213,6 +216,12 @@ export default function App() {
         setActivePage('dashboard');
         return;
       }
+    }
+
+    if (targetPage === 'edit-course') {
+      if (extraData) setCourseToEdit(extraData);
+    } else if (targetPage === 'create-course' && !extraData) {
+      setCourseToEdit(null);
     }
 
     // Guard: Admin Console requires Admin role
@@ -323,6 +332,10 @@ export default function App() {
           <InstructorDashboardPage
             currentUser={currentUser}
             setActivePage={handleSafePageTransition}
+            onEditCourse={(course) => {
+              setCourseToEdit(course);
+              handleSafePageTransition('edit-course', course);
+            }}
             setSelectedCourse={(course) => {
               setSelectedCourse(course);
               handleSafePageTransition('course-detail', course);
@@ -330,10 +343,11 @@ export default function App() {
           />
         )}
 
-        {/* Course Creation Studio (Protected) */}
-        {activePage === 'create-course' && (
+        {/* Course Creation & Editing Studio (Protected) */}
+        {(activePage === 'create-course' || activePage === 'edit-course') && (
           <CreateCoursePage
             currentUser={currentUser}
+            courseToEdit={courseToEdit}
             setActivePage={handleSafePageTransition}
             setSelectedCourse={(course) => {
               setSelectedCourse(course);

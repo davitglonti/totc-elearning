@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Star, Play, CheckCircle, Clock, BookOpen, Award, ShieldCheck, 
   ArrowRight, User, Sparkles, Lock, Unlock, Video, HelpCircle, 
-  Layers, ArrowLeft 
+  Layers, ArrowLeft, Edit3
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -485,6 +485,14 @@ export default function CourseDetailPage({
                   >
                     <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
                     <span>Open Classroom & Watch Lectures</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActivePage('edit-course', courseData)}
+                    className="w-full py-3 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2 shadow-2xs"
+                  >
+                    <Edit3 className="w-4 h-4 text-purple-700" />
+                    <span>Edit Course & Lectures</span>
                   </button>
 
                   <button

@@ -381,4 +381,258 @@ public class InstructorCoursesController : BaseApiController
 
         return Ok(new { url });
     }
+
+    /// <summary>
+    /// Retrieve full course curriculum, video URLs, and rejection feedback for editing.
+    /// </summary>
+    [HttpGet("courses/{id:guid}/full")]
+    [ProducesResponseType(typeof(InstructorCourseEditDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFullCourseForEdit(Guid id)
+    {
+        // Resolve instructor
+        User? instructor = null;
+        if (CurrentUserId.HasValue)
+        {
+            instructor = await _context.Users.FindAsync(CurrentUserId.Value);
+        }
+        if (instructor == null && !string.IsNullOrWhiteSpace(CurrentUserEmail))
+        {
+            instructor = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == CurrentUserEmail.ToLower());
+        }
+        if (instructor == null) return Unauthorized();
+
+        var course = await _context.Courses
+            .Include(c => c.Category)
+            .Include(c => c.Sections.OrderBy(s => s.OrderIndex))
+                .ThenInclude(s => s.Lessons.OrderBy(l => l.OrderIndex))
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (course == null) return NotFound(new { message = "Course not found." });
+
+        if (instructor.Role != UserRole.Admin && course.InstructorId != instructor.Id)
+            return Forbid();
+
+        var dto = new InstructorCourseEditDto
+        {
+            Id = course.Id,
+            Title = course.Title,
+            Description = course.Description,
+            ThumbnailUrl = course.ThumbnailUrl,
+            Price = course.Price,
+            Level = course.Level.ToString(),
+            CategoryId = course.CategoryId,
+            CategoryName = course.Category?.Name ?? "General",
+            IsPublished = course.IsPublished,
+            ApprovalStatus = course.ApprovalStatus,
+            RejectionReason = course.RejectionReason,
+            Sections = course.Sections.Select(s => new CreateFullSectionDto
+            {
+                Id = s.Id,
+                Title = s.Title,
+                OrderIndex = s.OrderIndex,
+                Lessons = s.Lessons.Select(l => new CreateFullLessonDto
+                {
+                    Id = l.Id,
+                    Title = l.Title,
+                    VideoUrl = l.VideoUrl,
+                    DurationMinutes = l.DurationMinutes,
+                    ContentText = l.ContentText,
+                    IsFreePreview = l.IsFreePreview,
+                    LessonType = l.LessonType ?? "Video",
+                    OrderIndex = l.OrderIndex
+                }).ToList()
+            }).ToList()
+        };
+
+        return Ok(dto);
+    }
+
+    /// <summary>
+    /// Update existing course curriculum, add/remove modules, add/remove/edit video lessons, and resubmit for approval.
+    /// </summary>
+    [HttpPut("courses/{id:guid}/full")]
+    [ProducesResponseType(typeof(InstructorCourseItemDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateFullCourse(Guid id, [FromBody] UpdateFullCourseDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            return BadRequest(new { message = "Course title is required." });
+
+        User? instructor = null;
+        if (CurrentUserId.HasValue)
+        {
+            instructor = await _context.Users.FindAsync(CurrentUserId.Value);
+        }
+        if (instructor == null && !string.IsNullOrWhiteSpace(CurrentUserEmail))
+        {
+            instructor = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == CurrentUserEmail.ToLower());
+        }
+        if (instructor == null) return Unauthorized();
+
+        var course = await _context.Courses
+            .Include(c => c.Category)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (course == null) return NotFound(new { message = "Course not found." });
+
+        var isUserAdmin = instructor.Role == UserRole.Admin || IsAdmin;
+        if (!isUserAdmin && course.InstructorId != instructor.Id)
+            return Forbid();
+
+        // Update Category
+        if (dto.CategoryId != Guid.Empty && dto.CategoryId != course.CategoryId)
+        {
+            var cat = await _context.Categories.FindAsync(dto.CategoryId);
+            if (cat != null) course.CategoryId = cat.Id;
+        }
+
+        // Update Course Metadata
+        course.Title = dto.Title.Trim();
+        course.Description = dto.Description?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(dto.ThumbnailUrl))
+            course.ThumbnailUrl = dto.ThumbnailUrl.Trim();
+        course.Price = dto.Price >= 0 ? dto.Price : 0m;
+        course.Level = dto.Level;
+
+        // If previously rejected or resubmit requested, put back in PendingApproval queue
+        if (!isUserAdmin)
+        {
+            if (course.ApprovalStatus == "Rejected" || dto.ResubmitForReview)
+            {
+                course.ApprovalStatus = "PendingApproval";
+                course.RejectionReason = null;
+                course.ApprovedAt = null;
+            }
+        }
+        else
+        {
+            course.IsPublished = dto.IsPublished;
+        }
+
+        // Load existing sections and lessons
+        var existingSections = await _context.Sections
+            .Include(s => s.Lessons)
+            .Where(s => s.CourseId == id)
+            .ToListAsync();
+
+        // Sync Sections and Lessons
+        var incomingSectionIds = dto.Sections
+            .Where(s => s.Id.HasValue && s.Id.Value != Guid.Empty)
+            .Select(s => s.Id!.Value)
+            .ToHashSet();
+
+        // Remove deleted sections
+        var sectionsToRemove = existingSections.Where(s => !incomingSectionIds.Contains(s.Id)).ToList();
+        _context.Sections.RemoveRange(sectionsToRemove);
+
+        // Update or Add Sections
+        int sOrder = 1;
+        foreach (var sDto in dto.Sections)
+        {
+            Section? section = null;
+            if (sDto.Id.HasValue && sDto.Id.Value != Guid.Empty)
+            {
+                section = existingSections.FirstOrDefault(s => s.Id == sDto.Id.Value);
+            }
+
+            if (section == null)
+            {
+                section = new Section
+                {
+                    CourseId = course.Id,
+                    Title = string.IsNullOrWhiteSpace(sDto.Title) ? $"Module {sOrder}" : sDto.Title.Trim(),
+                    OrderIndex = sDto.OrderIndex > 0 ? sDto.OrderIndex : sOrder
+                };
+                _context.Sections.Add(section);
+            }
+            else
+            {
+                section.Title = string.IsNullOrWhiteSpace(sDto.Title) ? $"Module {sOrder}" : sDto.Title.Trim();
+                section.OrderIndex = sDto.OrderIndex > 0 ? sDto.OrderIndex : sOrder;
+            }
+            sOrder++;
+
+            // Sync Lessons for this section
+            var incomingLessonIds = sDto.Lessons
+                .Where(l => l.Id.HasValue && l.Id.Value != Guid.Empty)
+                .Select(l => l.Id!.Value)
+                .ToHashSet();
+
+            var lessonsToRemove = section.Lessons.Where(l => !incomingLessonIds.Contains(l.Id)).ToList();
+            _context.Lessons.RemoveRange(lessonsToRemove);
+
+            int lOrder = 1;
+            foreach (var lDto in sDto.Lessons)
+            {
+                Lesson? lesson = null;
+                if (lDto.Id.HasValue && lDto.Id.Value != Guid.Empty)
+                {
+                    lesson = section.Lessons.FirstOrDefault(l => l.Id == lDto.Id.Value);
+                }
+
+                if (lesson == null)
+                {
+                    lesson = new Lesson
+                    {
+                        SectionId = section.Id,
+                        Title = string.IsNullOrWhiteSpace(lDto.Title) ? $"Lesson {lOrder}" : lDto.Title.Trim(),
+                        VideoUrl = string.IsNullOrWhiteSpace(lDto.VideoUrl) 
+                            ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+                            : lDto.VideoUrl.Trim(),
+                        DurationMinutes = lDto.DurationMinutes > 0 ? lDto.DurationMinutes : 15,
+                        ContentText = lDto.ContentText ?? string.Empty,
+                        IsFreePreview = lDto.IsFreePreview,
+                        LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType,
+                        OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lOrder
+                    };
+                    _context.Lessons.Add(lesson);
+                }
+                else
+                {
+                    lesson.Title = string.IsNullOrWhiteSpace(lDto.Title) ? $"Lesson {lOrder}" : lDto.Title.Trim();
+                    lesson.VideoUrl = string.IsNullOrWhiteSpace(lDto.VideoUrl) 
+                        ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+                        : lDto.VideoUrl.Trim();
+                    lesson.DurationMinutes = lDto.DurationMinutes > 0 ? lDto.DurationMinutes : 15;
+                    lesson.ContentText = lDto.ContentText ?? string.Empty;
+                    lesson.IsFreePreview = lDto.IsFreePreview;
+                    lesson.LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType;
+                    lesson.OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lOrder;
+                }
+                lOrder++;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Reload fresh counts
+        var totalLessonsCount = await _context.Lessons.CountAsync(l => l.Section != null && l.Section.CourseId == course.Id);
+        var totalSectionsCount = await _context.Sections.CountAsync(s => s.CourseId == course.Id);
+
+        var resultDto = new InstructorCourseItemDto
+        {
+            Id = course.Id,
+            Title = course.Title,
+            Description = course.Description,
+            ThumbnailUrl = course.ThumbnailUrl,
+            Price = course.Price,
+            Level = course.Level.ToString(),
+            CategoryName = course.Category?.Name ?? "General",
+            CategoryId = course.CategoryId,
+            InstructorId = course.InstructorId,
+            InstructorName = instructor.FullName,
+            InstructorEmail = instructor.Email,
+            IsPublished = course.IsPublished,
+            ApprovalStatus = course.ApprovalStatus,
+            RejectionReason = course.RejectionReason,
+            SectionsCount = totalSectionsCount,
+            LessonsCount = totalLessonsCount,
+            StudentsCount = course.Enrollments.Count,
+            Revenue = course.Enrollments.Count * course.Price,
+            Rating = 5.0,
+            CreatedAt = course.CreatedAt
+        };
+
+        return Ok(resultDto);
+    }
 }

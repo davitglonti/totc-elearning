@@ -123,6 +123,17 @@ export const api = {
       });
     },
 
+    async getCourseForEdit(courseId) {
+      return request(`/instructor/courses/${courseId}/full`);
+    },
+
+    async updateFullCourse(courseId, data) {
+      return request(`/instructor/courses/${courseId}/full`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
     async toggleCoursePublish(courseId) {
       return request(`/instructor/courses/${courseId}/toggle-publish`, {
         method: 'PUT',
