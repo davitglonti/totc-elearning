@@ -120,13 +120,23 @@ public class BunnyStreamService : IBunnyStreamService
             : Path.GetFileNameWithoutExtension(fileName);
 
         var config = _activeConfig;
+        var ext = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(ext)) ext = ".mp4";
+        var uniqueFileName = $"{Guid.NewGuid():N}{ext}";
+        var localFilePath = Path.Combine(_localUploadRoot, uniqueFileName);
 
-        // Attempt upload to Bunny Stream first
+        // 1. Buffer file stream directly to disk to ensure 100% seekability and zero memory overhead
+        using (var dest = new FileStream(localFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await fileStream.CopyToAsync(dest);
+        }
+
+        // 2. Attempt upload to Bunny Stream first if Library ID and API Key are present
         if (!string.IsNullOrWhiteSpace(config.LibraryId) && !string.IsNullOrWhiteSpace(config.ApiKey))
         {
             try
             {
-                // Step 1: Create Video Object in Bunny Video Library
+                // Step A: Create Video Object in Bunny Video Library
                 using var createReq = new HttpRequestMessage(HttpMethod.Post, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos");
                 createReq.Headers.Add("AccessKey", config.ApiKey);
                 createReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -146,51 +156,54 @@ public class BunnyStreamService : IBunnyStreamService
 
                     if (!string.IsNullOrWhiteSpace(videoGuid))
                     {
-                        // Step 2: Upload Video Binary Stream to Bunny CDN
-                        using var uploadReq = new HttpRequestMessage(HttpMethod.Put, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos/{videoGuid}");
-                        uploadReq.Headers.Add("AccessKey", config.ApiKey);
-                        uploadReq.Content = new StreamContent(fileStream);
-                        uploadReq.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-                        using var uploadResp = await _httpClient.SendAsync(uploadReq);
-
-                        var cdnHost = string.IsNullOrWhiteSpace(config.CdnHostname) 
-                            ? "vz-f0959c15-d92.b-cdn.net" 
-                            : config.CdnHostname;
-
-                        return new BunnyUploadResult
+                        // Step B: Upload Video Binary Stream to Bunny CDN using seekable FileStream
+                        using (var readFs = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                         {
-                            Success = true,
-                            VideoId = videoGuid,
-                            Title = title,
-                            EmbedUrl = $"https://iframe.mediadelivery.net/embed/{config.LibraryId}/{videoGuid}",
-                            HlsUrl = $"https://{cdnHost}/{videoGuid}/playlist.m3u8",
-                            DirectPlayUrl = $"https://{cdnHost}/{videoGuid}/play_720p.mp4",
-                            ThumbnailUrl = $"https://{cdnHost}/{videoGuid}/thumbnail.jpg",
-                            IsBunnyStream = true,
-                            Message = "Video uploaded and encoded successfully on Bunny Stream Edge CDN."
-                        };
+                            using var uploadReq = new HttpRequestMessage(HttpMethod.Put, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos/{videoGuid}");
+                            uploadReq.Headers.Add("AccessKey", config.ApiKey);
+                            uploadReq.Content = new StreamContent(readFs);
+                            uploadReq.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                            using var uploadResp = await _httpClient.SendAsync(uploadReq);
+                            if (uploadResp.IsSuccessStatusCode)
+                            {
+                                var cdnHost = string.IsNullOrWhiteSpace(config.CdnHostname) 
+                                    ? "vz-f0959c15-d92.b-cdn.net" 
+                                    : config.CdnHostname;
+
+                                return new BunnyUploadResult
+                                {
+                                    Success = true,
+                                    VideoId = videoGuid,
+                                    Title = title,
+                                    EmbedUrl = $"https://iframe.mediadelivery.net/embed/{config.LibraryId}/{videoGuid}",
+                                    HlsUrl = $"https://{cdnHost}/{videoGuid}/playlist.m3u8",
+                                    DirectPlayUrl = $"https://{cdnHost}/{videoGuid}/play_720p.mp4",
+                                    ThumbnailUrl = $"https://{cdnHost}/{videoGuid}/thumbnail.jpg",
+                                    IsBunnyStream = true,
+                                    Message = "Video uploaded and encoded successfully on Bunny Stream Edge CDN."
+                                };
+                            }
+                            else
+                            {
+                                var uploadErr = await uploadResp.Content.ReadAsStringAsync();
+                                Console.WriteLine($"[BunnyStream] Binary upload failed (HTTP {(int)uploadResp.StatusCode}): {uploadErr}");
+                            }
+                        }
                     }
+                }
+                else
+                {
+                    Console.WriteLine($"[BunnyStream] Create video failed (HTTP {(int)createResp.StatusCode}): {createContent}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BunnyStream] Upload failed: {ex.Message}. Falling back to resilient local storage.");
+                Console.WriteLine($"[BunnyStream] Upload failed: {ex.Message}. Falling back to resilient server storage.");
             }
         }
 
-        // Resilient Fallback: Save to Local Storage so lecturer is never blocked
-        fileStream.Position = 0;
-        var ext = Path.GetExtension(fileName);
-        if (string.IsNullOrWhiteSpace(ext)) ext = ".mp4";
-        var uniqueFileName = $"{Guid.NewGuid():N}{ext}";
-        var localFilePath = Path.Combine(_localUploadRoot, uniqueFileName);
-
-        using (var dest = new FileStream(localFilePath, FileMode.Create))
-        {
-            await fileStream.CopyToAsync(dest);
-        }
-
+        // 3. Resilient Fallback: The video is already safely saved in local storage!
         var localUrl = $"/uploads/videos/{uniqueFileName}";
         return new BunnyUploadResult
         {

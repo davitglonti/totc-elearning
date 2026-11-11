@@ -389,6 +389,8 @@ public class InstructorCoursesController : BaseApiController
     /// Upload a video file directly to Bunny Stream Video CDN (with adaptive transcoding, HLS & iframe embed).
     /// </summary>
     [HttpPost("media/upload-video")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = 2147483648, ValueLengthLimit = int.MaxValue, MultipartHeadersLengthLimit = int.MaxValue)]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(BunnyUploadResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> UploadVideoToBunny(IFormFile file, [FromForm] string? title = null)

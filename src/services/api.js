@@ -168,18 +168,25 @@ export const api = {
 
         xhr.onload = () => {
           try {
-            const data = JSON.parse(xhr.responseText);
             if (xhr.status >= 200 && xhr.status < 300) {
+              const data = JSON.parse(xhr.responseText);
               resolve(data);
+            } else if (xhr.status === 413) {
+              reject(new Error('Video file is too large (maximum size is 2GB).'));
             } else {
-              reject(new Error(data.message || data.error || 'Video upload failed.'));
+              let errorMsg = `Upload failed (Status ${xhr.status})`;
+              try {
+                const errData = JSON.parse(xhr.responseText);
+                if (errData.message || errData.error) errorMsg = errData.message || errData.error;
+              } catch (_) {}
+              reject(new Error(errorMsg));
             }
           } catch (err) {
-            reject(new Error('Invalid server response.'));
+            reject(new Error(xhr.status === 413 ? 'Video file is too large.' : 'Upload failed: ' + err.message));
           }
         };
 
-        xhr.onerror = () => reject(new Error('Network error during video upload.'));
+        xhr.onerror = () => reject(new Error('Network connection error during video upload. Please retry.'));
         xhr.send(formData);
       });
     },

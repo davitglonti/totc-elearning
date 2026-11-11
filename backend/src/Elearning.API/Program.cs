@@ -10,6 +10,20 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to support large video file uploads (up to 2 GB)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 2147483648; // 2 GB
+});
+
+// Configure FormOptions for multipart video uploads
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 2147483648; // 2 GB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
 // 1. Configure Database Connection
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=elearning.db";
 var useSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
@@ -27,6 +41,10 @@ builder.Services.AddDbContext<ElearningDbContext>(options =>
 });
 
 // 2. Register Application and Infrastructure Services
+builder.Services.AddHttpClient("BunnyClient", client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(30);
+});
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

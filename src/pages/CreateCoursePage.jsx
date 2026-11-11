@@ -46,7 +46,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         {
           id: 'les-1',
           title: 'Course Introduction & Environment Setup',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          videoUrl: '',
           durationMinutes: 12,
           contentText: 'Welcome to the curriculum. In this lecture, we configure our development toolchain and review core concepts.',
           isFreePreview: true,
@@ -56,7 +56,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         {
           id: 'les-2',
           title: 'Architectural Blueprint & Data Flow',
-          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+          videoUrl: '',
           durationMinutes: 20,
           contentText: 'Deep dive into systemic architecture, resilient state patterns, and best practices.',
           isFreePreview: false,
@@ -178,7 +178,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     updated[secIndex].lessons.push({
       id: `les-${Date.now()}`,
       title: `Lesson ${newLesNum}: Hands-on Workshop`,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      videoUrl: '',
       durationMinutes: 15,
       contentText: 'Key concepts, lecture video guidance, and step-by-step exercises.',
       isFreePreview: false,
@@ -294,7 +294,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           lessons: s.lessons.map((l, lIdx) => ({
             id: l.id && !String(l.id).startsWith('les-') ? l.id : null,
             title: l.title.trim(),
-            videoUrl: l.videoUrl.trim() || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            videoUrl: l.videoUrl ? l.videoUrl.trim() : '',
             durationMinutes: parseInt(l.durationMinutes, 10) || 15,
             contentText: l.contentText?.trim() || '',
             isFreePreview: !!l.isFreePreview,
@@ -703,31 +703,37 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                             </button>
                           </div>
 
-                          {/* Video Upload & Stream Settings */}
+                          {/* Video Upload & Stream Settings (Strictly File Upload - No Link/URL Input) */}
                           <div className="space-y-2 pt-1">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <label className="text-[11px] font-bold text-totc-navy flex items-center gap-1.5">
-                                <Video className="w-3.5 h-3.5 text-totc-teal" />
-                                <span>Lecture Video Source</span>
-                              </label>
-
-                              {/* Direct Bunny Upload Button */}
-                              <label className={`cursor-pointer px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-xs border ${
+                            {/* If no video uploaded yet: show prominent upload area */}
+                            {!lesson.videoUrl ? (
+                              <label className={`cursor-pointer w-full p-4 rounded-xl border-2 border-dashed transition-all flex flex-col sm:flex-row items-center justify-between gap-3 ${
                                 uploadingKey === `${sIdx}-${lIdx}`
-                                  ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
-                                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                                  ? 'bg-amber-50 border-amber-300 pointer-events-none'
+                                  : 'bg-indigo-50/40 hover:bg-indigo-50/80 border-indigo-200 hover:border-indigo-400'
                               }`}>
-                                {uploadingKey === `${sIdx}-${lIdx}` ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                                    <span>Uploading ({uploadProgress}%)...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
-                                    <span>Upload Video File (Bunny CDN)</span>
-                                  </>
-                                )}
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                                    {uploadingKey === `${sIdx}-${lIdx}` ? (
+                                      <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                                    ) : (
+                                      <UploadCloud className="w-5 h-5 text-indigo-600" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-indigo-950">
+                                      {uploadingKey === `${sIdx}-${lIdx}` ? `Uploading Video (${uploadProgress}%)...` : 'Upload Lecture Video File'}
+                                    </p>
+                                    <p className="text-[11px] text-indigo-600/80">
+                                      Select MP4, MOV or WebM from your device (Max 2GB). Streams directly to Bunny CDN.
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <span className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-xs hover:bg-indigo-700 transition-colors shrink-0">
+                                  Browse Video
+                                </span>
+
                                 <input
                                   type="file"
                                   accept="video/*"
@@ -740,7 +746,78 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                   className="hidden"
                                 />
                               </label>
-                            </div>
+                            ) : (
+                              /* If video is already uploaded and attached */
+                              <div className="p-3 bg-gradient-to-r from-teal-50/80 to-emerald-50/60 rounded-xl border border-teal-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+                                    <Video className="w-4 h-4 text-teal-700" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                                        {lesson.videoUrl.includes('mediadelivery.net') || lesson.videoUrl.includes('b-cdn.net')
+                                          ? '⚡ Bunny Stream CDN Video Ready'
+                                          : '📁 Video File Attached'}
+                                      </span>
+                                      <a
+                                        href={lesson.videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[10px] text-teal-700 hover:text-teal-900 font-bold underline"
+                                      >
+                                        Preview
+                                      </a>
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 font-mono truncate max-w-xs sm:max-w-md">
+                                      {lesson.videoUrl.split('/').pop()}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Action buttons: Replace or Remove */}
+                                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                  <label className={`cursor-pointer px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors border shadow-xs ${
+                                    uploadingKey === `${sIdx}-${lIdx}`
+                                      ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
+                                      : 'bg-white hover:bg-gray-50 text-totc-navy border-gray-200'
+                                  }`}>
+                                    {uploadingKey === `${sIdx}-${lIdx}` ? (
+                                      <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                                        <span>Uploading ({uploadProgress}%)...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UploadCloud className="w-3.5 h-3.5 text-totc-teal" />
+                                        <span>Replace Video</span>
+                                      </>
+                                    )}
+                                    <input
+                                      type="file"
+                                      accept="video/*"
+                                      disabled={uploadingKey === `${sIdx}-${lIdx}`}
+                                      onChange={(e) => {
+                                        if (e.target.files?.[0]) {
+                                          handleVideoUpload(sIdx, lIdx, e.target.files[0], lesson.title);
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleLessonChange(sIdx, lIdx, 'videoUrl', '')}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                    title="Remove attached video"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Active Upload Progress Bar */}
                             {uploadingKey === `${sIdx}-${lIdx}` && (
@@ -761,7 +838,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               </div>
                             )}
 
-                            {/* Upload Notice */}
+                            {/* Upload Notice (Success / Error toast) */}
                             {uploadNotice?.key === `${sIdx}-${lIdx}` && (
                               <div className={`p-2.5 rounded-xl text-[11px] font-semibold flex items-center justify-between gap-2 ${
                                 uploadNotice.isSuccess 
@@ -779,61 +856,35 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               </div>
                             )}
 
-                            {/* Bunny Stream CDN Ready Badge */}
-                            {lesson.videoUrl && (lesson.videoUrl.includes('mediadelivery.net') || lesson.videoUrl.includes('b-cdn.net')) && (
-                              <div className="px-3 py-1.5 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-lg flex items-center justify-between text-[11px]">
-                                <span className="font-bold text-emerald-800 flex items-center gap-1.5">
-                                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                                  ⚡ Bunny Stream CDN Transcoded & Ready
+                            {/* Lecture Metadata Row: Duration & Free Preview */}
+                            <div className="flex items-center justify-between gap-4 pt-1 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold text-totc-gray flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                  Duration:
                                 </span>
-                                <a 
-                                  href={lesson.videoUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className="text-teal-700 hover:text-teal-900 font-semibold underline text-[10px]"
-                                >
-                                  Preview Stream
-                                </a>
-                              </div>
-                            )}
-
-                            {/* Video URL & Runtime Row */}
-                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
-                              <div className="sm:col-span-8 relative">
-                                <Video className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                  type="url"
-                                  value={lesson.videoUrl}
-                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'videoUrl', e.target.value)}
-                                  placeholder="Video Stream URL or Bunny Embed URL"
-                                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-mono text-totc-navy"
-                                />
-                              </div>
-
-                              <div className="sm:col-span-4 flex items-center gap-2">
-                                <div className="relative flex-1">
-                                  <Clock className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                <div className="relative w-24">
                                   <input
                                     type="number"
                                     min="1"
                                     value={lesson.durationMinutes}
                                     onChange={(e) => handleLessonChange(sIdx, lIdx, 'durationMinutes', e.target.value)}
-                                    placeholder="Minutes"
-                                    className="w-full pl-7 pr-2 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-bold text-totc-navy"
-                                    title="Duration in minutes"
+                                    placeholder="Mins"
+                                    className="w-full px-2.5 py-1 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-xs font-bold text-totc-navy"
                                   />
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-semibold">min</span>
                                 </div>
-
-                                <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-totc-navy font-semibold shrink-0">
-                                  <input
-                                    type="checkbox"
-                                    checked={lesson.isFreePreview}
-                                    onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
-                                    className="rounded text-totc-teal focus:ring-totc-teal"
-                                  />
-                                  <span>Free</span>
-                                </label>
                               </div>
+
+                              <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-totc-navy font-semibold shrink-0">
+                                <input
+                                  type="checkbox"
+                                  checked={lesson.isFreePreview}
+                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
+                                  className="rounded text-totc-teal focus:ring-totc-teal"
+                                />
+                                <span>Free Preview</span>
+                              </label>
                             </div>
                           </div>
 
