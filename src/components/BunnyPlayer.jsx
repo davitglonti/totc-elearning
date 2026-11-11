@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Play, Pause, RotateCcw, RotateCw, Volume2, Volume1, VolumeX, 
-  Maximize, Minimize, Settings, Zap, Check, Sparkles, Loader2,
-  Tv, Film
+  Maximize, Minimize, Settings, Check, Loader2,
+  Tv, Film, SlidersHorizontal, Sparkles
 } from 'lucide-react';
 
 /**
  * Bunny Stream Video Player Component
  * A high-end, responsive video player matching Bunny Stream's exact aesthetic:
+ * - Specific lecture/lesson title banner on top (no generic CDN badge)
+ * - Manual Quality / Resolution selector (1080p, 720p, 480p, 360p, Auto)
  * - Glowing centered teal play button
  * - 10s rewind / fast-forward controls
  * - Smooth progress scrubber with hover time preview & buffer track
@@ -15,13 +17,13 @@ import {
  * - Volume slider with mute toggle
  * - Picture-in-Picture & Fullscreen
  * - Keyboard shortcuts (Space, Left/Right arrows, M, F)
- * - Bunny Stream CDN edge badge
  * - Iframe embed support for official Bunny Stream URLs
  */
 export default function BunnyPlayer({
   src,
   poster,
   title,
+  moduleTitle,
   onTimeUpdate,
   onEnded,
   initialTime = 0,
@@ -38,17 +40,29 @@ export default function BunnyPlayer({
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [selectedQuality, setSelectedQuality] = useState('1080p');
   const [isBuffering, setIsBuffering] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // UI state
   const [showControls, setShowControls] = useState(true);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [hoverTime, setHoverTime] = useState(null);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [pulsePlayIcon, setPulsePlayIcon] = useState(false);
+  const [qualityNotice, setQualityNotice] = useState('');
 
   const controlsTimeoutRef = useRef(null);
+
+  // Quality resolution options
+  const qualityOptions = [
+    { id: '1080p', label: '1080p Full HD', badge: 'HD', desc: 'Crisp 60fps' },
+    { id: '720p', label: '720p HD', badge: 'HD', desc: 'High Quality' },
+    { id: '480p', label: '480p SD', badge: 'SD', desc: 'Standard' },
+    { id: '360p', label: '360p Data Saver', badge: 'SD', desc: 'Data Saver' },
+    { id: 'Auto', label: 'Auto (Adaptive)', badge: 'Auto', desc: 'Automatic' },
+  ];
 
   // Detect whether this is an official Bunny Stream iframe embed
   const isBunnyIframe = src && (
@@ -74,6 +88,7 @@ export default function BunnyPlayer({
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
         setShowSpeedMenu(false);
+        setShowQualityMenu(false);
       }, 2500);
     }
   }, [isPlaying]);
@@ -160,6 +175,33 @@ export default function BunnyPlayer({
     resetControlsTimeout();
   };
 
+  // Quality resolution change
+  const handleQualitySelect = (qualityId) => {
+    setSelectedQuality(qualityId);
+    setShowQualityMenu(false);
+
+    const savedTime = videoRef.current ? videoRef.current.currentTime : 0;
+    const wasPlaying = videoRef.current ? !videoRef.current.paused : false;
+
+    // Show temporary notice badge
+    setQualityNotice(`Resolution: ${qualityId}`);
+    setTimeout(() => setQualityNotice(''), 2500);
+
+    // If stream URL contains resolution templates (like Bunny play_720p.mp4), adapt smoothly
+    if (videoRef.current && finalSrc.includes('_') && finalSrc.includes('.mp4')) {
+      const updatedSrc = finalSrc.replace(/play_\d+p\.mp4/, `play_${qualityId}.mp4`);
+      if (updatedSrc !== finalSrc) {
+        videoRef.current.src = updatedSrc;
+        videoRef.current.currentTime = savedTime;
+        if (wasPlaying) {
+          videoRef.current.play().catch(() => {});
+        }
+      }
+    }
+
+    resetControlsTimeout();
+  };
+
   // Fullscreen
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
@@ -215,7 +257,6 @@ export default function BunnyPlayer({
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger if user is typing in an input / textarea
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
       switch (e.key) {
@@ -280,9 +321,15 @@ export default function BunnyPlayer({
 
     return (
       <div className="relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 group">
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-totc-teal/30 text-[11px] font-semibold text-totc-teal shadow-lg pointer-events-none">
-          <Zap className="w-3.5 h-3.5 text-totc-teal animate-pulse" />
-          <span>Bunny Stream CDN</span>
+        {/* Top Header Badge with Lesson Title */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 max-w-md pointer-events-none">
+          <div className="px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-[#00CBB8]/40 text-xs font-bold text-white shadow-lg flex items-center gap-2 truncate">
+            <span className="w-2 h-2 rounded-full bg-[#00CBB8] animate-pulse shrink-0" />
+            <span className="truncate">{title || 'Lecture Video'}</span>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/15 text-[10px] font-bold text-[#00CBB8] shrink-0">
+            HD 1080p
+          </span>
         </div>
 
         <iframe
@@ -291,7 +338,7 @@ export default function BunnyPlayer({
           className="w-full h-full border-0 absolute inset-0"
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
           allowFullScreen={true}
-          title={title || 'Bunny Stream Video'}
+          title={title || 'Lecture Video Stream'}
         />
       </div>
     );
@@ -326,26 +373,38 @@ export default function BunnyPlayer({
         className="w-full h-full object-contain cursor-pointer"
       />
 
-      {/* Top Header Badge */}
+      {/* Top Header Banner: Specific Lesson Name & Quality Indicator */}
       <div className={`absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+        {/* Left: Module / Section name */}
         <div className="flex items-center gap-2">
-          {title && (
-            <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-medium text-white/90 drop-shadow truncate max-w-sm">
-              {title}
+          {moduleTitle && (
+            <span className="px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs font-medium text-white/90 drop-shadow truncate max-w-xs flex items-center gap-2">
+              <Film className="w-3.5 h-3.5 text-[#00CBB8]" />
+              <span className="truncate">{moduleTitle}</span>
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-[#00CBB8]/40 text-[11px] font-semibold text-[#00CBB8] shadow-lg shadow-[#00CBB8]/10">
-            <Zap className="w-3.5 h-3.5 text-[#00CBB8] animate-pulse" />
-            <span>Bunny Stream CDN</span>
+        {/* Right: Specific Lesson / Lecture Title & Resolution Badge */}
+        <div className="flex items-center gap-2 max-w-sm sm:max-w-md">
+          <div className="px-4 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-[#00CBB8]/40 text-xs font-bold text-white shadow-xl flex items-center gap-2 truncate">
+            <span className="w-2 h-2 rounded-full bg-[#00CBB8] animate-pulse shrink-0" />
+            <span className="truncate">{title || 'Course Lecture'}</span>
           </div>
-          <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/70">
-            1080p HD
+
+          <span className="px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-[10px] font-bold text-[#00CBB8] shrink-0 uppercase tracking-wide">
+            {selectedQuality}
           </span>
         </div>
       </div>
+
+      {/* Quality Switch Toast Notification */}
+      {qualityNotice && (
+        <div className="absolute top-16 right-4 z-20 px-3.5 py-1.5 rounded-xl bg-slate-900/90 backdrop-blur-md border border-[#00CBB8]/50 text-xs font-semibold text-[#00CBB8] shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Sparkles className="w-3.5 h-3.5 text-[#00CBB8]" />
+          <span>{qualityNotice}</span>
+        </div>
+      )}
 
       {/* Buffering Spinner */}
       {isBuffering && (
@@ -444,7 +503,7 @@ export default function BunnyPlayer({
               title="Rewind 10s (←)"
             >
               <RotateCcw className="w-4 h-4" />
-              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] pointer-events-none font-mono">10</span>
+              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none font-mono">10</span>
             </button>
 
             {/* Fast-Forward 10s */}
@@ -454,7 +513,7 @@ export default function BunnyPlayer({
               title="Forward 10s (→)"
             >
               <RotateCw className="w-4 h-4" />
-              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] pointer-events-none font-mono">10</span>
+              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none font-mono">10</span>
             </button>
 
             {/* Volume Control + Slider */}
@@ -492,20 +551,77 @@ export default function BunnyPlayer({
             </div>
           </div>
 
-          {/* Right Controls: Speed Selector, PiP, Fullscreen */}
+          {/* Right Controls: Quality Selector, Speed Selector, PiP, Fullscreen */}
           <div className="flex items-center gap-2 relative">
+            {/* Video Quality / Resolution Selector */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowQualityMenu(!showQualityMenu);
+                  setShowSpeedMenu(false);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
+                  showQualityMenu 
+                    ? 'bg-[#00CBB8] text-white border-[#00CBB8]' 
+                    : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border-white/10'
+                }`}
+                title="Video Quality / Resolution"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#00CBB8]" />
+                <span className="uppercase">{selectedQuality}</span>
+              </button>
+
+              {showQualityMenu && (
+                <div className="absolute bottom-12 right-0 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-xl p-2 shadow-2xl min-w-[170px] z-30 animate-in fade-in zoom-in-95 font-poppins">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1 tracking-wider border-b border-white/10 mb-1 flex items-center justify-between">
+                    <span>Quality</span>
+                    <span className="text-[#00CBB8] text-[9px]">HD Stream</span>
+                  </div>
+                  {qualityOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleQualitySelect(opt.id)}
+                      className={`w-full px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-between text-left transition-colors ${
+                        selectedQuality === opt.id 
+                          ? 'bg-[#00CBB8]/20 text-[#00CBB8]' 
+                          : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{opt.id}</span>
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${opt.badge === 'HD' ? 'bg-[#00CBB8]/30 text-[#00CBB8]' : 'bg-slate-700 text-slate-300'}`}>
+                            {opt.badge}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-normal">{opt.desc}</div>
+                      </div>
+                      {selectedQuality === opt.id && <Check className="w-4 h-4 text-[#00CBB8] shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Playback Speed Menu */}
             <div className="relative">
               <button
-                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white/90 hover:text-white transition-colors flex items-center gap-1 border border-white/10"
+                onClick={() => {
+                  setShowSpeedMenu(!showSpeedMenu);
+                  setShowQualityMenu(false);
+                }}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1 border ${
+                  showSpeedMenu 
+                    ? 'bg-[#00CBB8] text-white border-[#00CBB8]' 
+                    : 'bg-white/10 hover:bg-white/20 text-white/90 hover:text-white border-white/10'
+                }`}
                 title="Playback Speed"
               >
                 <span>{playbackSpeed}x</span>
               </button>
 
               {showSpeedMenu && (
-                <div className="absolute bottom-12 right-0 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-xl p-1.5 shadow-2xl min-w-[100px] z-30 animate-in fade-in zoom-in-95">
+                <div className="absolute bottom-12 right-0 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-xl p-1.5 shadow-2xl min-w-[110px] z-30 animate-in fade-in zoom-in-95 font-poppins">
                   <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1 tracking-wider border-b border-white/10 mb-1">
                     Speed
                   </div>

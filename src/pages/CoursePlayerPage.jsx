@@ -496,6 +496,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
               key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
               src={activeLesson?.videoUrl}
               title={activeLesson?.title}
+              moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
               onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
               onEnded={() => {
                 if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
