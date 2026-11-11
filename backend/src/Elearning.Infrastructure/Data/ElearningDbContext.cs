@@ -145,5 +145,31 @@ public class ElearningDbContext : DbContext
                   .IsRequired(false)
                   .OnDelete(DeleteBehavior.Restrict);
         });
+
+        // Quiz relationships
+        modelBuilder.Entity<Quiz>(entity =>
+        {
+            entity.HasOne(q => q.Lesson)
+                  .WithOne(l => l.Quiz)
+                  .HasForeignKey<Quiz>(q => q.LessonId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<QuizQuestion>(entity =>
+        {
+            entity.HasOne(qq => qq.Quiz)
+                  .WithMany(q => q.Questions)
+                  .HasForeignKey(qq => qq.QuizId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<QuizOption>(entity =>
+        {
+            entity.HasOne(qo => qo.QuizQuestion)
+                  .WithMany(qq => qq.Options)
+                  .HasForeignKey(qo => qo.QuizQuestionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

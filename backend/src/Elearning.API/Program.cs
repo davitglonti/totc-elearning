@@ -153,9 +153,10 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"[GLOBAL ERROR] {ex}");
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        var errorResponse = new { error = "An internal server error occurred.", details = ex.Message };
+        var errorResponse = new { error = ex.Message, details = ex.ToString() };
         await context.Response.WriteAsJsonAsync(errorResponse);
     }
 });

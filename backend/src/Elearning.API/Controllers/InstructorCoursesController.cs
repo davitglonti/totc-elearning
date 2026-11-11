@@ -221,6 +221,7 @@ public class InstructorCoursesController : BaseApiController
                         {
                             var quiz = new Quiz
                             {
+                                LessonId = lesson.Id,
                                 Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim(),
                                 Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.",
                                 PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70
@@ -231,6 +232,7 @@ public class InstructorCoursesController : BaseApiController
                             {
                                 var question = new QuizQuestion
                                 {
+                                    QuizId = quiz.Id,
                                     QuestionText = qDto.QuestionText.Trim(),
                                     Explanation = qDto.Explanation ?? string.Empty,
                                     OrderIndex = qIdx++
@@ -240,6 +242,7 @@ public class InstructorCoursesController : BaseApiController
                                 {
                                     question.Options.Add(new QuizOption
                                     {
+                                        QuizQuestionId = question.Id,
                                         OptionText = optDto.OptionText.Trim(),
                                         IsCorrect = optDto.IsCorrect
                                     });
@@ -249,7 +252,6 @@ public class InstructorCoursesController : BaseApiController
                             }
 
                             lesson.Quiz = quiz;
-                            lesson.LessonType = "Quiz";
                         }
 
                         section.Lessons.Add(lesson);
@@ -720,16 +722,26 @@ public class InstructorCoursesController : BaseApiController
                     {
                         lesson.Quiz = new Quiz
                         {
+                            LessonId = lesson.Id,
                             Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim(),
                             Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.",
                             PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70
                         };
+                        _context.Quizzes.Add(lesson.Quiz);
                     }
                     else
                     {
                         lesson.Quiz.Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim();
                         lesson.Quiz.Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.";
                         lesson.Quiz.PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70;
+
+                        // Safely remove existing questions and options to avoid EF Core orphan-deletion / FK constraints
+                        var existingQuestions = lesson.Quiz.Questions.ToList();
+                        foreach (var eq in existingQuestions)
+                        {
+                            _context.QuizOptions.RemoveRange(eq.Options);
+                        }
+                        _context.QuizQuestions.RemoveRange(existingQuestions);
                         lesson.Quiz.Questions.Clear();
                     }
 
@@ -738,6 +750,7 @@ public class InstructorCoursesController : BaseApiController
                     {
                         var question = new QuizQuestion
                         {
+                            QuizId = lesson.Quiz.Id,
                             QuestionText = qDto.QuestionText.Trim(),
                             Explanation = qDto.Explanation ?? string.Empty,
                             OrderIndex = qIdx++
@@ -747,13 +760,25 @@ public class InstructorCoursesController : BaseApiController
                         {
                             question.Options.Add(new QuizOption
                             {
+                                QuizQuestionId = question.Id,
                                 OptionText = optDto.OptionText.Trim(),
                                 IsCorrect = optDto.IsCorrect
                             });
                         }
                         lesson.Quiz.Questions.Add(question);
                     }
-                    lesson.LessonType = "Quiz";
+                }
+                else if (lesson.Quiz != null)
+                {
+                    // Quiz was removed by instructor
+                    var existingQuestions = lesson.Quiz.Questions.ToList();
+                    foreach (var eq in existingQuestions)
+                    {
+                        _context.QuizOptions.RemoveRange(eq.Options);
+                    }
+                    _context.QuizQuestions.RemoveRange(existingQuestions);
+                    _context.Quizzes.Remove(lesson.Quiz);
+                    lesson.Quiz = null;
                 }
                 lOrder++;
             }
