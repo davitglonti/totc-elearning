@@ -4,7 +4,9 @@ import {
   Clock, Award, Download, MessageSquare, FileText, Share2, 
   Volume2, Maximize, Check, HelpCircle, Code, ThumbsUp, Send, 
   Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass,
-  Video, ExternalLink, Loader2, Lock, FolderArchive, Paperclip, X
+  Video, ExternalLink, Loader2, Lock, FolderArchive, Paperclip, X,
+  Shield, ShieldAlert, ShieldCheck, AlertTriangle, Timer, Maximize2, Minimize2,
+  RefreshCw, EyeOff
 } from 'lucide-react';
 import { api } from '../services/api';
 import BunnyPlayer from '../components/BunnyPlayer';
@@ -18,6 +20,18 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const [loading, setLoading] = useState(true);
   const [completedLessonIds, setCompletedLessonIds] = useState(new Set());
   const [successNotice, setSuccessNotice] = useState('');
+
+  // Module Progression Gating State
+  const [passedQuizIds, setPassedQuizIds] = useState(new Set());
+  const [moduleUnlockNotice, setModuleUnlockNotice] = useState(null);
+
+  // Anti-Cheating & Exam Integrity Proctoring State
+  const [examStrikes, setExamStrikes] = useState(0);
+  const [examTerminated, setExamTerminated] = useState(false);
+  const [strikeModal, setStrikeModal] = useState({ isOpen: false, strikes: 0, message: '' });
+  const [examTimerSeconds, setExamTimerSeconds] = useState(1200); // 20 mins default
+  const [proctorToast, setProctorToast] = useState('');
+  const [isFullscreenExam, setIsFullscreenExam] = useState(false);
 
   // Quiz State
   const [quizData, setQuizData] = useState(null);
@@ -96,6 +110,40 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     return trimmed;
   };
 
+  const triggerProctorToast = (msg) => {
+    setProctorToast(msg);
+    setTimeout(() => {
+      setProctorToast(prev => prev === msg ? '' : prev);
+    }, 2800);
+  };
+
+  const shuffleArray = (arr) => {
+    if (!arr || !Array.isArray(arr)) return [];
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  const randomizeQuizOptions = (quiz) => {
+    if (!quiz || !quiz.questions) return quiz;
+    return {
+      ...quiz,
+      questions: quiz.questions.map(q => ({
+        ...q,
+        options: shuffleArray(q.options || [])
+      }))
+    };
+  };
+
+  const formatExamTime = (totalSeconds) => {
+    const mins = Math.max(0, Math.floor(totalSeconds / 60));
+    const secs = Math.max(0, totalSeconds % 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
   // Fallback static course content if API fails
   const defaultCourse = {
     title: activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations',
@@ -128,6 +176,14 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             lessonType: 'Assignment',
             isCompleted: false,
             hasQuiz: false
+          },
+          {
+            id: 'les-exam-1',
+            title: 'Module 1 Final Examination: Cloud Infrastructure Mastery',
+            durationMinutes: 20,
+            lessonType: 'Quiz',
+            isCompleted: false,
+            hasQuiz: true
           }
         ]
       },
@@ -198,6 +254,52 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         ],
         correctOptionId: 'opt-3-2',
         explanation: 'Multi-AZ architectures place synchronous replicas in separate physical data centers for seamless fault tolerance.'
+      }
+    ]
+  };
+
+  // Fallback Exam Quiz Data for Module 1 Final Exam
+  const fallbackExamQuiz = {
+    id: 'quiz-aws-exam-1',
+    title: 'Module 1 Final Examination: Cloud Infrastructure Mastery',
+    description: 'ოფიციალური შემაჯამებელი გამოცდა მოდული 1-ისთვის. საგამოცდო მონიტორინგი აქტიურია. მე-2 მოდულზე წვდომისთვის საჭიროა მინიმუმ 70%.',
+    passingScorePercentage: 70,
+    questions: [
+      {
+        id: 'qe-1',
+        questionText: 'When architecting a fault-tolerant multi-tier web application, where should your relational database replicas reside?',
+        options: [
+          { id: 'opt-e1-1', optionText: 'In a single public subnet for faster routing' },
+          { id: 'opt-e1-2', optionText: 'Across multiple Availability Zones in private subnets' },
+          { id: 'opt-e1-3', optionText: 'On edge locations outside VPC route tables' },
+          { id: 'opt-e1-4', optionText: 'Inside an unencrypted S3 storage bucket' }
+        ],
+        correctOptionId: 'opt-e1-2',
+        explanation: 'Deploying read/standby replicas in distinct Availability Zones ensures seamless failover and redundancy.'
+      },
+      {
+        id: 'qe-2',
+        questionText: 'Which security layer acts as a stateful virtual firewall controlling traffic at the EC2 instance level?',
+        options: [
+          { id: 'opt-e2-1', optionText: 'Security Group' },
+          { id: 'opt-e2-2', optionText: 'Network Access Control List (NACL)' },
+          { id: 'opt-e2-3', optionText: 'AWS Shield Standard' },
+          { id: 'opt-e2-4', optionText: 'Internet Gateway Route Policy' }
+        ],
+        correctOptionId: 'opt-e2-1',
+        explanation: 'Security Groups are stateful firewalls operating at the instance interface level, whereas Network ACLs are stateless at subnet boundaries.'
+      },
+      {
+        id: 'qe-3',
+        questionText: 'What mechanism allows an Auto Scaling Group to dynamically scale compute instances based on changing CPU utilization thresholds?',
+        options: [
+          { id: 'opt-e3-1', optionText: 'CloudWatch Alarms with Dynamic Target Tracking Scaling Policies' },
+          { id: 'opt-e3-2', optionText: 'Manual SSH cron scripts on the bastion host' },
+          { id: 'opt-e3-3', optionText: 'DNS round-robin TTL adjustments in Route 53' },
+          { id: 'opt-e3-4', optionText: 'Direct Connect failover routers' }
+        ],
+        correctOptionId: 'opt-e3-1',
+        explanation: 'Target tracking and dynamic scaling policies trigger alarms in CloudWatch to add or remove EC2 instances automatically.'
       }
     ]
   };
@@ -288,9 +390,43 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const isAdmin = resolvedUser?.role === 'Admin';
   const isAuthorOrAdmin = isCourseAuthor || isAdmin;
 
+  // Check if an entire module/section is unlocked for the student
+  const isSectionUnlocked = (sectionIndex) => {
+    if (isAuthorOrAdmin) return true; // Instructors & Admins preview all modules
+    if (sectionIndex <= 0) return true; // First module is always open
+
+    const sections = courseContent?.sections || [];
+    for (let i = 0; i < sectionIndex; i++) {
+      const prevSec = sections[i];
+      if (!prevSec || !prevSec.lessons || prevSec.lessons.length === 0) continue;
+
+      // 1. All lessons in preceding module must be completed
+      const allPrevLessonsCompleted = prevSec.lessons.every(l => completedLessonIds.has(l.id));
+      if (!allPrevLessonsCompleted) return false;
+
+      // 2. Any quiz / exam in preceding module must be passed
+      const quizLessons = prevSec.lessons.filter(l => l.lessonType === 'Quiz' || l.hasQuiz || l.quiz);
+      for (const ql of quizLessons) {
+        if (!completedLessonIds.has(ql.id) && !passedQuizIds.has(ql.id)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
   // Check if a specific lesson is unlocked for the current student
   const isLessonUnlocked = (lessonId) => {
     if (isAuthorOrAdmin) return true; // Instructors & Admins have full author preview access
+    const sections = courseContent?.sections || [];
+    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lessonId));
+
+    // If section is locked, all its lessons are strictly locked
+    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
+      return false;
+    }
+
+    // Within unlocked section, sequential progression applies:
     const idx = allLessons.findIndex(l => l.id === lessonId);
     if (idx <= 0) return true; // First lesson is always unlocked
     const previousLesson = allLessons[idx - 1];
@@ -303,34 +439,53 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const loadQuizForLesson = async (lessonId, lessonObj = null) => {
     setSelectedAnswers({});
     setQuizResult(null);
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((lessonObj?.durationMinutes || 20) * 60);
 
     // If lesson has embedded quiz
     if (lessonObj?.quiz && lessonObj.quiz.questions && lessonObj.quiz.questions.length > 0) {
-      setQuizData(lessonObj.quiz);
+      setQuizData(randomizeQuizOptions(lessonObj.quiz));
       return;
     }
 
     try {
       const q = await api.quizzes.getByLesson(lessonId);
       if (q && q.questions && q.questions.length > 0) {
-        setQuizData(q);
+        setQuizData(randomizeQuizOptions(q));
         return;
       }
     } catch (e) {
-      // Use fallback quiz for demo
-      if (lessonId === 'les-1' || !activeCourse?.id || activeCourse?.id === 'demo') {
-        setQuizData(fallbackQuiz);
-        return;
-      }
+      console.warn('API quiz fetch note:', e.message);
+    }
+
+    // Use fallback quizzes
+    const isExam = lessonObj?.title?.toLowerCase().includes('exam') || lessonId === 'les-exam-1';
+    if (isExam) {
+      setQuizData(randomizeQuizOptions(fallbackExamQuiz));
+    } else if (lessonId === 'les-1' || !activeCourse?.id || activeCourse?.id === 'demo') {
+      setQuizData(randomizeQuizOptions(fallbackQuiz));
+    } else {
       setQuizData(null);
     }
   };
 
   const handleLessonSwitch = (lesson) => {
+    const sections = courseContent?.sections || [];
+    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lesson.id));
+
+    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
+      const prevSec = sections[secIdx - 1];
+      setSuccessNotice(`🔒 ეს მოდული ჩაკეტილია! შემდეგ მოდულზე გადასასვლელად ჯერ წარმატებით უნდა ჩააბაროთ წინა მოდულის ("${prevSec?.title || 'Module'}") ფინალური გამოცდა (მინიმუმ 70%).`);
+      setTimeout(() => setSuccessNotice(''), 5500);
+      return;
+    }
+
     if (!isLessonUnlocked(lesson.id)) {
       const idx = allLessons.findIndex(l => l.id === lesson.id);
       const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
-      setSuccessNotice(`🔒 Please complete the previous lecture ("${prevLesson?.title || 'Preceding lesson'}") before unlocking this lecture and its materials.`);
+      setSuccessNotice(`🔒 გთხოვთ გაიაროთ წინა გაკვეთილი ("${prevLesson?.title || 'Preceding lesson'}"), რათა გაიხსნას ეს მასალა.`);
       setTimeout(() => setSuccessNotice(''), 4500);
       return;
     }
@@ -339,12 +494,135 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     setIsPlaying(false);
     setCurrentVideoTime(0);
 
+    // Reset proctoring state for fresh attempt
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((lesson.durationMinutes || 20) * 60);
+
     // If student clicks a Quiz item in the syllabus, automatically open the Quiz tab!
     if (lesson.lessonType === 'Quiz') {
       setActiveTab('quiz');
     }
 
     loadQuizForLesson(lesson.id, lesson);
+  };
+
+  // 1. Anti-Cheating: Tab Switching & Window Blur Monitoring
+  useEffect(() => {
+    if (activeTab !== 'quiz' || quizResult || examTerminated || !quizData?.questions?.length) return;
+
+    let debounceTimeout = null;
+
+    const handleInfraction = () => {
+      if (debounceTimeout) return;
+      debounceTimeout = setTimeout(() => { debounceTimeout = null; }, 1200);
+
+      setExamStrikes(prev => {
+        const nextStrikes = prev + 1;
+        if (nextStrikes >= 3) {
+          setExamTerminated(true);
+          setStrikeModal({
+            isOpen: true,
+            strikes: 3,
+            message: '❌ გამოცდა გაუქმებულია: დაფიქსირდა 3 დარღვევა (ჩანართის ან ფანჯრის დატოვება). თქვენ ვერ ჩააბარეთ მოდულის გამოცდა.'
+          });
+          setQuizResult({
+            totalQuestions: quizData?.questions?.length || 0,
+            correctAnswersCount: 0,
+            scorePercentage: 0,
+            passed: false,
+            feedbackMessage: '❌ გამოცდა გაუქმებულია საგამოცდო წესების 3-ჯერ დარღვევის გამო (ჩანართის/ბრაუზერის დატოვება). თქვენ დისკვალიფიცირებული ხართ.'
+          });
+          return 3;
+        } else {
+          setStrikeModal({
+            isOpen: true,
+            strikes: nextStrikes,
+            message: nextStrikes === 1
+              ? '⚠️ საგამოცდო წესების დარღვევა! ბრაუზერის ჩანართის დატოვება ან სხვა ფანჯარაზე გადასვლა კატეგორიულად აკრძალულია. დაფიქსირდა გაფრთხილება: 1 / 3. მე-3 დარღვევაზე გამოცდა ავტომატურად გაუქმდება!'
+              : '🚨 კრიტიკული გაფრთხილება! თქვენ მეორედ დატოვეთ საგამოცდო გვერდი. დაფიქსირდა გაფრთხილება: 2 / 3. შემდეგი დარღვევისთანავე თქვენი გამოცდა დაუყოვნებლივ გაუქმდება და ჩაგეთვლებათ ჩაჭრილად!'
+          });
+          return nextStrikes;
+        }
+      });
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        handleInfraction();
+      }
+    };
+
+    const onWindowBlur = () => {
+      handleInfraction();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onWindowBlur);
+      if (debounceTimeout) clearTimeout(debounceTimeout);
+    };
+  }, [activeTab, quizResult, examTerminated, quizData]);
+
+  // 2. Anti-Cheating: Keyboard Shortcut Interception
+  useEffect(() => {
+    if (activeTab !== 'quiz' || quizResult || !quizData?.questions?.length) return;
+
+    const handleKeyDown = (e) => {
+      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+
+      if (
+        (isCtrlOrCmd && ['c', 'v', 'x', 'a', 'u', 's', 'p'].includes(key)) ||
+        e.key === 'F12' ||
+        (isCtrlOrCmd && e.shiftKey && ['i', 'j', 'c'].includes(key))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProctorToast('🚫 საგამოცდო სისტემა ბლოკავს კლავიატურის ამ კომბინაციას (კოპირება/ჩასმა/ინსპექტირება)');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [activeTab, quizResult, quizData]);
+
+  // 3. Anti-Cheating: Countdown Timer
+  useEffect(() => {
+    if (activeTab !== 'quiz' || quizResult || examTerminated || !quizData?.questions?.length) return;
+
+    const timer = setInterval(() => {
+      setExamTimerSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmitQuiz();
+          triggerProctorToast('⏱️ საგამოცდო დრო ამოიწურა! პასუხები ავტომატურად გაიგზავნა შესაფასებლად.');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [activeTab, quizResult, examTerminated, quizData]);
+
+  // Fullscreen exam toggle
+  const toggleFullscreenExam = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreenExam(true);
+      }).catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          setIsFullscreenExam(false);
+        }).catch(() => {});
+      }
+    }
   };
 
   // Handle Mark as Complete
@@ -371,7 +649,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
   // Quiz Answer Selection
   const handleSelectOption = (questionId, optionId) => {
-    if (quizResult) return; // Prevent changing after submission
+    if (quizResult || examTerminated) return; // Prevent changing after submission/disqualification
     setSelectedAnswers(prev => ({
       ...prev,
       [questionId]: optionId
@@ -384,55 +662,78 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     setIsSubmittingQuiz(true);
 
     try {
-      // Try backend submission
-      const res = await api.quizzes.submit(quizData.id, selectedAnswers);
+      let res = null;
+      try {
+        res = await api.quizzes.submit(quizData.id, selectedAnswers);
+      } catch (e) {
+        // Local evaluation fallback
+        const questions = quizData.questions || [];
+        let correct = 0;
+        const feedbacks = questions.map(q => {
+          const selected = selectedAnswers[q.id];
+          const isRight = selected === q.correctOptionId;
+          if (isRight) correct++;
+          return {
+            questionId: q.id,
+            selectedOptionId: selected,
+            correctOptionId: q.correctOptionId,
+            isCorrect: isRight,
+            explanation: q.explanation || 'Verified architectural best practice.'
+          };
+        });
+
+        const pct = Math.round((correct / questions.length) * 100);
+        const passed = pct >= (quizData.passingScorePercentage || 70);
+
+        res = {
+          totalQuestions: questions.length,
+          correctAnswersCount: correct,
+          scorePercentage: pct,
+          passed,
+          feedbackMessage: passed
+            ? `🎉 გილოცავთ! თქვენ წარმატებით ჩააბარეთ გამოცდა ${pct}%-ით!`
+            : `თქვენი შედეგია ${pct}%. გამსვლელი ქულაა ${quizData.passingScorePercentage || 70}%. გაიმეორეთ მასალა და სცადეთ ხელახლა!`,
+          questionFeedbacks: feedbacks
+        };
+      }
+
       setQuizResult(res);
 
-      if (res.passed) {
+      if (res && res.passed) {
+        setPassedQuizIds(prev => new Set(prev).add(activeLesson.id));
         setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
-        setSuccessNotice('Quiz Passed! Lecture completed! 🎉');
-        setTimeout(() => setSuccessNotice(''), 4000);
-      }
-    } catch (e) {
-      // Local evaluation fallback
-      const questions = quizData.questions || [];
-      let correct = 0;
-      const feedbacks = questions.map(q => {
-        const selected = selectedAnswers[q.id];
-        const isRight = selected === q.correctOptionId;
-        if (isRight) correct++;
-        return {
-          questionId: q.id,
-          selectedOptionId: selected,
-          correctOptionId: q.correctOptionId,
-          isCorrect: isRight,
-          explanation: q.explanation || 'Verified architectural best practice.'
-        };
-      });
 
-      const pct = Math.round((correct / questions.length) * 100);
-      const passed = pct >= (quizData.passingScorePercentage || 70);
+        const sections = courseContent?.sections || [];
+        const currentSecIdx = sections.findIndex(s => s.lessons?.some(l => l.id === activeLesson.id));
+        const nextSec = currentSecIdx >= 0 && currentSecIdx < sections.length - 1 ? sections[currentSecIdx + 1] : null;
 
-      const localRes = {
-        totalQuestions: questions.length,
-        correctAnswersCount: correct,
-        scorePercentage: pct,
-        passed,
-        feedbackMessage: passed
-          ? `🎉 Excellent! You scored ${pct}% and successfully completed this check.`
-          : `You scored ${pct}%. Review the lecture and try again!`,
-        questionFeedbacks: feedbacks
-      };
+        if (nextSec) {
+          setModuleUnlockNotice({
+            currentModuleTitle: sections[currentSecIdx]?.title || `Module ${currentSecIdx + 1}`,
+            nextModuleTitle: nextSec.title,
+            nextLesson: nextSec.lessons?.[0],
+            score: res.scorePercentage
+          });
+        }
 
-      setQuizResult(localRes);
-
-      if (passed) {
-        setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
-        setSuccessNotice('Quiz Passed! Lecture completed! 🎉');
-        setTimeout(() => setSuccessNotice(''), 4000);
+        setSuccessNotice(`🎉 გამოცდა წარმატებით ჩაბარებულია (${res.scorePercentage}%)! ${nextSec ? 'შემდეგი მოდული განბლოკილია!' : 'კურსი წარმატებით დასრულდა!'}`);
+        setTimeout(() => setSuccessNotice(''), 6000);
       }
     } finally {
       setIsSubmittingQuiz(false);
+    }
+  };
+
+  // Retake quiz after failure or disqualification
+  const handleRetakeQuiz = () => {
+    setSelectedAnswers({});
+    setQuizResult(null);
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((activeLesson?.durationMinutes || 20) * 60);
+    if (quizData) {
+      setQuizData(randomizeQuizOptions(quizData));
     }
   };
 
@@ -543,44 +844,85 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
           
           {/* Video Container with Bunny Stream Player or Locked Barrier */}
           <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center border border-slate-800">
-            {isCurrentLessonLocked ? (
-              <div className="text-center p-8 space-y-4 max-w-md animate-in fade-in">
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-lg">
-                  <Lock className="w-8 h-8" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-bold text-xl text-white">Lecture Locked</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    თქვენ ჯერ არ გაგივლიათ წინა ლექცია. წინა მასალების (ვიდეო, ქვიზი) გავლის შემდეგ ეს გაკვეთილი გაიხსნება.
-                  </p>
-                </div>
-                {allLessons.findIndex(l => l.id === activeLesson?.id) > 0 && (
-                  <button
-                    onClick={() => {
-                      const idx = allLessons.findIndex(l => l.id === activeLesson?.id);
-                      handleLessonSwitch(allLessons[idx - 1]);
-                    }}
-                    className="px-5 py-2.5 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Go to Previous Incomplete Lecture</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <BunnyPlayer
-                key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
-                src={activeLesson?.videoUrl}
-                title={activeLesson?.title}
-                moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
-                onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
-                onEnded={() => {
-                  if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
-                    handleCompleteCurrentLesson();
-                  }
-                }}
-              />
-            )}
+            {(() => {
+              const activeSecIdx = courseContent?.sections?.findIndex(s => s.lessons?.some(l => l.id === activeLesson?.id)) ?? -1;
+              const isCurrentSectionLocked = activeSecIdx > 0 && !isSectionUnlocked(activeSecIdx);
+              const prevSection = activeSecIdx > 0 ? courseContent?.sections?.[activeSecIdx - 1] : null;
+              const prevSectionExam = prevSection?.lessons?.slice().reverse().find(l => l.lessonType === 'Quiz' || l.hasQuiz || l.title?.toLowerCase().includes('exam') || l.title?.toLowerCase().includes('quiz'));
+
+              if (isCurrentSectionLocked) {
+                return (
+                  <div className="text-center p-8 space-y-4 max-w-lg animate-in fade-in">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto shadow-xl animate-pulse">
+                      <Lock className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-2">
+                      <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wider inline-block">
+                        🔒 მოდული ჩაკეტილია (Module Locked)
+                      </span>
+                      <h3 className="font-bold text-xl text-white">
+                        {courseContent?.sections?.[activeSecIdx]?.title || 'Module Locked'}
+                      </h3>
+                      <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+                        შემდეგ მოდულზე წვდომის მისაღებად აუცილებელია წინა მოდულის ("{prevSection?.title || 'Preceding Module'}") ყველა გაკვეთილის გავლა და ფინალური გამოცდის ჩაბარება (მინიმუმ 70%).
+                      </p>
+                    </div>
+                    {prevSectionExam && (
+                      <button
+                        onClick={() => handleLessonSwitch(prevSectionExam)}
+                        className="px-6 py-3 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark font-bold text-xs shadow-lg transition-all inline-flex items-center gap-2 mt-2"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        <span>გადადით წინა მოდულის ფინალურ გამოცდაზე</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              if (isCurrentLessonLocked) {
+                return (
+                  <div className="text-center p-8 space-y-4 max-w-md animate-in fade-in">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-800 text-slate-400 border border-slate-700 flex items-center justify-center mx-auto shadow-lg">
+                      <Lock className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-xl text-white">Lecture Locked</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        თქვენ ჯერ არ გაგივლიათ წინა ლექცია. წინა მასალების (ვიდეო, ქვიზი) გავლის შემდეგ ეს გაკვეთილი გაიხსნება.
+                      </p>
+                    </div>
+                    {allLessons.findIndex(l => l.id === activeLesson?.id) > 0 && (
+                      <button
+                        onClick={() => {
+                          const idx = allLessons.findIndex(l => l.id === activeLesson?.id);
+                          handleLessonSwitch(allLessons[idx - 1]);
+                        }}
+                        className="px-5 py-2.5 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Go to Previous Incomplete Lecture</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <BunnyPlayer
+                  key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
+                  src={activeLesson?.videoUrl}
+                  title={activeLesson?.title}
+                  moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
+                  onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
+                  onEnded={() => {
+                    if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
+                      handleCompleteCurrentLesson();
+                    }
+                  }}
+                />
+              );
+            })()}
           </div>
 
           {/* Active Lecture Header Bar */}
@@ -616,6 +958,37 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
               )}
             </div>
           </div>
+
+          {/* Celebratory Module Unlocked Banner */}
+          {moduleUnlockNotice && (
+            <div className="p-5 bg-gradient-to-r from-emerald-950/60 via-teal-950/40 to-slate-900 border border-emerald-500/50 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                    <span>🎉 გილოცავთ! თქვენ წარმატებით ჩააბარეთ მოდულის ფინალური გამოცდა ({moduleUnlockNotice.score}%)</span>
+                  </h4>
+                  <p className="text-xs text-emerald-300/90 mt-0.5">
+                    {moduleUnlockNotice.currentModuleTitle} დასრულებულია. შემდეგი მოდული (<strong>{moduleUnlockNotice.nextModuleTitle}</strong>) განბლოკილია!
+                  </p>
+                </div>
+              </div>
+              {moduleUnlockNotice.nextLesson && (
+                <button
+                  onClick={() => {
+                    handleLessonSwitch(moduleUnlockNotice.nextLesson);
+                    setModuleUnlockNotice(null);
+                  }}
+                  className="px-5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition-all shrink-0 flex items-center gap-2"
+                >
+                  <span>გადადით შემდეგ მოდულზე</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
           {successNotice && (
             <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl flex items-center gap-2 animate-in fade-in">
@@ -738,6 +1111,74 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 {/* TAB 2: INTERACTIVE QUIZ (Knowledge Check) */}
                 {activeTab === 'quiz' && (
                   <div className="space-y-6 animate-in fade-in duration-200">
+                    
+                    {/* PROCTORING INTEGRITY HEADER BAR */}
+                    <div className="p-4 bg-slate-900/90 rounded-2xl border border-slate-700/80 space-y-3 shadow-lg">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        {/* Live Proctor Shield & Strikes Badge */}
+                        <div className="flex items-center gap-2.5">
+                          <div className={`px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold border transition-colors ${
+                            examStrikes === 0
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : examStrikes === 1
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                              : examStrikes === 2
+                              ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
+                              : 'bg-red-500/20 text-red-300 border-red-500/40'
+                          }`}>
+                            {examStrikes === 0 ? (
+                              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            ) : (
+                              <ShieldAlert className="w-4 h-4 text-amber-400 animate-pulse" />
+                            )}
+                            <span>
+                              {examStrikes === 0
+                                ? '🛡️ საგამოცდო კონტროლი: აქტიური (დარღვევები: 0/3)'
+                                : examStrikes === 1
+                                ? '⚠️ გაფრთხილება: 1 / 3'
+                                : examStrikes === 2
+                                ? '🚨 კრიტიკული გაფრთხილება: 2 / 3'
+                                : '❌ დისკვალიფიცირებული (3/3)'}
+                            </span>
+                          </div>
+
+                          <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                            <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                            <span>ჩანართის დატოვება და გადაწერა აკრძალულია</span>
+                          </span>
+                        </div>
+
+                        {/* Live Countdown Timer & Fullscreen */}
+                        <div className="flex items-center gap-2.5">
+                          <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 font-mono text-xs font-bold ${
+                            examTimerSeconds <= 120
+                              ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse'
+                              : 'bg-slate-800 text-slate-200 border-slate-700'
+                          }`}>
+                            <Timer className="w-4 h-4 text-totc-teal" />
+                            <span>⏱️ {formatExamTime(examTimerSeconds)}</span>
+                          </div>
+
+                          <button
+                            onClick={toggleFullscreenExam}
+                            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition-all flex items-center gap-1.5"
+                            title="სრულ ეკრანზე გაშლა"
+                          >
+                            {isFullscreenExam ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                            <span className="hidden md:inline">{isFullscreenExam ? 'ფანჯარა' : 'სრული ეკრანი'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Proctoring Alert Toast */}
+                      {proctorToast && (
+                        <div className="p-2.5 bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-semibold rounded-xl flex items-center gap-2 animate-in fade-in">
+                          <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+                          <span>{proctorToast}</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
                       <div>
                         <h3 className="font-bold text-lg text-white">
@@ -765,8 +1206,27 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       </div>
                     ) : (
                       <>
-                        {/* Questions List */}
-                        <div className="space-y-6">
+                        {/* Questions List with Anti-Copy & Anti-Selection Protection */}
+                        <div 
+                          className="space-y-6 select-none"
+                          style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none' }}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            triggerProctorToast('🚫 მარჯვენა ღილაკის კონტექსტური მენიუ დაბლოკილია საგამოცდო რეჟიმში');
+                          }}
+                          onCopy={(e) => {
+                            e.preventDefault();
+                            triggerProctorToast('🚫 ტექსტის კოპირება დაბლოკილია საგამოცდო რეჟიმში');
+                          }}
+                          onCut={(e) => {
+                            e.preventDefault();
+                            triggerProctorToast('🚫 ამოჭრა დაბლოკილია');
+                          }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            triggerProctorToast('🚫 ჩასმა დაბლოკილია');
+                          }}
+                        >
                           {quizData.questions.map((q, qIndex) => {
                             const selectedOptId = selectedAnswers[q.id];
                             const feedback = quizResult?.questionFeedbacks?.find(f => f.questionId === q.id);
@@ -801,7 +1261,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                                     return (
                                       <button
                                         key={opt.id}
-                                        disabled={quizResult !== null}
+                                        disabled={quizResult !== null || examTerminated}
                                         onClick={() => handleSelectOption(q.id, opt.id)}
                                         className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center justify-between ${
                                           isCorrectAnswer
@@ -862,20 +1322,18 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                           <div className="flex items-center gap-3">
                             {quizResult ? (
                               <button
-                                onClick={() => {
-                                  setSelectedAnswers({});
-                                  setQuizResult(null);
-                                }}
-                                className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                                onClick={handleRetakeQuiz}
+                                className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-1.5"
                               >
-                                Retake Quiz
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                <span>Retake Quiz (ხელახლა ცდა)</span>
                               </button>
                             ) : (
                               <button
                                 onClick={handleSubmitQuiz}
-                                disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1)}
+                                disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1) || examTerminated}
                                 className={`px-8 py-3 rounded-full font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
-                                  Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1)
+                                  Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1) && !examTerminated
                                     ? 'bg-totc-teal text-white hover:bg-totc-teal-dark'
                                     : 'bg-slate-700 text-slate-400 cursor-not-allowed'
                                 }`}
@@ -1190,96 +1648,182 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
           {/* Modules Accordion */}
           <div className="space-y-3 overflow-y-auto max-h-[750px] pr-1">
-            {courseContent?.sections?.map((section, sIdx) => (
-              <div
-                key={section.id || sIdx}
-                className="bg-slate-800/80 rounded-2xl border border-slate-700/60 overflow-hidden"
-              >
-                <div className="p-3.5 bg-slate-800 border-b border-slate-700/60 flex items-center justify-between">
-                  <span className="font-bold text-xs text-slate-200 truncate pr-2">{section.title}</span>
-                  <span className="text-[10px] text-slate-400 font-medium shrink-0">{section.lessons?.length || 0} items</span>
-                </div>
+            {courseContent?.sections?.map((section, sIdx) => {
+              const isSecUnlocked = isSectionUnlocked(sIdx);
+              const prevSec = sIdx > 0 ? courseContent?.sections?.[sIdx - 1] : null;
 
-                <div className="divide-y divide-slate-700/40">
-                  {section.lessons?.map((lesson, lIdx) => {
-                    const isCurrent = activeLesson?.id === lesson.id;
-                    const isDone = completedLessonIds.has(lesson.id);
-                    const isUnlocked = isLessonUnlocked(lesson.id);
-                    const type = lesson.lessonType || 'Video';
+              return (
+                <div
+                  key={section.id || sIdx}
+                  className={`rounded-2xl border overflow-hidden transition-all ${
+                    !isSecUnlocked
+                      ? 'bg-slate-900/90 border-slate-700/40 opacity-75'
+                      : 'bg-slate-800/80 border-slate-700/60'
+                  }`}
+                >
+                  <div className={`p-3.5 border-b flex items-center justify-between ${
+                    !isSecUnlocked
+                      ? 'bg-slate-950/60 border-slate-800'
+                      : 'bg-slate-800 border-slate-700/60'
+                  }`}>
+                    <div className="flex items-center gap-2 truncate pr-2">
+                      {!isSecUnlocked ? (
+                        <span className="p-1 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                          <Lock className="w-3.5 h-3.5" />
+                        </span>
+                      ) : (
+                        <span className="p-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                          <BookOpen className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <div className="truncate">
+                        <span className="font-bold text-xs text-slate-200 block truncate">{section.title}</span>
+                        {!isSecUnlocked && (
+                          <span className="text-[10px] text-amber-400 font-semibold block">
+                            🔒 ჩაკეტილია (ჩააბარეთ {prevSec?.title?.split(':')[0] || 'წინა მოდულის'} გამოცდა)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium shrink-0">
+                      {section.lessons?.length || 0} items
+                    </span>
+                  </div>
 
-                    return (
-                      <button
-                        key={lesson.id || lIdx}
-                        onClick={() => handleLessonSwitch(lesson)}
-                        className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
-                          !isUnlocked
-                            ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
-                            : isCurrent
-                            ? 'bg-totc-teal/15 text-white font-medium border-l-4 border-totc-teal'
-                            : 'hover:bg-slate-700/40 text-slate-300'
-                        }`}
-                      >
-                        {/* Type Icon & Completion Indicator */}
-                        <div className="mt-0.5 shrink-0">
-                          {isDone ? (
-                            <CheckCircle className="w-4 h-4 text-emerald-400" />
-                          ) : !isUnlocked ? (
-                            <Lock className="w-4 h-4 text-slate-500" />
-                          ) : type === 'Quiz' ? (
-                            <HelpCircle className="w-4 h-4 text-purple-400" />
-                          ) : type === 'Assignment' ? (
-                            <Code className="w-4 h-4 text-amber-400" />
-                          ) : isCurrent ? (
-                            <Play className="w-4 h-4 text-totc-teal fill-totc-teal animate-pulse" />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border border-slate-500" />
-                          )}
-                        </div>
+                  <div className="divide-y divide-slate-700/40">
+                    {section.lessons?.map((lesson, lIdx) => {
+                      const isCurrent = activeLesson?.id === lesson.id;
+                      const isDone = completedLessonIds.has(lesson.id);
+                      const isUnlocked = isLessonUnlocked(lesson.id);
+                      const type = lesson.lessonType || 'Video';
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <p className={`text-xs line-clamp-2 ${isCurrent ? 'font-bold text-totc-cyan' : ''}`}>
-                              {lesson.title}
-                            </p>
-                            {!isUnlocked && (
-                              <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[9px] font-bold shrink-0 flex items-center gap-1">
-                                <Lock className="w-2.5 h-2.5" />
-                                <span>Locked</span>
-                              </span>
+                      return (
+                        <button
+                          key={lesson.id || lIdx}
+                          onClick={() => handleLessonSwitch(lesson)}
+                          className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
+                            !isUnlocked
+                              ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
+                              : isCurrent
+                              ? 'bg-totc-teal/15 text-white font-medium border-l-4 border-totc-teal'
+                              : 'hover:bg-slate-700/40 text-slate-300'
+                          }`}
+                        >
+                          {/* Type Icon & Completion Indicator */}
+                          <div className="mt-0.5 shrink-0">
+                            {isDone ? (
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            ) : !isUnlocked ? (
+                              <Lock className="w-4 h-4 text-slate-500" />
+                            ) : type === 'Quiz' ? (
+                              <HelpCircle className="w-4 h-4 text-purple-400" />
+                            ) : type === 'Assignment' ? (
+                              <Code className="w-4 h-4 text-amber-400" />
+                            ) : isCurrent ? (
+                              <Play className="w-4 h-4 text-totc-teal fill-totc-teal animate-pulse" />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border border-slate-500" />
                             )}
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                              type === 'Quiz'
-                                ? 'bg-purple-500/20 text-purple-300'
-                                : type === 'Assignment'
-                                ? 'bg-amber-500/20 text-amber-300'
-                                : 'bg-slate-700 text-slate-300'
-                            }`}>
-                              {type}
-                            </span>
-                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {lesson.durationMinutes || 15} mins
-                            </span>
-                            {lesson.resources && lesson.resources.length > 0 && (
-                              <span className="text-[10px] text-totc-cyan font-semibold flex items-center gap-0.5">
-                                <Download className="w-2.5 h-2.5" />
-                                {lesson.resources.length}
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1.5">
+                              <p className={`text-xs line-clamp-2 ${isCurrent ? 'font-bold text-totc-cyan' : ''}`}>
+                                {lesson.title}
+                              </p>
+                              {!isUnlocked && (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[9px] font-bold shrink-0 flex items-center gap-1">
+                                  <Lock className="w-2.5 h-2.5" />
+                                  <span>Locked</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                type === 'Quiz'
+                                  ? 'bg-purple-500/20 text-purple-300'
+                                  : type === 'Assignment'
+                                  ? 'bg-amber-500/20 text-amber-300'
+                                  : 'bg-slate-700 text-slate-300'
+                              }`}>
+                                {type}
                               </span>
-                            )}
+                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {lesson.durationMinutes || 15} mins
+                              </span>
+                              {lesson.resources && lesson.resources.length > 0 && (
+                                <span className="text-[10px] text-totc-cyan font-semibold flex items-center gap-0.5">
+                                  <Download className="w-2.5 h-2.5" />
+                                  {lesson.resources.length}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
       </div>
+
+      {/* STRIKE WARNING & DISQUALIFICATION OVERLAY MODAL */}
+      {strikeModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className={`max-w-md w-full p-6 sm:p-7 rounded-3xl border shadow-2xl space-y-5 text-center ${
+            strikeModal.strikes >= 3
+              ? 'bg-red-950/95 border-red-500/60'
+              : 'bg-slate-900 border-amber-500/60'
+          }`}>
+            <div className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-lg ${
+              strikeModal.strikes >= 3
+                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+            }`}>
+              {strikeModal.strikes >= 3 ? (
+                <ShieldAlert className="w-8 h-8" />
+              ) : (
+                <AlertTriangle className="w-8 h-8" />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-bold text-lg text-white">
+                {strikeModal.strikes >= 3
+                  ? '❌ გამოცდა გაუქმებულია (დისკვალიფიკაცია)'
+                  : `⚠️ საგამოცდო წესების დარღვევა (${strikeModal.strikes} / 3)`}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {strikeModal.message}
+              </p>
+            </div>
+
+            <div className="pt-2">
+              {strikeModal.strikes >= 3 ? (
+                <button
+                  onClick={handleRetakeQuiz}
+                  className="w-full py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>გამოცდის თავიდან გავლა (Retake Exam)</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setStrikeModal({ isOpen: false, strikes: strikeModal.strikes, message: '' })}
+                  className="w-full py-3 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-lg transition-all"
+                >
+                  გასაგებია, ვაგრძელებ გამოცდას
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

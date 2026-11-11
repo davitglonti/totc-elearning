@@ -213,6 +213,41 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     setSections(updated);
   };
 
+  const handleAddFinalExam = (secIndex) => {
+    const updated = [...sections];
+    const newLesNum = updated[secIndex].lessons.length + 1;
+    updated[secIndex].lessons.push({
+      id: `les-${Date.now()}`,
+      title: `Module ${secIndex + 1} Final Examination (ფინალური გამოცდა)`,
+      videoUrl: '',
+      durationMinutes: 20,
+      contentText: 'მოდულის შემაჯამებელი საგამოცდო ტესტი. სტუდენტმა წარმატებით უნდა ჩააბაროს ეს გამოცდა (მინიმუმ 70%), რათა განბლოკოს შემდეგი მოდული.',
+      isFreePreview: false,
+      lessonType: 'Quiz',
+      orderIndex: newLesNum,
+      resources: [],
+      quiz: {
+        title: `Module ${secIndex + 1} Final Examination`,
+        description: 'შემაჯამებელი გამოცდა. საგამოცდო მონიტორინგი და ჩანართის კონტროლი ჩართულია.',
+        passingScorePercentage: 70,
+        questions: [
+          {
+            id: `q-${Date.now()}-1`,
+            questionText: 'რა არის ამ მოდულის ძირითადი საკვანძო პრინციპი?',
+            explanation: 'სწორი პასუხი წარმოადგენს მოდულის მთავარ არქიტექტურულ პრინციპს.',
+            options: [
+              { id: `opt-${Date.now()}-1`, optionText: 'მთავარი არქიტექტურული პრინციპი და სტანდარტი', isCorrect: true },
+              { id: `opt-${Date.now()}-2`, optionText: 'არასწორი ვარიანტი A', isCorrect: false },
+              { id: `opt-${Date.now()}-3`, optionText: 'არასწორი ვარიანტი B', isCorrect: false },
+              { id: `opt-${Date.now()}-4`, optionText: 'არასწორი ვარიანტი C', isCorrect: false }
+            ]
+          }
+        ]
+      }
+    });
+    setSections(updated);
+  };
+
   const handleRemoveLesson = (secIndex, lesIndex) => {
     const updated = [...sections];
     if (updated[secIndex].lessons.length <= 1) {
@@ -1425,15 +1460,25 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                         </div>
                       ))}
 
-                      {/* Add Lesson Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleAddLesson(sIdx)}
-                        className="w-full py-2.5 rounded-xl border border-dashed border-indigo-300 hover:border-indigo-500 bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Lecture to Module {sIdx + 1}</span>
-                      </button>
+                      {/* Add Lesson & Add Final Exam Buttons */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleAddLesson(sIdx)}
+                          className="py-2.5 px-4 rounded-xl border border-dashed border-indigo-300 hover:border-indigo-500 bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Lecture (ლექცია)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddFinalExam(sIdx)}
+                          className="py-2.5 px-4 rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 hover:bg-purple-100/50 text-purple-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
+                          <span>+ Add Module Final Exam (გამოცდა)</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

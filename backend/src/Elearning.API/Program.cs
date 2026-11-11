@@ -206,6 +206,7 @@ using (var scope = app.Services.CreateScope())
 
         await SeedData.InitializeAsync(dbContext);
         await SeedData.EnrichInstructorProfilesAsync(dbContext);
+        await SeedData.EnrichModuleQuizzesAsync(dbContext);
         Console.WriteLine("[TOTC LMS] Database initialized and seeded successfully.");
     }
     catch (Exception ex)

@@ -213,6 +213,66 @@ public static class SeedData
         };
         awsSection1.Lessons.Add(lessonAwsLab);
 
+        var lessonAwsExam1 = new Lesson
+        {
+            Title = "Module 1 Final Examination: Cloud Infrastructure Mastery",
+            DurationMinutes = 20,
+            ContentText = "Official proctored examination for Module 1. Passing grade: 70%. Achieving the passing score is strictly required to unlock Module 2.",
+            IsFreePreview = false,
+            OrderIndex = 4,
+            LessonType = "Quiz"
+        };
+
+        var quizModule1Exam = new Quiz
+        {
+            Title = "Module 1 Final Examination: Cloud Infrastructure Mastery",
+            Description = "Comprehensive proctored assessment. Anti-cheating monitoring is active. Minimum 70% required to unlock Module 2.",
+            PassingScorePercentage = 70,
+            Lesson = lessonAwsExam1
+        };
+
+        var qm1_1 = new QuizQuestion
+        {
+            QuestionText = "When architecting a fault-tolerant multi-tier web application, where should your relational database replicas reside?",
+            Explanation = "Deploying read/standby replicas in distinct Availability Zones ensures seamless failover and redundancy.",
+            OrderIndex = 1,
+            Quiz = quizModule1Exam
+        };
+        qm1_1.Options.Add(new QuizOption { OptionText = "In a single public subnet for faster routing", IsCorrect = false });
+        qm1_1.Options.Add(new QuizOption { OptionText = "Across multiple Availability Zones in private subnets", IsCorrect = true });
+        qm1_1.Options.Add(new QuizOption { OptionText = "On edge locations outside VPC route tables", IsCorrect = false });
+        qm1_1.Options.Add(new QuizOption { OptionText = "Inside an unencrypted S3 storage bucket", IsCorrect = false });
+
+        var qm1_2 = new QuizQuestion
+        {
+            QuestionText = "Which security layer acts as a stateful virtual firewall controlling traffic at the EC2 instance level?",
+            Explanation = "Security Groups are stateful firewalls operating at the instance interface level, whereas Network ACLs are stateless at subnet boundaries.",
+            OrderIndex = 2,
+            Quiz = quizModule1Exam
+        };
+        qm1_2.Options.Add(new QuizOption { OptionText = "Security Group", IsCorrect = true });
+        qm1_2.Options.Add(new QuizOption { OptionText = "Network Access Control List (NACL)", IsCorrect = false });
+        qm1_2.Options.Add(new QuizOption { OptionText = "AWS Shield Standard", IsCorrect = false });
+        qm1_2.Options.Add(new QuizOption { OptionText = "Internet Gateway Route Policy", IsCorrect = false });
+
+        var qm1_3 = new QuizQuestion
+        {
+            QuestionText = "What mechanism allows an Auto Scaling Group to dynamically scale compute instances based on changing CPU utilization thresholds?",
+            Explanation = "Target tracking and dynamic scaling policies trigger alarms in CloudWatch to add or remove EC2 instances automatically.",
+            OrderIndex = 3,
+            Quiz = quizModule1Exam
+        };
+        qm1_3.Options.Add(new QuizOption { OptionText = "CloudWatch Alarms with Dynamic Target Tracking Scaling Policies", IsCorrect = true });
+        qm1_3.Options.Add(new QuizOption { OptionText = "Manual SSH cron scripts on the bastion host", IsCorrect = false });
+        qm1_3.Options.Add(new QuizOption { OptionText = "DNS round-robin TTL adjustments in Route 53", IsCorrect = false });
+        qm1_3.Options.Add(new QuizOption { OptionText = "Direct Connect failover routers", IsCorrect = false });
+
+        quizModule1Exam.Questions.Add(qm1_1);
+        quizModule1Exam.Questions.Add(qm1_2);
+        quizModule1Exam.Questions.Add(qm1_3);
+        lessonAwsExam1.Quiz = quizModule1Exam;
+        awsSection1.Lessons.Add(lessonAwsExam1);
+
         var awsSection2 = new Section { Course = courseAws, Title = "Module 2: Real-time Gradebook & Webhook Pipelines", OrderIndex = 2 };
         awsSection2.Lessons.Add(new Lesson
         {
@@ -234,6 +294,29 @@ public static class SeedData
             OrderIndex = 2,
             LessonType = "Quiz"
         };
+
+        var quizModule2Exam = new Quiz
+        {
+            Title = "Module Quiz: Distributed Systems & Gradebook Architecture",
+            Description = "Comprehensive final assessment for Module 2. Test your knowledge on DynamoDB, global tables, webhooks, and real-time streaming.",
+            PassingScorePercentage = 70,
+            Lesson = awsSectionQuiz
+        };
+
+        var qm2_1 = new QuizQuestion
+        {
+            QuestionText = "Which DynamoDB feature enables asynchronous real-time change data capture for webhook distribution?",
+            Explanation = "DynamoDB Streams captures time-ordered sequences of item-level modifications in any DynamoDB table.",
+            OrderIndex = 1,
+            Quiz = quizModule2Exam
+        };
+        qm2_1.Options.Add(new QuizOption { OptionText = "DynamoDB Streams", IsCorrect = true });
+        qm2_1.Options.Add(new QuizOption { OptionText = "DynamoDB Accelerator (DAX)", IsCorrect = false });
+        qm2_1.Options.Add(new QuizOption { OptionText = "Global Secondary Index (GSI)", IsCorrect = false });
+        qm2_1.Options.Add(new QuizOption { OptionText = "S3 Cross-Region Replication", IsCorrect = false });
+
+        quizModule2Exam.Questions.Add(qm2_1);
+        awsSectionQuiz.Quiz = quizModule2Exam;
         awsSection2.Lessons.Add(awsSectionQuiz);
 
         courseAws.Sections.Add(awsSection1);
@@ -352,5 +435,129 @@ public static class SeedData
         }
 
         await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Ensures all modules have an end-of-module Final Examination / Quiz with questions attached.
+    /// </summary>
+    public static async Task EnrichModuleQuizzesAsync(ElearningDbContext context)
+    {
+        var courseAws = await context.Courses
+            .Include(c => c.Sections)
+                .ThenInclude(s => s.Lessons)
+                    .ThenInclude(l => l.Quiz)
+                        .ThenInclude(q => q.Questions)
+                            .ThenInclude(qu => qu.Options)
+            .FirstOrDefaultAsync(c => c.Title.Contains("AWS Certified"));
+
+        if (courseAws != null)
+        {
+            var sec1 = courseAws.Sections.OrderBy(s => s.OrderIndex).FirstOrDefault();
+            if (sec1 != null)
+            {
+                var hasExam = sec1.Lessons.Any(l => l.LessonType == "Quiz" || l.Title.Contains("Final Exam") || l.Title.Contains("Examination"));
+                if (!hasExam)
+                {
+                    var examLesson = new Lesson
+                    {
+                        SectionId = sec1.Id,
+                        Title = "Module 1 Final Examination: Cloud Infrastructure Mastery",
+                        DurationMinutes = 20,
+                        ContentText = "Official proctored examination for Module 1. Passing grade: 70%. Achieving the passing score is strictly required to unlock Module 2.",
+                        IsFreePreview = false,
+                        OrderIndex = sec1.Lessons.Count + 1,
+                        LessonType = "Quiz"
+                    };
+
+                    var quiz = new Quiz
+                    {
+                        Title = "Module 1 Final Examination: Cloud Infrastructure Mastery",
+                        Description = "Comprehensive proctored assessment. Anti-cheating monitoring is active. Minimum 70% required to unlock Module 2.",
+                        PassingScorePercentage = 70,
+                        Lesson = examLesson
+                    };
+
+                    var q1 = new QuizQuestion
+                    {
+                        QuestionText = "When architecting a fault-tolerant multi-tier web application, where should your relational database replicas reside?",
+                        Explanation = "Deploying read/standby replicas in distinct Availability Zones ensures seamless failover and redundancy.",
+                        OrderIndex = 1,
+                        Quiz = quiz
+                    };
+                    q1.Options.Add(new QuizOption { OptionText = "In a single public subnet for faster routing", IsCorrect = false });
+                    q1.Options.Add(new QuizOption { OptionText = "Across multiple Availability Zones in private subnets", IsCorrect = true });
+                    q1.Options.Add(new QuizOption { OptionText = "On edge locations outside VPC route tables", IsCorrect = false });
+                    q1.Options.Add(new QuizOption { OptionText = "Inside an unencrypted S3 storage bucket", IsCorrect = false });
+
+                    var q2 = new QuizQuestion
+                    {
+                        QuestionText = "Which security layer acts as a stateful virtual firewall controlling traffic at the EC2 instance level?",
+                        Explanation = "Security Groups are stateful firewalls operating at the instance interface level, whereas Network ACLs are stateless at subnet boundaries.",
+                        OrderIndex = 2,
+                        Quiz = quiz
+                    };
+                    q2.Options.Add(new QuizOption { OptionText = "Security Group", IsCorrect = true });
+                    q2.Options.Add(new QuizOption { OptionText = "Network Access Control List (NACL)", IsCorrect = false });
+                    q2.Options.Add(new QuizOption { OptionText = "AWS Shield Standard", IsCorrect = false });
+                    q2.Options.Add(new QuizOption { OptionText = "Internet Gateway Route Policy", IsCorrect = false });
+
+                    var q3 = new QuizQuestion
+                    {
+                        QuestionText = "What mechanism allows an Auto Scaling Group to dynamically scale compute instances based on changing CPU utilization thresholds?",
+                        Explanation = "Target tracking and dynamic scaling policies trigger alarms in CloudWatch to add or remove EC2 instances automatically.",
+                        OrderIndex = 3,
+                        Quiz = quiz
+                    };
+                    q3.Options.Add(new QuizOption { OptionText = "CloudWatch Alarms with Dynamic Target Tracking Scaling Policies", IsCorrect = true });
+                    q3.Options.Add(new QuizOption { OptionText = "Manual SSH cron scripts on the bastion host", IsCorrect = false });
+                    q3.Options.Add(new QuizOption { OptionText = "DNS round-robin TTL adjustments in Route 53", IsCorrect = false });
+                    q3.Options.Add(new QuizOption { OptionText = "Direct Connect failover routers", IsCorrect = false });
+
+                    quiz.Questions.Add(q1);
+                    quiz.Questions.Add(q2);
+                    quiz.Questions.Add(q3);
+                    examLesson.Quiz = quiz;
+
+                    context.Lessons.Add(examLesson);
+                    await context.SaveChangesAsync();
+                }
+            }
+
+            var sec2 = courseAws.Sections.OrderBy(s => s.OrderIndex).Skip(1).FirstOrDefault();
+            if (sec2 != null)
+            {
+                var quizLesson = sec2.Lessons.FirstOrDefault(l => l.LessonType == "Quiz");
+                if (quizLesson != null && (quizLesson.Quiz == null || !quizLesson.Quiz.Questions.Any()))
+                {
+                    var quiz = quizLesson.Quiz ?? new Quiz
+                    {
+                        Title = "Module Quiz: Distributed Systems & Gradebook Architecture",
+                        Description = "Comprehensive final assessment for Module 2. Test your knowledge on DynamoDB, global tables, webhooks, and real-time streaming.",
+                        PassingScorePercentage = 70,
+                        Lesson = quizLesson
+                    };
+
+                    var q1 = new QuizQuestion
+                    {
+                        QuestionText = "Which DynamoDB feature enables asynchronous real-time change data capture for webhook distribution?",
+                        Explanation = "DynamoDB Streams captures time-ordered sequences of item-level modifications in any DynamoDB table.",
+                        OrderIndex = 1,
+                        Quiz = quiz
+                    };
+                    q1.Options.Add(new QuizOption { OptionText = "DynamoDB Streams", IsCorrect = true });
+                    q1.Options.Add(new QuizOption { OptionText = "DynamoDB Accelerator (DAX)", IsCorrect = false });
+                    q1.Options.Add(new QuizOption { OptionText = "Global Secondary Index (GSI)", IsCorrect = false });
+                    q1.Options.Add(new QuizOption { OptionText = "S3 Cross-Region Replication", IsCorrect = false });
+
+                    quiz.Questions.Add(q1);
+                    if (quizLesson.Quiz == null)
+                    {
+                        quizLesson.Quiz = quiz;
+                        context.Quizzes.Add(quiz);
+                    }
+                    await context.SaveChangesAsync();
+                }
+            }
+        }
     }
 }
