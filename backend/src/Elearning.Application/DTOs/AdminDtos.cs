@@ -10,6 +10,7 @@ public class AdminStatsDto
     public int ProSubscribers { get; set; }
     public int TotalCourses { get; set; }
     public int PublishedCourses { get; set; }
+    public int PendingApprovals { get; set; }
     public int TotalEnrollments { get; set; }
     public decimal TotalRevenue { get; set; }
     public int TotalOrders { get; set; }
@@ -49,9 +50,23 @@ public class AdminCourseListItemDto
     public decimal Price { get; set; }
     public string Level { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
+    public string ApprovalStatus { get; set; } = "Approved"; // "Approved", "PendingApproval", "Rejected"
+    public string? RejectionReason { get; set; }
+    public int SectionsCount { get; set; }
+    public int LessonsCount { get; set; }
     public int StudentsCount { get; set; }
     public string? ThumbnailUrl { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public class AdminCourseReviewDto : AdminCourseListItemDto
+{
+    public List<SectionDto> Sections { get; set; } = new();
+}
+
+public class RejectCourseDto
+{
+    public string Reason { get; set; } = string.Empty;
 }
 
 public class AdminOrderListItemDto

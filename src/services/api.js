@@ -278,6 +278,23 @@ export const api = {
       });
     },
 
+    async getCourseReview(courseId) {
+      return request(`/admin/courses/${courseId}/review`);
+    },
+
+    async approveCourse(courseId) {
+      return request(`/admin/courses/${courseId}/approve`, {
+        method: 'PUT',
+      });
+    },
+
+    async rejectCourse(courseId, reason) {
+      return request(`/admin/courses/${courseId}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ reason }),
+      });
+    },
+
     async getOrders() {
       return request('/admin/orders');
     },

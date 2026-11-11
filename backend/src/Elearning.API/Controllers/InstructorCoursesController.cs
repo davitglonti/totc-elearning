@@ -74,6 +74,8 @@ public class InstructorCoursesController : BaseApiController
                 CategoryName = c.Category != null ? c.Category.Name : "General",
                 CategoryId = c.CategoryId,
                 IsPublished = c.IsPublished,
+                ApprovalStatus = c.ApprovalStatus,
+                RejectionReason = c.RejectionReason,
                 SectionsCount = c.Sections.Count,
                 LessonsCount = totalLessons,
                 StudentsCount = studentsCount,
@@ -128,6 +130,11 @@ public class InstructorCoursesController : BaseApiController
             dto.CategoryId = category.Id;
         }
 
+        // If creator is Admin, approve and publish immediately;
+        // If Instructor, course requires Admin moderation and approval!
+        var approvalStatus = IsAdmin ? "Approved" : "PendingApproval";
+        var isPublished = IsAdmin ? dto.IsPublished : false;
+
         var course = new Course
         {
             Title = dto.Title.Trim(),
@@ -137,7 +144,8 @@ public class InstructorCoursesController : BaseApiController
             Level = dto.Level,
             CategoryId = dto.CategoryId,
             InstructorId = CurrentUserId.Value,
-            IsPublished = dto.IsPublished,
+            ApprovalStatus = approvalStatus,
+            IsPublished = isPublished,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -213,6 +221,8 @@ public class InstructorCoursesController : BaseApiController
             CategoryName = category.Name,
             CategoryId = category.Id,
             IsPublished = course.IsPublished,
+            ApprovalStatus = course.ApprovalStatus,
+            RejectionReason = course.RejectionReason,
             SectionsCount = course.Sections.Count,
             LessonsCount = course.Sections.Sum(s => s.Lessons.Count),
             StudentsCount = 0,

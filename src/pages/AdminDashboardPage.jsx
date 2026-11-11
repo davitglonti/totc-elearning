@@ -3,12 +3,13 @@ import {
   Shield, Users, Server, Database, Activity, ExternalLink, 
   CheckCircle, Lock, BookOpen, Sparkles, DollarSign, CreditCard, 
   Search, Filter, Trash2, RefreshCw, AlertCircle, Eye, EyeOff, 
-  Check, X, ArrowUpRight, GraduationCap, UserCheck, Layers, Clock
+  Check, X, ArrowUpRight, GraduationCap, UserCheck, Layers, Clock,
+  Bell, CheckSquare, XCircle, FileText, Video
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function AdminDashboardPage({ currentUser, setActivePage, setSelectedCourse }) {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'courses' | 'orders' | 'system'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'approvals' | 'users' | 'courses' | 'orders' | 'system'
   
   // Real live data states from backend API
   const [stats, setStats] = useState(null);
@@ -23,6 +24,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('ALL');
   const [courseSearch, setCourseSearch] = useState('');
+  const [courseStatusFilter, setCourseStatusFilter] = useState('ALL');
+
+  // Inspection / Review Modal for Pending Courses
+  const [reviewModalCourse, setReviewModalCourse] = useState(null);
+  const [loadingReview, setLoadingReview] = useState(false);
+  const [rejectDialogCourse, setRejectDialogCourse] = useState(null);
+  const [rejectionFeedback, setRejectionFeedback] = useState('');
 
   // Fetch all real admin data from the API
   const loadAdminData = async () => {
@@ -51,6 +59,52 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   useEffect(() => {
     loadAdminData();
   }, []);
+
+  // Inspect full course curriculum (all modules & lessons)
+  const handleOpenReviewModal = async (courseId) => {
+    setLoadingReview(true);
+    try {
+      const detailed = await api.admin.getCourseReview(courseId);
+      setReviewModalCourse(detailed);
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Could not load course curriculum: ' + err.message });
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  // Approve course and publish to catalog
+  const handleApproveCourse = async (courseId, courseTitle) => {
+    try {
+      const res = await api.admin.approveCourse(courseId);
+      setActionMessage({ 
+        type: 'success', 
+        text: `🎉 Course "${courseTitle}" has been APPROVED and is now live in the TOTC public catalog!` 
+      });
+      setReviewModalCourse(null);
+      loadAdminData();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Course approval failed: ' + err.message });
+    }
+  };
+
+  // Reject course with feedback
+  const handleConfirmReject = async () => {
+    if (!rejectDialogCourse) return;
+    try {
+      const res = await api.admin.rejectCourse(rejectDialogCourse.id, rejectionFeedback);
+      setActionMessage({ 
+        type: 'success', 
+        text: `Course "${rejectDialogCourse.title}" returned to instructor with change request.` 
+      });
+      setRejectDialogCourse(null);
+      setRejectionFeedback('');
+      setReviewModalCourse(null);
+      loadAdminData();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Rejection failed: ' + err.message });
+    }
+  };
 
   // Handle changing user role
   const handleRoleChange = async (userId, newRole) => {
@@ -115,6 +169,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
     }
   };
 
+  // Pending courses for moderation
+  const pendingCourses = coursesList.filter(c => c.approvalStatus === 'PendingApproval');
+
   // Filtered users
   const filteredUsers = usersList.filter(user => {
     const matchesSearch = 
@@ -125,11 +182,18 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   });
 
   // Filtered courses
-  const filteredCourses = coursesList.filter(course => 
-    course.title.toLowerCase().includes(courseSearch.toLowerCase()) ||
-    course.instructorName.toLowerCase().includes(courseSearch.toLowerCase()) ||
-    course.categoryName.toLowerCase().includes(courseSearch.toLowerCase())
-  );
+  const filteredCourses = coursesList.filter(course => {
+    const matchesSearch = 
+      course.title.toLowerCase().includes(courseSearch.toLowerCase()) ||
+      course.instructorName.toLowerCase().includes(courseSearch.toLowerCase()) ||
+      course.categoryName.toLowerCase().includes(courseSearch.toLowerCase());
+    const matchesStatus = 
+      courseStatusFilter === 'ALL' ||
+      (courseStatusFilter === 'PENDING' && course.approvalStatus === 'PendingApproval') ||
+      (courseStatusFilter === 'APPROVED' && course.approvalStatus === 'Approved') ||
+      (courseStatusFilter === 'REJECTED' && course.approvalStatus === 'Rejected');
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="pt-28 pb-24 bg-[#F8FAFC] min-h-screen">
@@ -146,7 +210,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               Platform Administration
             </h1>
             <p className="font-poppins text-totc-gray text-sm sm:text-base">
-              Real-time telemetry, user role assignment, course publishing, and financial transaction ledger.
+              Course review & verification pipeline, user roles, catalog publishing, and financial transaction ledger.
             </p>
           </div>
 
@@ -193,6 +257,33 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
+        {/* Pending Courses Approval Alert Notification */}
+        {pendingCourses.length > 0 && (
+          <div className="mb-8 p-5 sm:p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[24px] text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                <Bell className="w-6 h-6 text-white animate-bounce" />
+              </div>
+              <div>
+                <h3 className="font-poppins font-black text-lg">
+                  {pendingCourses.length} Course{pendingCourses.length > 1 ? 's' : ''} Awaiting Review & Verification
+                </h3>
+                <p className="text-xs text-white/90">
+                  Instructors have submitted new curriculum. Review syllabus videos and approve to make them live.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('approvals')}
+              className="px-6 py-2.5 rounded-full font-bold text-xs bg-white text-orange-600 hover:bg-orange-50 transition-all shadow-md shrink-0 flex items-center gap-2"
+            >
+              <span>Review Now</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* 4 Real Metric Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           {/* Real Total Users */}
@@ -227,18 +318,18 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             </div>
           </div>
 
-          {/* Real Published Courses */}
+          {/* Real Published Courses & Moderation Queue */}
           <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Courses</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Catalog & Queue</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
-                {stats ? `${stats.publishedCourses} / ${stats.totalCourses}` : <span className="animate-pulse">...</span>}
+                {stats ? `${stats.publishedCourses} Live` : <span className="animate-pulse">...</span>}
               </h3>
-              <p className="text-[11px] text-totc-teal font-medium">
-                {stats ? `${stats.totalEnrollments} Enrollments` : ''}
+              <p className="text-[11px] text-amber-600 font-bold">
+                {stats ? `${pendingCourses.length} Pending Review` : ''}
               </p>
             </div>
           </div>
@@ -265,10 +356,11 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 border-b border-gray-200">
           {[
             { id: 'overview', label: 'Overview & Telemetry', icon: Activity, count: null },
-            { id: 'users', label: 'Users & Roles', icon: Users, count: usersList.length },
-            { id: 'courses', label: 'Courses Management', icon: BookOpen, count: coursesList.length },
-            { id: 'orders', label: 'Orders & Revenue', icon: CreditCard, count: ordersList.length },
-            { id: 'system', label: 'System Architecture', icon: Server, count: null },
+            { id: 'approvals', label: 'Course Approvals', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
+            { id: 'users', label: 'Users & Roles', icon: Users, count: usersList.length, alert: false },
+            { id: 'courses', label: 'Courses Management', icon: BookOpen, count: coursesList.length, alert: false },
+            { id: 'orders', label: 'Orders & Revenue', icon: CreditCard, count: ordersList.length, alert: false },
+            { id: 'system', label: 'System Architecture', icon: Server, count: null, alert: false },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -286,7 +378,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-totc-navy'
+                    tab.alert
+                      ? 'bg-amber-500 text-white animate-pulse'
+                      : isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-totc-navy'
                   }`}>
                     {tab.count}
                   </span>
@@ -383,7 +477,109 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
-        {/* Tab 2: Users & Roles Management */}
+        {/* Tab 2: Course Approvals & Moderation Pipeline */}
+        {activeTab === 'approvals' && (
+          <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
+                  <CheckSquare className="w-5 h-5 text-amber-500" />
+                  <span>Course Moderation & Quality Verification</span>
+                </h3>
+                <p className="text-xs text-totc-gray">
+                  Audit instructor curriculums, inspect video stream URLs, and approve courses before publishing to the LMS catalog.
+                </p>
+              </div>
+
+              <span className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs">
+                {pendingCourses.length} Courses Pending Verification
+              </span>
+            </div>
+
+            {pendingCourses.length === 0 ? (
+              <div className="py-16 text-center space-y-3 bg-slate-50 rounded-2xl border border-gray-100">
+                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h4 className="font-poppins font-bold text-totc-navy text-base">All Caught Up!</h4>
+                <p className="text-xs text-totc-gray max-w-sm mx-auto">
+                  There are currently no courses pending administrator approval. Any new courses created by instructors will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingCourses.map(course => (
+                  <div 
+                    key={course.id}
+                    className="p-5 sm:p-6 rounded-2xl border-2 border-amber-100 bg-amber-50/20 hover:border-amber-300 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+                  >
+                    <div className="flex items-start gap-4 flex-1">
+                      <img
+                        src={course.thumbnailUrl || '/assets/explore_row_1.png'}
+                        alt={course.title}
+                        className="w-20 h-14 sm:w-28 sm:h-20 rounded-xl object-cover shrink-0 border border-gray-200 shadow-sm"
+                      />
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-[10px] tracking-wide uppercase">
+                            Pending Approval
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-totc-gray text-[10px] font-semibold">
+                            {course.categoryName} • {course.level}
+                          </span>
+                        </div>
+                        <h4 className="font-poppins font-bold text-base text-totc-navy truncate">
+                          {course.title}
+                        </h4>
+                        <p className="text-xs text-totc-gray line-clamp-2">
+                          {course.description}
+                        </p>
+                        <div className="text-[11px] text-totc-gray flex items-center gap-3 pt-1">
+                          <span>Instructor: <strong className="text-totc-navy">{course.instructorName}</strong> ({course.instructorEmail})</span>
+                          <span>•</span>
+                          <span>Lectures: <strong className="text-totc-navy">{course.lessonsCount}</strong></span>
+                          <span>•</span>
+                          <span>Price: <strong className="text-totc-navy">${course.price}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0 self-end lg:self-center">
+                      {/* Inspect Syllabus */}
+                      <button
+                        onClick={() => handleOpenReviewModal(course.id)}
+                        className="px-4 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors flex items-center gap-1.5"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Inspect Curriculum</span>
+                      </button>
+
+                      {/* Request Changes / Reject */}
+                      <button
+                        onClick={() => setRejectDialogCourse(course)}
+                        className="px-4 py-2.5 rounded-full font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-1.5 border border-red-200"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Reject</span>
+                      </button>
+
+                      {/* Approve & Publish Live */}
+                      <button
+                        onClick={() => handleApproveCourse(course.id, course.title)}
+                        className="px-5 py-2.5 rounded-full font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md flex items-center gap-1.5"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Approve & Publish</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: Users & Roles Management */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -520,24 +716,37 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
-        {/* Tab 3: Courses Management */}
+        {/* Tab 4: Courses Management */}
         {activeTab === 'courses' && (
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="font-poppins font-bold text-xl text-totc-navy">Course Catalog & Publishing</h3>
-                <p className="text-xs text-totc-gray">Real course curriculum, student enrollment counts, and live visibility toggles.</p>
+                <p className="text-xs text-totc-gray">All courses, verification statuses, student enrollments, and visibility controls.</p>
               </div>
 
-              <div className="relative">
-                <Search className="w-4 h-4 text-totc-gray absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search course title or instructor..."
-                  value={courseSearch}
-                  onChange={(e) => setCourseSearch(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 rounded-full border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal w-64"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-totc-gray absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search course title or instructor..."
+                    value={courseSearch}
+                    onChange={(e) => setCourseSearch(e.target.value)}
+                    className="pl-9 pr-4 py-2.5 rounded-full border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal w-56 sm:w-64"
+                  />
+                </div>
+
+                <select
+                  value={courseStatusFilter}
+                  onChange={(e) => setCourseStatusFilter(e.target.value)}
+                  className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold text-totc-navy bg-white focus:outline-none focus:border-totc-teal cursor-pointer"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="PENDING">Pending Approval ({pendingCourses.length})</option>
+                  <option value="APPROVED">Approved & Live</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
               </div>
             </div>
 
@@ -547,9 +756,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <tr className="border-b border-gray-100 text-totc-gray font-bold uppercase tracking-wider text-[10px]">
                     <th className="py-3 px-4">Course</th>
                     <th className="py-3 px-4">Instructor</th>
+                    <th className="py-3 px-4">Approval Status</th>
                     <th className="py-3 px-4">Price</th>
                     <th className="py-3 px-4">Students</th>
-                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Visibility</th>
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -577,6 +787,32 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         <p className="text-[10px] text-totc-gray">{course.instructorEmail}</p>
                       </td>
 
+                      {/* Approval Status Badge */}
+                      <td className="py-3.5 px-4">
+                        {course.approvalStatus === 'Approved' && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 inline-flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            <span>Approved</span>
+                          </span>
+                        )}
+                        {course.approvalStatus === 'PendingApproval' && (
+                          <button
+                            onClick={() => handleOpenReviewModal(course.id)}
+                            className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200 inline-flex items-center gap-1 hover:bg-amber-100"
+                            title="Click to review and approve"
+                          >
+                            <Clock className="w-3 h-3 text-amber-600 animate-spin" />
+                            <span>Pending Review</span>
+                          </button>
+                        )}
+                        {course.approvalStatus === 'Rejected' && (
+                          <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px] border border-red-200 inline-flex items-center gap-1">
+                            <XCircle className="w-3 h-3 text-red-600" />
+                            <span>Changes Needed</span>
+                          </span>
+                        )}
+                      </td>
+
                       <td className="py-3.5 px-4 font-poppins font-black text-totc-navy">
                         ${Number(course.price).toFixed(2)}
                       </td>
@@ -599,12 +835,20 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                           title="Click to toggle publish status"
                         >
                           {course.isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          <span>{course.isPublished ? 'Live (Published)' : 'Draft (Hidden)'}</span>
+                          <span>{course.isPublished ? 'Live' : 'Hidden'}</span>
                         </button>
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenReviewModal(course.id)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                            title="Audit syllabus modules & lectures"
+                          >
+                            Inspect
+                          </button>
+
                           <button
                             onClick={() => {
                               setSelectedCourse(course);
@@ -614,6 +858,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                           >
                             Preview
                           </button>
+
                           <button
                             onClick={() => handleDeleteCourse(course.id, course.title)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
@@ -637,7 +882,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
-        {/* Tab 4: Orders & Financial Transactions */}
+        {/* Tab 5: Orders & Financial Transactions */}
         {activeTab === 'orders' && (
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
@@ -720,7 +965,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
-        {/* Tab 5: System Architecture & Security */}
+        {/* Tab 6: System Architecture & Security */}
         {activeTab === 'system' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
@@ -739,16 +984,16 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="text-xs">
-                    <p className="font-bold text-emerald-900">JWT Bearer Authentication (HS256)</p>
-                    <p className="text-emerald-700">Cryptographically signed token issuance with role claim guards.</p>
+                    <p className="font-bold text-emerald-900">Moderation Workflow Active</p>
+                    <p className="text-emerald-700">All instructor course submissions gated by Administrator quality check.</p>
                   </div>
                 </div>
 
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="text-xs">
-                    <p className="font-bold text-emerald-900">Password Security (BCrypt Salted Hashes)</p>
-                    <p className="text-emerald-700">All user passwords salted and securely hashed using BCrypt.</p>
+                    <p className="font-bold text-emerald-900">JWT Bearer Authentication (HS256)</p>
+                    <p className="text-emerald-700">Cryptographically signed token issuance with role claim guards.</p>
                   </div>
                 </div>
               </div>
@@ -764,7 +1009,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">200 OK</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Includes full documentation for Auth, Admin, Courses, Subscriptions, Payments, Quizzes, and Reviews.
+                  Includes full documentation for Auth, Admin Approvals, Courses, Subscriptions, Payments, Quizzes, and Reviews.
                 </p>
                 <a
                   href="http://localhost:5000/swagger"
@@ -781,6 +1026,195 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         )}
 
       </div>
+
+      {/* Course Curriculum Audit & Inspection Modal for Admin */}
+      {reviewModalCourse && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-[28px] max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto space-y-6">
+            
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src={reviewModalCourse.thumbnailUrl || '/assets/explore_row_1.png'}
+                  alt={reviewModalCourse.title}
+                  className="w-16 h-12 rounded-xl object-cover border border-gray-200"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase">
+                      Curriculum Audit
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      reviewModalCourse.approvalStatus === 'Approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {reviewModalCourse.approvalStatus}
+                    </span>
+                  </div>
+                  <h3 className="font-poppins font-black text-xl text-totc-navy mt-1">
+                    {reviewModalCourse.title}
+                  </h3>
+                  <p className="text-xs text-totc-gray">
+                    Authored by: <strong className="text-totc-navy">{reviewModalCourse.instructorName}</strong> ({reviewModalCourse.instructorEmail})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setReviewModalCourse(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Course Overview Metrics */}
+            <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs">
+              <div>
+                <span className="text-totc-gray">Category & Level:</span>
+                <p className="font-bold text-totc-navy">{reviewModalCourse.categoryName} • {reviewModalCourse.level}</p>
+              </div>
+              <div>
+                <span className="text-totc-gray">Price:</span>
+                <p className="font-bold text-totc-navy">${reviewModalCourse.price}</p>
+              </div>
+              <div>
+                <span className="text-totc-gray">Total Modules / Lectures:</span>
+                <p className="font-bold text-totc-navy">{reviewModalCourse.sections?.length || 0} Modules • {reviewModalCourse.lessonsCount} Lectures</p>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-totc-navy uppercase tracking-wider">Course Syllabus Description:</span>
+              <p className="text-xs text-totc-gray bg-slate-50 p-3.5 rounded-xl border border-gray-100 leading-relaxed">
+                {reviewModalCourse.description}
+              </p>
+            </div>
+
+            {/* Detailed Modules & Lectures List */}
+            <div className="space-y-4">
+              <h4 className="font-poppins font-bold text-sm text-totc-navy flex items-center gap-2">
+                <Video className="w-4 h-4 text-totc-teal" />
+                <span>Submitted Modules & Video Lectures:</span>
+              </h4>
+
+              {reviewModalCourse.sections && reviewModalCourse.sections.map((section, sIdx) => (
+                <div key={section.id} className="p-4 rounded-2xl bg-slate-50 border border-gray-200/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-totc-navy flex items-center gap-2">
+                      <span className="w-5 h-5 rounded bg-totc-navy text-white text-[10px] flex items-center justify-center font-bold">
+                        {sIdx + 1}
+                      </span>
+                      <span>{section.title}</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-totc-gray">
+                      {section.lessons?.length || 0} Lessons
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 pl-4 border-l-2 border-totc-teal/40">
+                    {section.lessons && section.lessons.map((lesson, lIdx) => (
+                      <div key={lesson.id} className="p-3 bg-white rounded-xl border border-gray-100 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-totc-navy">
+                            {lIdx + 1}. {lesson.title}
+                          </span>
+                          <span className="text-[10px] font-semibold text-totc-gray">
+                            ⏱️ {lesson.durationMinutes} mins {lesson.isFreePreview && '• 🎁 Free Preview'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-mono text-totc-teal truncate">
+                          Stream URL: {lesson.videoUrl}
+                        </p>
+                        {lesson.contentText && (
+                          <p className="text-[11px] text-totc-gray italic">
+                            Notes: {lesson.contentText}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setReviewModalCourse(null)}
+                className="px-5 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors"
+              >
+                Close Audit
+              </button>
+
+              <button
+                onClick={() => {
+                  setRejectDialogCourse(reviewModalCourse);
+                }}
+                className="px-5 py-2.5 rounded-full font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200 flex items-center gap-1.5"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>Reject & Request Changes</span>
+              </button>
+
+              <button
+                onClick={() => handleApproveCourse(reviewModalCourse.id, reviewModalCourse.title)}
+                className="px-6 py-2.5 rounded-full font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Approve & Publish Live to Catalog</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Reject / Request Changes Feedback Dialog */}
+      {rejectDialogCourse && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[24px] max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <span>Request Curriculum Changes</span>
+              </h3>
+              <button onClick={() => setRejectDialogCourse(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-totc-gray">
+              Provide constructive feedback for instructor <strong className="text-totc-navy">{rejectDialogCourse.instructorName}</strong> on course <strong>"{rejectDialogCourse.title}"</strong>:
+            </p>
+
+            <textarea
+              rows={4}
+              placeholder="e.g., Please add video lessons with at least 720p resolution and provide code downloads for Module 2..."
+              value={rejectionFeedback}
+              onChange={(e) => setRejectionFeedback(e.target.value)}
+              className="w-full p-3 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-red-500"
+            />
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setRejectDialogCourse(null)}
+                className="px-4 py-2 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleConfirmReject}
+                className="px-5 py-2 rounded-full font-bold text-xs bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Send Feedback & Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

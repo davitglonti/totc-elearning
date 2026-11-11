@@ -184,7 +184,11 @@ export default function CreateCoursePage({ currentUser, setActivePage, setSelect
       };
 
       const result = await api.instructor.createFullCourse(payload);
-      setSuccessMessage('🎉 Course successfully created and published to TOTC LMS catalog!');
+      if (currentUser?.role === 'Admin') {
+        setSuccessMessage('🎉 Course successfully published to TOTC LMS catalog!');
+      } else {
+        setSuccessMessage('🎉 Course submitted for review! An Administrator will audit your curriculum and publish it to the catalog upon verification.');
+      }
 
       // Redirect back to Instructor Studio after 1.5 seconds
       setTimeout(() => {

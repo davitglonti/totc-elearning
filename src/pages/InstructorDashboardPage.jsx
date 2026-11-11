@@ -263,20 +263,40 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                       ${Number(c.revenue).toFixed(2)}
                     </td>
 
-                    {/* Live / Draft Toggle */}
+                    {/* Status with Admin Moderation Info */}
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleTogglePublish(c.id, c.isPublished)}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-colors ${
-                          c.isPublished
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                        }`}
-                        title="Click to toggle publish status"
-                      >
-                        {c.isPublished ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                        <span>{c.isPublished ? 'Live' : 'Draft'}</span>
-                      </button>
+                      {c.approvalStatus === 'PendingApproval' && (
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-amber-600 animate-spin" />
+                            <span>Pending Review</span>
+                          </span>
+                          <p className="text-[10px] text-totc-gray">Waiting for Admin</p>
+                        </div>
+                      )}
+
+                      {c.approvalStatus === 'Approved' && (
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 inline-flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            <span>Approved & Live</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {c.approvalStatus === 'Rejected' && (
+                        <div className="space-y-1">
+                          <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px] border border-red-200 inline-flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3 text-red-600" />
+                            <span>Changes Requested</span>
+                          </span>
+                          {c.rejectionReason && (
+                            <p className="text-[10px] text-red-600 font-medium line-clamp-2 max-w-[150px]" title={c.rejectionReason}>
+                              Feedback: {c.rejectionReason}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     {/* Actions */}

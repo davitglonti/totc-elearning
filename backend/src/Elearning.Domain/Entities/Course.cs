@@ -16,6 +16,11 @@ public class Course
     public bool IsPublished { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Moderation and Admin Approval Workflow
+    public string ApprovalStatus { get; set; } = "Approved"; // "Approved", "PendingApproval", "Rejected"
+    public string? RejectionReason { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+
     // Foreign keys
     public Guid CategoryId { get; set; }
     public Category? Category { get; set; }

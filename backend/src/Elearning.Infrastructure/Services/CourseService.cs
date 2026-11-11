@@ -26,7 +26,7 @@ public class CourseService : ICourseService
             .Include(c => c.Sections).ThenInclude(s => s.Lessons)
             .Include(c => c.Reviews)
             .Include(c => c.Enrollments)
-            .Where(c => c.IsPublished)
+            .Where(c => c.IsPublished && c.ApprovalStatus == "Approved")
             .AsQueryable();
 
         // Search text in Title, Description, or Instructor
