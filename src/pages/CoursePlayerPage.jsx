@@ -3,7 +3,8 @@ import {
   Play, Pause, CheckCircle, ArrowLeft, ArrowRight, BookOpen, 
   Clock, Award, Download, MessageSquare, FileText, Share2, 
   Volume2, Maximize, Check, HelpCircle, Code, ThumbsUp, Send, 
-  Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass 
+  Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass,
+  Video, ExternalLink, Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
 

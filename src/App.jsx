@@ -17,17 +17,21 @@ import { AuthModal, VideoModal, AssessmentModal } from './components/Modals';
 import { api } from './services/api';
 
 /**
- * Generate clean, human-readable URL slugs for courses and articles
+ * Generate clean, human-readable URL slugs for courses and articles with Unicode support
  */
-const slugify = (text) => {
-  if (!text) return 'course';
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-');
+const slugify = (text, id) => {
+  if (!text && !id) return 'course';
+  const clean = text
+    ? text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/[^\p{L}\p{N}\-]+/gu, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    : '';
+  return clean || (id ? String(id).substring(0, 8) : 'course');
 };
 
 /**
@@ -41,12 +45,12 @@ const getPathForPage = (page, course, playCourse) => {
       return '/courses';
     case 'course-detail': {
       const active = course || playCourse;
-      const slug = active ? (active.slug || slugify(active.title)) : 'overview';
+      const slug = active ? (active.slug || slugify(active.title, active.id || active.courseId)) : 'overview';
       return `/courses/${slug}`;
     }
     case 'course-player': {
       const active = playCourse || course;
-      const slug = active ? (active.slug || slugify(active.title)) : 'classroom';
+      const slug = active ? (active.slug || slugify(active.title, active.id || active.courseId)) : 'classroom';
       return `/learn/${slug}`;
     }
     case 'dashboard':
@@ -103,8 +107,13 @@ export default function App() {
 
         // Route: /learn/:courseSlug (Interactive Video Classroom)
         if (path.startsWith('/learn/')) {
-          const slug = path.replace('/learn/', '').replace(/\/$/, '');
-          const matched = allAvailableCourses.find(c => slugify(c.title) === slug || c.id === slug) || allAvailableCourses[0];
+          const rawSlug = decodeURIComponent(path.replace('/learn/', '').replace(/\/$/, ''));
+          const matched = allAvailableCourses.find(c => 
+            (c.id && c.id.toLowerCase() === rawSlug) || 
+            (c.courseId && c.courseId.toLowerCase() === rawSlug) ||
+            slugify(c.title, c.id) === rawSlug ||
+            (c.title && c.title.toLowerCase().startsWith(rawSlug.replace(/-+$/, '')))
+          ) || allAvailableCourses[0];
           if (matched) {
             setActiveCourseToPlay(matched);
             setSelectedCourse(matched);
@@ -115,9 +124,14 @@ export default function App() {
 
         // Route: /courses/:courseSlug (Course Detail Page)
         if (path.startsWith('/courses/')) {
-          const slug = path.replace('/courses/', '').replace(/\/$/, '');
-          if (slug && slug !== 'all' && slug !== 'catalog') {
-            const matched = allAvailableCourses.find(c => slugify(c.title) === slug || c.id === slug) || allAvailableCourses[0];
+          const rawSlug = decodeURIComponent(path.replace('/courses/', '').replace(/\/$/, ''));
+          if (rawSlug && rawSlug !== 'all' && rawSlug !== 'catalog') {
+            const matched = allAvailableCourses.find(c => 
+              (c.id && c.id.toLowerCase() === rawSlug) || 
+              (c.courseId && c.courseId.toLowerCase() === rawSlug) ||
+              slugify(c.title, c.id) === rawSlug ||
+              (c.title && c.title.toLowerCase().startsWith(rawSlug.replace(/-+$/, '')))
+            ) || allAvailableCourses[0];
             if (matched) {
               setSelectedCourse(matched);
             }
