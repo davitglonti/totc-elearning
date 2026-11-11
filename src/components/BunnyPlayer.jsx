@@ -1,11 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Plyr from 'plyr';
-import 'plyr/dist/plyr.css';
-import { Video, Sparkles, AlertCircle, RefreshCw, Maximize2, Zap } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { 
+  Play, Pause, RotateCcw, RotateCw, Volume2, Volume1, VolumeX, 
+  Maximize, Minimize, Settings, Zap, Check, Sparkles, Loader2,
+  Tv, Film
+} from 'lucide-react';
 
 /**
  * Bunny Stream Video Player Component
- * Supports both official Bunny Stream iframe embeds and direct HTML5 videos with Bunny-styled Plyr controls.
+ * A high-end, responsive video player matching Bunny Stream's exact aesthetic:
+ * - Glowing centered teal play button
+ * - 10s rewind / fast-forward controls
+ * - Smooth progress scrubber with hover time preview & buffer track
+ * - Playback speed selector (0.5x - 2x)
+ * - Volume slider with mute toggle
+ * - Picture-in-Picture & Fullscreen
+ * - Keyboard shortcuts (Space, Left/Right arrows, M, F)
+ * - Bunny Stream CDN edge badge
+ * - Iframe embed support for official Bunny Stream URLs
  */
 export default function BunnyPlayer({
   src,
@@ -16,143 +27,251 @@ export default function BunnyPlayer({
   initialTime = 0,
   autoPlay = false
 }) {
+  const containerRef = useRef(null);
   const videoRef = useRef(null);
-  const playerRef = useRef(null);
-  const [loadError, setLoadError] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
 
-  // Detect whether this is an official Bunny Stream embed iframe or direct video file
+  // Playback state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [bufferedTime, setBufferedTime] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // UI state
+  const [showControls, setShowControls] = useState(true);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [hoverTime, setHoverTime] = useState(null);
+  const [hoverPosition, setHoverPosition] = useState(0);
+  const [pulsePlayIcon, setPulsePlayIcon] = useState(false);
+
+  const controlsTimeoutRef = useRef(null);
+
+  // Detect whether this is an official Bunny Stream iframe embed
   const isBunnyIframe = src && (
     src.includes('iframe.mediadelivery.net') || 
     src.includes('video.bunnycdn.com') ||
     src.includes('/embed/')
   );
 
-  // Ensure local /uploads/ URLs route cleanly to backend or proxy
-  const getResolvedSrc = (inputUrl) => {
-    if (!inputUrl) return '';
-    const trimmed = String(inputUrl).trim();
-    if (trimmed.startsWith('/uploads/')) {
-      return `http://localhost:5000${trimmed}`;
-    }
-    return trimmed;
+  const resolveSrc = (url) => {
+    if (!url) return '';
+    return String(url).trim();
   };
 
-  const finalSrc = getResolvedSrc(src);
+  const finalSrc = resolveSrc(src);
 
-  useEffect(() => {
-    setLoadError(false);
-
-    if (isBunnyIframe || !finalSrc || !videoRef.current) {
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {
-          console.warn('Error destroying player:', e);
-        }
-        playerRef.current = null;
-      }
-      return;
+  // Auto-hide controls timer
+  const resetControlsTimeout = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
     }
+    if (isPlaying) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+        setShowSpeedMenu(false);
+      }, 2500);
+    }
+  }, [isPlaying]);
 
+  const handleMouseMove = () => {
+    resetControlsTimeout();
+  };
+
+  // Toggle Play / Pause
+  const togglePlay = useCallback(() => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(e => console.warn('Play error:', e));
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setPulsePlayIcon(true);
+    setTimeout(() => setPulsePlayIcon(false), 450);
+    resetControlsTimeout();
+  }, [resetControlsTimeout]);
+
+  // Seek video by delta seconds (-10s / +10s)
+  const seekRelative = useCallback((seconds) => {
+    if (!videoRef.current) return;
+    const newTime = Math.max(0, Math.min(videoRef.current.duration || 0, videoRef.current.currentTime + seconds));
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    resetControlsTimeout();
+  }, [resetControlsTimeout]);
+
+  // Scrub bar interaction
+  const handleScrubberChange = (e) => {
+    if (!videoRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const targetTime = pos * duration;
+    videoRef.current.currentTime = targetTime;
+    setCurrentTime(targetTime);
+    resetControlsTimeout();
+  };
+
+  const handleScrubberMouseMove = (e) => {
+    if (!duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverPosition(pos * 100);
+    setHoverTime(pos * duration);
+  };
+
+  const handleScrubberMouseLeave = () => {
+    setHoverTime(null);
+  };
+
+  // Volume & Mute
+  const handleVolumeChange = (newVol) => {
+    if (!videoRef.current) return;
+    const v = Math.max(0, Math.min(1, parseFloat(newVol)));
+    videoRef.current.volume = v;
+    videoRef.current.muted = v === 0;
+    setVolume(v);
+    setIsMuted(v === 0);
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    if (isMuted) {
+      videoRef.current.muted = false;
+      videoRef.current.volume = volume > 0 ? volume : 0.8;
+      setIsMuted(false);
+    } else {
+      videoRef.current.muted = true;
+      setIsMuted(true);
+    }
+  };
+
+  // Speed change
+  const handleSpeedSelect = (speed) => {
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = speed;
+    setPlaybackSpeed(speed);
+    setShowSpeedMenu(false);
+    resetControlsTimeout();
+  };
+
+  // Fullscreen
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().catch(err => {
+        console.warn('Fullscreen error:', err);
+      });
+    } else {
+      document.exitFullscreen().catch(err => {
+        console.warn('Exit fullscreen error:', err);
+      });
+    }
+  };
+
+  // Picture in Picture
+  const togglePiP = async () => {
+    if (!videoRef.current) return;
     try {
-      // Destroy any prior Plyr instance on the element
-      if (playerRef.current) {
-        playerRef.current.destroy();
-        playerRef.current = null;
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (document.pictureInPictureEnabled) {
+        await videoRef.current.requestPictureInPicture();
       }
+    } catch (e) {
+      console.warn('PiP error:', e);
+    }
+  };
 
-      // Initialize Plyr with Bunny Stream custom controls and dark theme
-      const player = new Plyr(videoRef.current, {
-        controls: [
-          'play-large',
-          'restart',
-          'rewind',
-          'play',
-          'fast-forward',
-          'progress',
-          'current-time',
-          'duration',
-          'mute',
-          'volume',
-          'captions',
-          'settings',
-          'pip',
-          'airplay',
-          'fullscreen'
-        ],
-        settings: ['captions', 'quality', 'speed', 'loop'],
-        speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] },
-        seekTime: 10,
-        keyboard: { focused: true, global: true },
-        tooltips: { controls: true, seek: true },
-        autoplay: autoPlay,
-        hideControls: true,
-        resetOnEnd: false,
-        ratio: '16:9'
-      });
-
-      playerRef.current = player;
-
-      // Event listeners
-      player.on('timeupdate', () => {
-        if (onTimeUpdate && player.currentTime !== undefined) {
-          onTimeUpdate(Math.floor(player.currentTime));
-        }
-      });
-
-      player.on('waiting', () => setIsBuffering(true));
-      player.on('playing', () => setIsBuffering(false));
-      player.on('pause', () => setIsBuffering(false));
-
-      player.on('ended', () => {
-        if (onEnded) onEnded();
-      });
-
-      player.on('error', (e) => {
-        console.warn('Bunny Player video playback error:', e);
-        setLoadError(true);
-      });
-
-      if (initialTime > 0) {
-        player.on('ready', () => {
-          player.currentTime = initialTime;
-        });
-      }
-
-    } catch (err) {
-      console.error('Failed to initialize Bunny Plyr player:', err);
+  // Video event handlers
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+    const t = videoRef.current.currentTime;
+    setCurrentTime(t);
+    if (onTimeUpdate) {
+      onTimeUpdate(Math.floor(t));
     }
 
-    return () => {
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {}
-        playerRef.current = null;
+    // Update buffer progress
+    if (videoRef.current.buffered.length > 0) {
+      const end = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
+      setBufferedTime(end);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+    setDuration(videoRef.current.duration || 0);
+    if (initialTime > 0) {
+      videoRef.current.currentTime = initialTime;
+    }
+  };
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger if user is typing in an input / textarea
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+
+      switch (e.key) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          togglePlay();
+          break;
+        case 'ArrowLeft':
+        case 'j':
+          e.preventDefault();
+          seekRelative(-10);
+          break;
+        case 'ArrowRight':
+        case 'l':
+          e.preventDefault();
+          seekRelative(10);
+          break;
+        case 'm':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'f':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        default:
+          break;
       }
     };
-  }, [finalSrc, isBunnyIframe]);
 
-  if (!src) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center space-y-4 bg-slate-900 rounded-[24px] border border-slate-800">
-        <div className="w-16 h-16 rounded-full bg-slate-800/80 text-totc-teal flex items-center justify-center shadow-lg border border-slate-700/50">
-          <Video className="w-8 h-8" />
-        </div>
-        <div>
-          <h4 className="font-bold text-lg text-white mb-1">No Video Attached</h4>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            The instructor has not uploaded a video for this lecture yet.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [togglePlay, seekRelative]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const bufferedPercent = duration > 0 ? (bufferedTime / duration) * 100 : 0;
 
   // Case 1: Official Bunny Stream Embed Iframe
   if (isBunnyIframe) {
-    // Ensure responsive and clean embed parameters
     let iframeUrl = src;
     if (!iframeUrl.includes('autoplay=')) {
       const sep = iframeUrl.includes('?') ? '&' : '?';
@@ -160,9 +279,8 @@ export default function BunnyPlayer({
     }
 
     return (
-      <div className="bunny-stream-player relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 group">
-        {/* Bunny Stream Edge badge */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-totc-teal/30 text-[11px] font-semibold text-totc-teal shadow-lg pointer-events-none transition-opacity duration-300 opacity-90 group-hover:opacity-100">
+      <div className="relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 group">
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-totc-teal/30 text-[11px] font-semibold text-totc-teal shadow-lg pointer-events-none">
           <Zap className="w-3.5 h-3.5 text-totc-teal animate-pulse" />
           <span>Bunny Stream CDN</span>
         </div>
@@ -179,46 +297,256 @@ export default function BunnyPlayer({
     );
   }
 
-  // Case 2: Direct Video Stream / Local File with Bunny-themed Plyr Player
+  // Case 2: Bunny-styled Modern Streaming Player
   return (
-    <div className="bunny-stream-player relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center group">
-      
-      {/* Bunny Stream Edge badge */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md border border-totc-teal/30 text-[11px] font-semibold text-totc-teal shadow-lg pointer-events-none transition-opacity duration-300 opacity-90 group-hover:opacity-100">
-        <Zap className="w-3.5 h-3.5 text-totc-teal animate-pulse" />
-        <span>Bunny Stream Engine</span>
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => isPlaying && setShowControls(false)}
+      className="relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 select-none group font-poppins"
+    >
+      {/* Native Video Element */}
+      <video
+        ref={videoRef}
+        src={finalSrc}
+        poster={poster}
+        playsInline
+        preload="auto"
+        onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => setIsBuffering(false)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          if (onEnded) onEnded();
+        }}
+        className="w-full h-full object-contain cursor-pointer"
+      />
+
+      {/* Top Header Badge */}
+      <div className={`absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="flex items-center gap-2">
+          {title && (
+            <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-xs font-medium text-white/90 drop-shadow truncate max-w-sm">
+              {title}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-[#00CBB8]/40 text-[11px] font-semibold text-[#00CBB8] shadow-lg shadow-[#00CBB8]/10">
+            <Zap className="w-3.5 h-3.5 text-[#00CBB8] animate-pulse" />
+            <span>Bunny Stream CDN</span>
+          </div>
+          <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/70">
+            1080p HD
+          </span>
+        </div>
       </div>
 
-      {loadError ? (
-        <div className="flex flex-col items-center justify-center p-6 text-center space-y-3 z-10 bg-slate-900/90 rounded-2xl border border-red-500/20 max-w-md mx-4">
-          <AlertCircle className="w-10 h-10 text-rose-400" />
-          <h4 className="font-bold text-white text-base">Video Loading Error</h4>
-          <p className="text-xs text-slate-400">
-            Could not stream the media file. Please check your network connection or ensure the backend video path is available.
-          </p>
-          <button
-            onClick={() => {
-              setLoadError(false);
-              if (videoRef.current) {
-                videoRef.current.load();
-              }
-            }}
-            className="mt-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white flex items-center gap-2 border border-slate-700"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-totc-teal" />
-            <span>Retry Playback</span>
-          </button>
+      {/* Buffering Spinner */}
+      {isBuffering && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="p-4 rounded-full bg-black/60 backdrop-blur-md">
+            <Loader2 className="w-10 h-10 text-[#00CBB8] animate-spin" />
+          </div>
         </div>
-      ) : (
-        <video
-          ref={videoRef}
-          src={finalSrc}
-          poster={poster}
-          playsInline
-          crossOrigin="anonymous"
-          className="w-full h-full object-contain"
-        />
       )}
+
+      {/* Large Centered Glowing Play Button (Shows when paused) */}
+      {!isPlaying && (
+        <div 
+          onClick={togglePlay}
+          className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer bg-black/25 group-hover:bg-black/35 transition-colors"
+        >
+          <div className="relative group/play">
+            {/* Outer Glow Ring */}
+            <div className="absolute -inset-4 rounded-full bg-[#00CBB8]/30 blur-xl group-hover/play:bg-[#00CBB8]/50 transition-all duration-500 animate-pulse" />
+            
+            <button
+              aria-label="Play Video"
+              className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#00CBB8] hover:bg-[#00b5a3] text-white flex items-center justify-center shadow-[0_0_40px_rgba(0,203,184,0.7)] group-hover/play:scale-110 active:scale-95 transition-all duration-300 border-2 border-white/40"
+            >
+              <Play className="w-9 h-9 sm:w-11 sm:h-11 fill-white ml-1.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Click Pulse Animation */}
+      {pulsePlayIcon && isPlaying && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white scale-125 animate-out fade-out zoom-out duration-300">
+            <Play className="w-8 h-8 fill-white ml-1" />
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          Bottom Controls Overlay Bar (Bunny Stream Theme)
+          ========================================================================= */}
+      <div 
+        className={`absolute bottom-0 inset-x-0 z-20 px-4 sm:px-6 pb-4 pt-16 bg-gradient-to-t from-black/95 via-black/70 to-transparent transition-all duration-300 ${showControls || !isPlaying ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}
+      >
+        {/* Scrubber Progress Bar */}
+        <div 
+          onClick={handleScrubberChange}
+          onMouseMove={handleScrubberMouseMove}
+          onMouseLeave={handleScrubberMouseLeave}
+          className="relative h-2 hover:h-3.5 bg-white/20 rounded-full cursor-pointer mb-3.5 transition-all duration-200 group/bar flex items-center"
+        >
+          {/* Buffered Progress */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 bg-white/35 rounded-full transition-all duration-300"
+            style={{ width: `${bufferedPercent}%` }}
+          />
+
+          {/* Played Progress (Bunny Teal) */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 bg-[#00CBB8] rounded-full relative"
+            style={{ width: `${progressPercent}%` }}
+          >
+            {/* Scrubber Thumb */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 rounded-full bg-white shadow-[0_0_12px_rgba(0,203,184,0.9)] border-2 border-[#00CBB8] scale-0 group-hover/bar:scale-100 transition-transform duration-150" />
+          </div>
+
+          {/* Hover Time Tooltip */}
+          {hoverTime !== null && (
+            <div 
+              className="absolute -top-9 -translate-x-1/2 px-2.5 py-1 rounded-md bg-slate-900 border border-white/20 text-[11px] font-bold text-white shadow-xl pointer-events-none"
+              style={{ left: `${hoverPosition}%` }}
+            >
+              {formatTime(hoverTime)}
+            </div>
+          )}
+        </div>
+
+        {/* Control Buttons Row */}
+        <div className="flex items-center justify-between text-white text-sm">
+          {/* Left Controls: Play/Pause, Rewind, Forward, Volume, Time */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Play / Pause Toggle */}
+            <button
+              onClick={togglePlay}
+              className="p-2 rounded-xl text-white/90 hover:text-white hover:bg-white/10 transition-colors"
+              title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
+            >
+              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+            </button>
+
+            {/* Rewind 10s */}
+            <button
+              onClick={() => seekRelative(-10)}
+              className="p-2 rounded-xl text-white/80 hover:text-[#00CBB8] hover:bg-white/10 transition-colors relative group/btn"
+              title="Rewind 10s (←)"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] pointer-events-none font-mono">10</span>
+            </button>
+
+            {/* Fast-Forward 10s */}
+            <button
+              onClick={() => seekRelative(10)}
+              className="p-2 rounded-xl text-white/80 hover:text-[#00CBB8] hover:bg-white/10 transition-colors relative group/btn"
+              title="Forward 10s (→)"
+            >
+              <RotateCw className="w-4 h-4" />
+              <span className="absolute text-[8px] font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] pointer-events-none font-mono">10</span>
+            </button>
+
+            {/* Volume Control + Slider */}
+            <div className="flex items-center gap-2 group/vol">
+              <button
+                onClick={toggleMute}
+                className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-5 h-5 text-rose-400" />
+                ) : volume < 0.5 ? (
+                  <Volume1 className="w-5 h-5" />
+                ) : (
+                  <Volume2 className="w-5 h-5" />
+                )}
+              </button>
+              
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => handleVolumeChange(e.target.value)}
+                className="w-16 sm:w-20 h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer accent-[#00CBB8] transition-all"
+              />
+            </div>
+
+            {/* Time Display */}
+            <div className="text-xs text-slate-300 font-mono font-medium tracking-tight pl-1 sm:pl-2">
+              <span className="text-white font-semibold">{formatTime(currentTime)}</span>
+              <span className="text-slate-500 mx-1.5">/</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Right Controls: Speed Selector, PiP, Fullscreen */}
+          <div className="flex items-center gap-2 relative">
+            {/* Playback Speed Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white/90 hover:text-white transition-colors flex items-center gap-1 border border-white/10"
+                title="Playback Speed"
+              >
+                <span>{playbackSpeed}x</span>
+              </button>
+
+              {showSpeedMenu && (
+                <div className="absolute bottom-12 right-0 bg-slate-900/95 backdrop-blur-xl border border-white/15 rounded-xl p-1.5 shadow-2xl min-w-[100px] z-30 animate-in fade-in zoom-in-95">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 px-3 py-1 tracking-wider border-b border-white/10 mb-1">
+                    Speed
+                  </div>
+                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSpeedSelect(s)}
+                      className={`w-full px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between text-left transition-colors ${
+                        playbackSpeed === s 
+                          ? 'bg-[#00CBB8]/20 text-[#00CBB8]' 
+                          : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      <span>{s}x</span>
+                      {playbackSpeed === s && <Check className="w-3.5 h-3.5 text-[#00CBB8]" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Picture in Picture */}
+            <button
+              onClick={togglePiP}
+              className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors hidden sm:inline-flex"
+              title="Picture in Picture"
+            >
+              <Tv className="w-4 h-4" />
+            </button>
+
+            {/* Fullscreen */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+              title="Fullscreen (F)"
+            >
+              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

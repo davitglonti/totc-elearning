@@ -171,11 +171,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// 8. Serve Static Uploaded Files
-app.UseStaticFiles();
-
 app.UseRouting();
 app.UseCors("AllowFrontend");
+
+// 8. Serve Static Uploaded Files with CORS support
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
