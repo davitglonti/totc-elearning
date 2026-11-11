@@ -8,7 +8,7 @@ namespace Elearning.Application.Interfaces;
 public interface ICourseService
 {
     Task<PagedResult<CourseDto>> GetCoursesAsync(CourseFilterParams filterParams);
-    Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId);
+    Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId, string? currentUserEmail = null);
     Task<List<CategoryDto>> GetCategoriesAsync();
     
     // Instructor / Admin management

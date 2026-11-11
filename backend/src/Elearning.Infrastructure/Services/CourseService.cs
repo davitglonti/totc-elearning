@@ -86,7 +86,7 @@ public class CourseService : ICourseService
         };
     }
 
-    public async Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId)
+    public async Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId, string? currentUserEmail = null)
     {
         var course = await _context.Courses
             .Include(c => c.Category)
@@ -99,11 +99,19 @@ public class CourseService : ICourseService
 
         if (course == null) return null;
 
-        var isEnrolled = false;
+        User? user = null;
         if (currentUserId.HasValue)
         {
-            isEnrolled = await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == currentUserId.Value);
+            user = await _context.Users.FindAsync(currentUserId.Value);
         }
+        if (user == null && !string.IsNullOrWhiteSpace(currentUserEmail))
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == currentUserEmail.ToLower());
+        }
+
+        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
+        var isInstructorOrAdmin = user != null && (user.Role == Domain.Enums.UserRole.Admin || course.InstructorId == user.Id || (!string.IsNullOrWhiteSpace(user.Email) && course.Instructor != null && course.Instructor.Email.ToLower() == user.Email.ToLower()));
+        var isEnrolled = isInstructorOrAdmin || isSubscribed || (user != null && await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == user.Id));
 
         var dto = new CourseDetailDto
         {
@@ -118,6 +126,7 @@ public class CourseService : ICourseService
             InstructorName = course.Instructor?.FullName ?? string.Empty,
             InstructorAvatar = course.Instructor?.AvatarUrl,
             InstructorId = course.InstructorId,
+            InstructorEmail = course.Instructor?.Email ?? string.Empty,
             AverageRating = course.Reviews.Any() ? Math.Round(course.Reviews.Average(r => r.Rating), 1) : 5.0,
             ReviewsCount = course.Reviews.Count,
             TotalDurationMinutes = course.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes),
@@ -295,6 +304,7 @@ public class CourseService : ICourseService
             InstructorName = c.Instructor?.FullName ?? string.Empty,
             InstructorAvatar = c.Instructor?.AvatarUrl,
             InstructorId = c.InstructorId,
+            InstructorEmail = c.Instructor?.Email ?? string.Empty,
             AverageRating = c.Reviews != null && c.Reviews.Any() ? Math.Round(c.Reviews.Average(r => r.Rating), 1) : 5.0,
             ReviewsCount = c.Reviews?.Count ?? 0,
             TotalDurationMinutes = c.Sections != null ? c.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes) : 0,

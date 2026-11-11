@@ -22,6 +22,9 @@ public class InstructorCourseItemDto
     public string Level { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
     public Guid CategoryId { get; set; }
+    public Guid InstructorId { get; set; }
+    public string InstructorName { get; set; } = string.Empty;
+    public string InstructorEmail { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
     public string ApprovalStatus { get; set; } = "Approved";
     public string? RejectionReason { get; set; }

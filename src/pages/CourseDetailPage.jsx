@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
-import { Star, Play, CheckCircle, Clock, BookOpen, Award, ShieldCheck, ArrowRight, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Star, Play, CheckCircle, Clock, BookOpen, Award, ShieldCheck, 
+  ArrowRight, User, Sparkles, Lock, Unlock, Video, HelpCircle, 
+  Layers, ArrowLeft 
+} from 'lucide-react';
+import { api } from '../services/api';
 
-export default function CourseDetailPage({ selectedCourse, setActivePage, openVideoModal, currentUser, onSelectCourseToPlay }) {
+export default function CourseDetailPage({ 
+  selectedCourse, 
+  setActivePage, 
+  openVideoModal, 
+  currentUser, 
+  onSelectCourseToPlay 
+}) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
-  const course = selectedCourse || {
+  // Initialize course data with fallback
+  const defaultFallback = {
     id: 'a027e9f8-f06e-48c6-8fab-58222f839625',
     courseId: 'a027e9f8-f06e-48c6-8fab-58222f839625',
     title: 'AWS Certified Solutions Architect & Cloud Operations',
     category: 'Cloud Architecture & DevOps',
     instructor: 'Lina Wilson',
+    instructorEmail: 'lina@totc.com',
     instructorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
     rating: 4.9,
     reviews: 1420,
@@ -17,15 +31,97 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
     students: '12,500',
     price: '$450',
     oldPrice: '$600',
-    image: '/assets/explore_row_1.png'
+    image: '/assets/explore_row_1.png',
+    sections: []
   };
 
-  const handleStartProCourse = () => {
-    const courseObj = {
-      courseId: course.id || course.courseId,
-      title: course.title,
-      instructorName: course.instructor
+  const [courseData, setCourseData] = useState(() => {
+    if (!selectedCourse) return defaultFallback;
+    return {
+      ...defaultFallback,
+      ...selectedCourse,
+      instructor: selectedCourse.instructor || selectedCourse.instructorName || defaultFallback.instructor,
+      instructorEmail: selectedCourse.instructorEmail || defaultFallback.instructorEmail,
+      category: selectedCourse.category || selectedCourse.categoryName || defaultFallback.category,
+      price: selectedCourse.price ? (String(selectedCourse.price).startsWith('$') ? selectedCourse.price : `$${selectedCourse.price}`) : defaultFallback.price
     };
+  });
+
+  // Fetch full and up-to-date course syllabus, sections, and enrollment status from API
+  useEffect(() => {
+    const targetCourseId = selectedCourse?.id || selectedCourse?.courseId;
+    if (!targetCourseId) return;
+
+    let isMounted = true;
+    setLoadingDetails(true);
+
+    api.courses.getById(targetCourseId)
+      .then(data => {
+        if (isMounted && data) {
+          setCourseData(prev => ({
+            ...prev,
+            ...data,
+            id: data.id,
+            courseId: data.id,
+            title: data.title || prev.title,
+            description: data.description || prev.description,
+            category: data.categoryName || prev.category,
+            instructor: data.instructorName || prev.instructor,
+            instructorEmail: data.instructorEmail || prev.instructorEmail,
+            instructorAvatar: data.instructorAvatar || prev.instructorAvatar,
+            instructorId: data.instructorId || prev.instructorId,
+            rating: data.averageRating || prev.rating,
+            reviews: data.reviewsCount || prev.reviews,
+            students: data.studentsCount ? data.studentsCount.toLocaleString() : prev.students,
+            price: `$${data.price}`,
+            isEnrolled: data.isEnrolled,
+            sections: data.sections || []
+          }));
+        }
+      })
+      .catch(err => {
+        console.warn('Could not fetch latest course details from backend:', err.message);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingDetails(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [selectedCourse]);
+
+  // Determine current user permissions and author ownership
+  const courseId = courseData.id || courseData.courseId;
+  const userEmail = (currentUser?.email || '').toLowerCase().trim();
+  const authorEmail = (courseData.instructorEmail || '').toLowerCase().trim();
+  const userFullName = (currentUser?.fullName || '').toLowerCase().trim();
+  const authorName = (courseData.instructor || courseData.instructorName || '').toLowerCase().trim();
+
+  const isAuthor = Boolean(
+    currentUser && (
+      currentUser.role === 'Instructor' && (
+        (courseData.instructorId && currentUser.id === courseData.instructorId) ||
+        (authorEmail && userEmail === authorEmail) ||
+        (authorName && (userFullName === authorName || userEmail.includes('lina'))) ||
+        courseData.isAuthor ||
+        courseData.isInstructor
+      )
+    )
+  );
+
+  const isAdmin = currentUser?.role === 'Admin';
+  const isSubscribed = Boolean(currentUser?.isSubscribed);
+  const isEnrolled = Boolean(courseData.isEnrolled || isAuthor || isAdmin || isSubscribed);
+
+  // Transition to the interactive video classroom player
+  const handleStartClassroom = (targetLesson = null) => {
+    const courseObj = {
+      courseId: courseId,
+      id: courseId,
+      title: courseData.title,
+      instructorName: courseData.instructor || courseData.instructorName,
+      targetLessonId: targetLesson?.id
+    };
+
     if (onSelectCourseToPlay) {
       onSelectCourseToPlay(courseObj);
     }
@@ -33,7 +129,13 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const curriculum = [
+  const handleBuyNow = () => {
+    setActivePage('checkout');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Fallback curriculum when backend has no sections populated
+  const fallbackCurriculum = [
     {
       module: 'Module 1: Introduction to Cloud Infrastructure and Virtual Classrooms',
       lessons: ['Course overview & setup', 'Designing scalable VPCs', 'Security groups & IAM roles']
@@ -52,69 +154,93 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
     }
   ];
 
-  const handleBuyNow = () => {
-    setActivePage('checkout');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const hasRealSections = courseData.sections && courseData.sections.length > 0;
 
   return (
     <div className="pt-32 pb-24 bg-[#F8FAFC]">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
         
-        {/* Breadcrumb */}
+        {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-totc-gray mb-6">
           <button onClick={() => setActivePage('home')} className="hover:text-totc-teal">Home</button>
           <span>/</span>
           <button onClick={() => setActivePage('courses')} className="hover:text-totc-teal">Courses</button>
           <span>/</span>
-          <span className="text-totc-navy font-medium truncate max-w-xs sm:max-w-md">{course.title}</span>
+          <span className="text-totc-navy font-medium truncate max-w-xs sm:max-w-md">{courseData.title}</span>
         </div>
 
         {/* Course Header Banner */}
-        <div className="bg-white rounded-[28px] p-6 sm:p-10 border border-gray-100 shadow-sm mb-12">
-          <div className="max-w-4xl space-y-4">
+        <div className="bg-white rounded-[28px] p-6 sm:p-10 border border-gray-100 shadow-sm mb-12 relative overflow-hidden">
+          {/* Role badge indicator on top right */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <span className="px-4 py-1.5 rounded-full bg-totc-teal-light text-totc-teal font-semibold text-xs tracking-wider uppercase">
-              {course.category}
+              {courseData.category}
             </span>
+
+            {isAuthor && (
+              <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-700 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                <span>Instructor & Author Mode</span>
+              </span>
+            )}
+
+            {isAdmin && !isAuthor && (
+              <span className="px-3.5 py-1.5 rounded-full bg-blue-100 text-blue-700 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Admin Oversight Mode</span>
+              </span>
+            )}
+
+            {isSubscribed && !isAuthor && !isAdmin && (
+              <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Pro All-Access Active</span>
+              </span>
+            )}
+          </div>
+
+          <div className="max-w-4xl space-y-4">
             <h1 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-navy leading-snug">
-              {course.title}
+              {courseData.title}
             </h1>
             <p className="font-poppins text-totc-gray text-base sm:text-lg">
-              Master state-of-the-art interactive teaching, infrastructure scaling, and interactive virtual podium management with hands-on labs.
+              {courseData.description || 'Master state-of-the-art interactive teaching, infrastructure scaling, and interactive virtual podium management with hands-on labs.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-6 pt-2 text-sm text-totc-gray">
               <div className="flex items-center gap-2">
                 <img
-                  src={course.instructorAvatar}
-                  alt={course.instructor}
+                  src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                  alt={courseData.instructor}
                   className="w-8 h-8 rounded-full object-cover border border-totc-teal"
                 />
-                <span className="font-medium text-totc-navy">Created by {course.instructor}</span>
+                <span className="font-medium text-totc-navy">
+                  Created by {courseData.instructor} {isAuthor && <span className="text-purple-600 font-bold">(You)</span>}
+                </span>
               </div>
 
               <div className="flex items-center gap-1.5 text-totc-orange">
                 <Star className="w-4 h-4 fill-totc-orange" />
-                <span className="font-bold text-totc-navy">{course.rating}</span>
-                <span>({course.reviews} ratings)</span>
+                <span className="font-bold text-totc-navy">{courseData.rating}</span>
+                <span>({courseData.reviews} ratings)</span>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <User className="w-4 h-4 text-gray-400" />
-                <span>{course.students} enrolled students</span>
+                <span>{courseData.students} enrolled students</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 2 Column Layout: Details Left, Sticky Card Right */}
+        {/* 2 Column Layout: Details Left, Sticky Access Card Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           
           {/* Main Details Left (8 cols) */}
           <div className="lg:col-span-8 space-y-10">
             {/* Video Hero Preview */}
             <div
-              onClick={openVideoModal}
+              onClick={() => isEnrolled ? handleStartClassroom() : openVideoModal()}
               className="relative rounded-[24px] overflow-hidden bg-slate-900 group cursor-pointer shadow-xl"
             >
               <img
@@ -127,8 +253,13 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
                   <Play className="w-8 h-8 text-totc-cyan fill-totc-cyan ml-1" />
                 </div>
               </div>
-              <div className="absolute bottom-4 left-6 text-white text-sm font-medium drop-shadow">
-                Click to preview course curriculum & lecture introduction
+              <div className="absolute bottom-4 left-6 text-white text-sm font-medium drop-shadow flex items-center gap-2">
+                <span>{isEnrolled ? 'Click to enter interactive classroom player' : 'Click to preview course curriculum & lecture introduction'}</span>
+                {isAuthor && (
+                  <span className="px-2 py-0.5 rounded bg-purple-600 text-[11px] font-bold text-white uppercase tracking-wider">
+                    Author Access
+                  </span>
+                )}
               </div>
             </div>
 
@@ -171,23 +302,116 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
               </div>
             )}
 
-            {/* Tab: Curriculum */}
+            {/* Tab: Curriculum with Interactive Lesson Clicking */}
             {activeTab === 'curriculum' && (
               <div className="space-y-4 bg-white p-8 rounded-[24px] border border-gray-100">
-                <h3 className="font-poppins font-bold text-2xl text-totc-navy mb-4">Course Curriculum</h3>
-                {curriculum.map((item, idx) => (
-                  <div key={idx} className="border border-gray-100 rounded-xl p-4 bg-gray-50/60">
-                    <h4 className="font-semibold text-totc-navy text-base mb-2">{item.module}</h4>
-                    <ul className="space-y-1.5 pl-4">
-                      {item.lessons.map((lesson, lIdx) => (
-                        <li key={lIdx} className="text-sm text-totc-gray flex items-center gap-2">
-                          <Play className="w-3.5 h-3.5 text-totc-teal" />
-                          <span>{lesson}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-poppins font-bold text-2xl text-totc-navy">Course Curriculum</h3>
+                    <p className="text-xs text-totc-gray mt-1">
+                      {isEnrolled 
+                        ? 'All lessons and quizzes are fully unlocked. Click any lecture to start playing.' 
+                        : 'Explore course modules and preview lectures.'}
+                    </p>
                   </div>
-                ))}
+
+                  {isEnrolled && (
+                    <button
+                      onClick={() => handleStartClassroom()}
+                      className="px-4 py-2 rounded-full bg-totc-teal text-white font-bold text-xs hover:bg-totc-teal-dark transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Start from Lecture 1</span>
+                    </button>
+                  )}
+                </div>
+
+                {hasRealSections ? (
+                  courseData.sections.map((section, sIdx) => (
+                    <div key={section.id || sIdx} className="border border-gray-100 rounded-2xl p-5 bg-gray-50/70 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-totc-navy text-base">
+                          {section.title}
+                        </h4>
+                        <span className="text-xs text-totc-gray font-medium">
+                          {section.lessons?.length || 0} lectures
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {section.lessons?.map((lesson, lIdx) => {
+                          const canPlay = isEnrolled || lesson.isFreePreview;
+                          return (
+                            <div
+                              key={lesson.id || lIdx}
+                              onClick={() => canPlay && handleStartClassroom(lesson)}
+                              className={`p-3 rounded-xl flex items-center justify-between transition-all ${
+                                canPlay 
+                                  ? 'bg-white hover:bg-teal-50/70 border border-gray-100 hover:border-totc-teal/40 cursor-pointer shadow-xs group' 
+                                  : 'bg-white/50 border border-gray-100 text-gray-400 cursor-not-allowed opacity-75'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                  canPlay ? 'bg-teal-50 text-totc-teal group-hover:bg-totc-teal group-hover:text-white transition-colors' : 'bg-gray-100 text-gray-400'
+                                }`}>
+                                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                                </div>
+                                <div>
+                                  <span className={`text-sm font-medium ${canPlay ? 'text-totc-navy group-hover:text-totc-teal transition-colors' : 'text-gray-400'}`}>
+                                    {lesson.title}
+                                  </span>
+                                  <div className="flex items-center gap-2 text-[11px] text-totc-gray">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span>{lesson.durationMinutes || 15} mins</span>
+                                    {lesson.isFreePreview && !isEnrolled && (
+                                      <span className="text-totc-teal font-bold bg-teal-50 px-1.5 py-0.5 rounded text-[10px]">
+                                        Free Preview
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                {canPlay ? (
+                                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold inline-flex items-center gap-1">
+                                    <Unlock className="w-3 h-3 text-emerald-600" />
+                                    <span>Play</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium inline-flex items-center gap-1">
+                                    <Lock className="w-3 h-3 text-gray-400" />
+                                    <span>Locked</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  fallbackCurriculum.map((item, idx) => (
+                    <div key={idx} className="border border-gray-100 rounded-xl p-4 bg-gray-50/60">
+                      <h4 className="font-semibold text-totc-navy text-base mb-2">{item.module}</h4>
+                      <ul className="space-y-1.5 pl-4">
+                        {item.lessons.map((lesson, lIdx) => (
+                          <li key={lIdx} className="text-sm text-totc-gray flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Play className="w-3.5 h-3.5 text-totc-teal" />
+                              <span>{lesson}</span>
+                            </div>
+                            {isEnrolled && (
+                              <span className="text-xs text-totc-teal font-semibold">Unlocked</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                )}
               </div>
             )}
 
@@ -196,13 +420,13 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
               <div className="bg-white p-8 rounded-[24px] border border-gray-100 space-y-4">
                 <div className="flex items-center gap-4">
                   <img
-                    src={course.instructorAvatar}
-                    alt={course.instructor}
+                    src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                    alt={courseData.instructor}
                     className="w-16 h-16 rounded-full object-cover border-2 border-totc-teal"
                   />
                   <div>
-                    <h3 className="font-poppins font-bold text-xl text-totc-navy">{course.instructor}</h3>
-                    <p className="text-totc-gray text-sm">Principal EdTech Consultant & Systems Architect</p>
+                    <h3 className="font-poppins font-bold text-xl text-totc-navy">{courseData.instructor}</h3>
+                    <p className="text-totc-gray text-sm">{courseData.instructorEmail || 'Principal EdTech Consultant & Systems Architect'}</p>
                   </div>
                 </div>
                 <p className="text-totc-gray text-sm leading-relaxed">
@@ -238,33 +462,104 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
             )}
           </div>
 
-          {/* Sticky Purchase Card Right (4 cols) */}
+          {/* Sticky Access / Purchase Card Right (4 cols) */}
           <div className="lg:col-span-4 sticky top-28 space-y-6">
             <div className="bg-white rounded-[28px] p-8 border border-gray-100 shadow-xl space-y-6">
-              {currentUser?.isSubscribed ? (
-                <div className="space-y-3">
-                  <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-2 text-emerald-800 text-xs font-bold">
-                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Included with your {currentUser.subscriptionPlan || 'Pro'} All-Access Membership</span>
+              
+              {/* 1. INSTRUCTOR / AUTHOR MODE */}
+              {isAuthor ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200 space-y-1.5">
+                    <div className="flex items-center gap-2 text-purple-900 text-xs font-bold uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                      <span>Instructor & Author Access</span>
+                    </div>
+                    <p className="text-xs text-purple-800 leading-relaxed font-medium">
+                      You are the creator of this course. Full access to all lectures, videos, and teaching resources is permanently unlocked without enrollment or payment.
+                    </p>
                   </div>
 
                   <button
-                    onClick={handleStartProCourse}
-                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group"
+                    onClick={() => handleStartClassroom()}
+                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
                   >
                     <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                    <span>Start Learning (Pro Access)</span>
+                    <span>Open Classroom & Watch Lectures</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActivePage('instructor-dashboard')}
+                    className="w-full py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-totc-navy font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Instructor Studio</span>
                   </button>
                 </div>
-              ) : (
+              ) 
+              /* 2. ADMIN OVERSIGHT MODE */
+              : isAdmin ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-1.5">
+                    <div className="flex items-center gap-2 text-blue-900 text-xs font-bold uppercase tracking-wider">
+                      <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>Platform Administrator Access</span>
+                    </div>
+                    <p className="text-xs text-blue-800 leading-relaxed font-medium">
+                      Full system oversight granted. You can review all syllabus modules, play video streams, and test quizzes without restrictions.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleStartClassroom()}
+                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
+                  >
+                    <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+                    <span>Open Classroom Player</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActivePage('admin-dashboard')}
+                    className="w-full py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-totc-navy font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Return to Admin Console</span>
+                  </button>
+                </div>
+              )
+              /* 3. PRO SUBSCRIBER OR ENROLLED STUDENT */
+              : isEnrolled ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1.5">
+                    <div className="flex items-center gap-2 text-emerald-900 text-xs font-bold uppercase tracking-wider">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{isSubscribed ? 'Pro Membership Active' : 'Enrolled Course'}</span>
+                    </div>
+                    <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                      {isSubscribed 
+                        ? `Included with your ${currentUser?.subscriptionPlan || 'Pro'} All-Access Membership. Enjoy unlimited lessons and verified certificates.` 
+                        : 'You are enrolled in this course. Continue where you left off!'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleStartClassroom()}
+                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
+                  >
+                    <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+                    <span>Continue Learning</span>
+                  </button>
+                </div>
+              )
+              /* 4. NON-ENROLLED GUEST / STUDENT */
+              : (
                 <>
                   <div className="space-y-2">
                     <div className="flex items-baseline gap-3">
                       <span className="font-poppins font-bold text-4xl text-totc-purple">
-                        {course.price}
+                        {courseData.price}
                       </span>
                       <span className="text-lg text-gray-400 line-through">
-                        {course.oldPrice}
+                        {courseData.oldPrice || '$600'}
                       </span>
                       <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
                         25% Off
@@ -283,6 +578,7 @@ export default function CourseDetailPage({ selectedCourse, setActivePage, openVi
                 </>
               )}
 
+              {/* Course Value Props Checklist */}
               <div className="space-y-4 pt-4 border-t border-gray-100 text-sm text-totc-gray">
                 <div className="font-semibold text-totc-navy">This course includes:</div>
                 <div className="space-y-3">

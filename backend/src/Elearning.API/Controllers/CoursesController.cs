@@ -35,7 +35,7 @@ public class CoursesController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCourseById(Guid id)
     {
-        var course = await _courseService.GetCourseByIdAsync(id, CurrentUserId);
+        var course = await _courseService.GetCourseByIdAsync(id, CurrentUserId, CurrentUserEmail);
         if (course == null) return NotFound(new { message = "Course not found." });
 
         return Ok(course);

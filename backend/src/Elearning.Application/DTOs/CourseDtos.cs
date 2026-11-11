@@ -24,6 +24,7 @@ public class CourseDto
     public string InstructorName { get; set; } = string.Empty;
     public string? InstructorAvatar { get; set; }
     public Guid InstructorId { get; set; }
+    public string InstructorEmail { get; set; } = string.Empty;
     public double AverageRating { get; set; }
     public int ReviewsCount { get; set; }
     public int TotalDurationMinutes { get; set; }

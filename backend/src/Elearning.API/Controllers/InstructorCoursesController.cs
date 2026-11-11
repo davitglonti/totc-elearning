@@ -53,6 +53,7 @@ public class InstructorCoursesController : BaseApiController
         var query = _context.Courses
             .AsNoTracking()
             .Include(c => c.Category)
+            .Include(c => c.Instructor)
             .Include(c => c.Enrollments)
             .Include(c => c.Reviews)
             .Include(c => c.Sections)
@@ -84,6 +85,9 @@ public class InstructorCoursesController : BaseApiController
                 Level = c.Level.ToString(),
                 CategoryName = c.Category != null ? c.Category.Name : "General",
                 CategoryId = c.CategoryId,
+                InstructorId = c.InstructorId,
+                InstructorName = c.Instructor?.FullName ?? instructor.FullName,
+                InstructorEmail = c.Instructor?.Email ?? instructor.Email,
                 IsPublished = c.IsPublished,
                 ApprovalStatus = c.ApprovalStatus,
                 RejectionReason = c.RejectionReason,

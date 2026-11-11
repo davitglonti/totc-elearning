@@ -304,10 +304,34 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => {
-                            if (setSelectedCourse) setSelectedCourse(c);
-                            setActivePage('course-detail', c);
+                            const courseObj = {
+                              courseId: c.id,
+                              id: c.id,
+                              title: c.title,
+                              instructorName: c.instructorName || currentUser?.fullName
+                            };
+                            setActivePage('course-player', courseObj);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-totc-teal hover:text-white text-xs font-bold text-totc-teal transition-colors inline-flex items-center gap-1 shadow-2xs"
+                          title="Open Video Classroom Player directly"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Classroom</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const courseObj = {
+                              ...c,
+                              instructorId: c.instructorId || currentUser?.id,
+                              instructorEmail: c.instructorEmail || currentUser?.email,
+                              instructor: c.instructorName || currentUser?.fullName
+                            };
+                            if (setSelectedCourse) setSelectedCourse(courseObj);
+                            setActivePage('course-detail', courseObj);
                           }}
                           className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-totc-teal hover:text-white text-xs font-bold text-totc-navy transition-colors"
+                          title="View Course Syllabus & Details"
                         >
                           Preview
                         </button>

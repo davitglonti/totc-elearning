@@ -194,9 +194,10 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
   useEffect(() => {
     async function fetchCourseDetails() {
       setLoading(true);
-      if (activeCourse?.courseId) {
+      const targetCourseId = activeCourse?.courseId || activeCourse?.id;
+      if (targetCourseId) {
         try {
-          const data = await api.learning.getContent(activeCourse.courseId);
+          const data = await api.learning.getContent(targetCourseId);
           if (data && data.sections && data.sections.length > 0) {
             setCourseContent(data);
             const initialCompleted = new Set();
@@ -206,10 +207,21 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
               });
             });
             setCompletedLessonIds(initialCompleted);
-            const firstIncomplete = data.sections.flatMap(s => s.lessons).find(l => !l.isCompleted);
-            const targetLesson = firstIncomplete || data.sections[0].lessons[0];
-            setActiveLesson(targetLesson);
-            loadQuizForLesson(targetLesson.id);
+
+            const allLessons = data.sections.flatMap(s => s.lessons);
+            let targetLesson = null;
+            if (activeCourse?.targetLessonId) {
+              targetLesson = allLessons.find(l => l.id === activeCourse.targetLessonId);
+            }
+            if (!targetLesson) {
+              const firstIncomplete = allLessons.find(l => !l.isCompleted);
+              targetLesson = firstIncomplete || allLessons[0];
+            }
+
+            if (targetLesson) {
+              setActiveLesson(targetLesson);
+              loadQuizForLesson(targetLesson.id);
+            }
             setLoading(false);
             return;
           }
@@ -419,13 +431,17 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         <div className="flex items-center gap-4">
           <button
             onClick={() => {
-              setActivePage('dashboard');
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                setActivePage('courses');
+              }
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex items-center gap-2 text-sm text-slate-300 hover:text-totc-teal font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to My Learning</span>
+            <span>Back</span>
           </button>
           <span className="text-slate-600 hidden sm:inline">|</span>
           <h1 className="font-semibold text-base sm:text-lg text-white truncate max-w-md sm:max-w-xl">

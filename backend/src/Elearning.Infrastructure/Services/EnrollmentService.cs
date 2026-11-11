@@ -98,15 +98,16 @@ public class EnrollmentService : IEnrollmentService
         return result;
     }
 
-    public async Task<CourseLearnDto> GetCourseLearningContentAsync(Guid courseId, Guid userId)
+    public async Task<CourseLearnDto> GetCourseLearningContentAsync(Guid courseId, Guid userId, string? userEmail = null)
     {
         var user = await _context.Users.FindAsync(userId);
-        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
-
-        // Access is granted if user is individually enrolled OR has an active Pro subscription!
-        var isEnrolled = isSubscribed || await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
+        if (user == null && !string.IsNullOrWhiteSpace(userEmail))
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == userEmail.ToLower());
+        }
 
         var course = await _context.Courses
+            .Include(c => c.Instructor)
             .Include(c => c.Sections.OrderBy(s => s.OrderIndex))
                 .ThenInclude(s => s.Lessons.OrderBy(l => l.OrderIndex))
                     .ThenInclude(l => l.Quiz)
@@ -114,6 +115,12 @@ public class EnrollmentService : IEnrollmentService
 
         if (course == null)
             throw new KeyNotFoundException("Course not found.");
+
+        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
+        var isInstructorOrAdmin = user != null && (user.Role == Domain.Enums.UserRole.Admin || course.InstructorId == user.Id || (!string.IsNullOrWhiteSpace(user.Email) && course.Instructor != null && course.Instructor.Email.ToLower() == user.Email.ToLower()));
+
+        // Access is granted if user is the course instructor, admin, individually enrolled, OR has an active Pro subscription!
+        var isEnrolled = isInstructorOrAdmin || isSubscribed || (user != null && await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == user.Id));
 
         var userProgressMap = await _context.LessonProgresses
             .Where(lp => lp.UserId == userId)

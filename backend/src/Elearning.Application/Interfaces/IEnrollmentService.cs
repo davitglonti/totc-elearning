@@ -8,7 +8,7 @@ namespace Elearning.Application.Interfaces;
 public interface IEnrollmentService
 {
     Task<List<MyCourseDto>> GetUserCoursesAsync(Guid userId);
-    Task<CourseLearnDto> GetCourseLearningContentAsync(Guid courseId, Guid userId);
+    Task<CourseLearnDto> GetCourseLearningContentAsync(Guid courseId, Guid userId, string? userEmail = null);
     Task<bool> CompleteLessonAsync(Guid lessonId, Guid userId, CompleteLessonDto dto);
     Task<bool> EnrollUserAsync(Guid userId, Guid courseId);
     

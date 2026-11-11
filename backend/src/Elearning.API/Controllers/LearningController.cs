@@ -29,7 +29,7 @@ public class LearningController : BaseApiController
 
         try
         {
-            var content = await _enrollmentService.GetCourseLearningContentAsync(courseId, CurrentUserId.Value);
+            var content = await _enrollmentService.GetCourseLearningContentAsync(courseId, CurrentUserId.Value, CurrentUserEmail);
             return Ok(content);
         }
         catch (KeyNotFoundException ex)
