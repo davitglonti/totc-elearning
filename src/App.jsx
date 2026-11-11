@@ -158,6 +158,19 @@ export default function App() {
       }
 
       // Standard route mappings
+      const loggedInUser = api.auth.getCurrentUser();
+      if (loggedInUser && (path === '/login' || path === '/register')) {
+        const dest = loggedInUser.role === 'Instructor'
+          ? 'instructor-dashboard'
+          : loggedInUser.role === 'Admin'
+          ? 'admin-dashboard'
+          : 'dashboard';
+        const destPath = getPathForPage(dest);
+        window.history.replaceState({ page: dest, path: destPath }, '', destPath);
+        setActivePage(dest);
+        return;
+      }
+
       if (path === '/login') {
         setActivePage('login');
       } else if (path === '/register') {
@@ -210,6 +223,8 @@ export default function App() {
   }, []);
 
   const openAuthModal = (mode = 'login') => {
+    const effectiveUser = currentUser || api.auth.getCurrentUser();
+    if (effectiveUser) return; // If already logged in, auth modal does not exist
     setAuthModal({ isOpen: true, mode });
   };
 
@@ -220,7 +235,18 @@ export default function App() {
   /**
    * Protected Route Transition and Browser Address Bar URL Synchronization
    */
-  const handleSafePageTransition = (targetPage, extraData = null) => {
+  const handleSafePageTransition = (targetPage, extraData = null, overrideUser = null) => {
+    const effectiveUser = overrideUser || currentUser || api.auth.getCurrentUser();
+
+    // Guard: If user is already authenticated, login and registration pages NO LONGER EXIST for them!
+    if ((targetPage === 'login' || targetPage === 'register') && effectiveUser) {
+      targetPage = effectiveUser.role === 'Instructor'
+        ? 'instructor-dashboard'
+        : effectiveUser.role === 'Admin'
+        ? 'admin-dashboard'
+        : 'dashboard';
+    }
+
     // Save relevant course payload if provided
     if (extraData) {
       if (targetPage === 'course-detail') {
@@ -233,7 +259,7 @@ export default function App() {
     }
 
     // Guard: Student Dashboard & Course Player require authentication
-    if ((targetPage === 'dashboard' || targetPage === 'course-player') && !currentUser) {
+    if ((targetPage === 'dashboard' || targetPage === 'course-player') && !effectiveUser) {
       setSecurityNotice('Please log in to access your personal courses and learning dashboard.');
       openAuthModal('login');
       return;
@@ -241,12 +267,12 @@ export default function App() {
 
     // Guard: Instructor Studio & Course Creation require Instructor or Admin role
     if (targetPage === 'instructor-dashboard' || targetPage === 'create-course' || targetPage === 'edit-course') {
-      if (!currentUser) {
+      if (!effectiveUser) {
         setSecurityNotice('Instructor credentials required to access the Instructor Studio.');
         openAuthModal('login');
         return;
       }
-      if (currentUser.role !== 'Instructor' && currentUser.role !== 'Admin') {
+      if (effectiveUser.role !== 'Instructor' && effectiveUser.role !== 'Admin') {
         setSecurityNotice('Access denied: You need an Instructor account to view this page.');
         setActivePage('dashboard');
         return;
@@ -261,12 +287,12 @@ export default function App() {
 
     // Guard: Admin Console requires Admin role
     if (targetPage === 'admin-dashboard') {
-      if (!currentUser) {
+      if (!effectiveUser) {
         setSecurityNotice('Admin credentials required to access the Admin Console.');
         openAuthModal('login');
         return;
       }
-      if (currentUser.role !== 'Admin') {
+      if (effectiveUser.role !== 'Admin') {
         setSecurityNotice('Access denied: Administrator privileges required.');
         setActivePage('dashboard');
         return;
@@ -293,14 +319,14 @@ export default function App() {
 
     if (!user) return;
 
-    if (user.role === 'Instructor') {
-      handleSafePageTransition('instructor-dashboard');
-    } else if (user.role === 'Admin') {
-      handleSafePageTransition('admin-dashboard');
-    } else {
-      handleSafePageTransition('dashboard');
-    }
+    const dest = user.role === 'Instructor'
+      ? 'instructor-dashboard'
+      : user.role === 'Admin'
+      ? 'admin-dashboard'
+      : 'dashboard';
 
+    // Direct transition passing effective user so no asynchronous state race condition occurs
+    handleSafePageTransition(dest, null, user);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

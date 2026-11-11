@@ -67,6 +67,20 @@ export default function AuthPage({
   const [experience, setExperience] = useState('');
   const [bio, setBio] = useState('');
 
+  // Guard: if user is already authenticated, redirect them away immediately
+  useEffect(() => {
+    const existing = api.auth.getCurrentUser();
+    if (existing) {
+      if (existing.role === 'Instructor') {
+        setActivePage('instructor-dashboard');
+      } else if (existing.role === 'Admin') {
+        setActivePage('admin-dashboard');
+      } else {
+        setActivePage('dashboard');
+      }
+    }
+  }, [setActivePage]);
+
   // Sync mode whenever initialMode changes
   useEffect(() => {
     setMode(initialMode || 'login');
@@ -83,10 +97,7 @@ export default function AuthPage({
     try {
       if (mode === 'login') {
         const res = await api.auth.login(email, password);
-        setSuccessMsg('Welcome back! Logging you in...');
-        setTimeout(() => {
-          if (onAuthSuccess) onAuthSuccess(res.user);
-        }, 600);
+        if (onAuthSuccess) onAuthSuccess(res.user);
       } else {
         // Registering either as Student or Instructor
         const extra = role === 'Instructor' ? {
@@ -97,14 +108,7 @@ export default function AuthPage({
         } : {};
 
         const res = await api.auth.register(fullName, email, password, role, extra);
-        setSuccessMsg(
-          role === 'Instructor'
-            ? 'Instructor account created! Preparing your Instructor Studio...'
-            : 'Account created! Redirecting to your learning dashboard...'
-        );
-        setTimeout(() => {
-          if (onAuthSuccess) onAuthSuccess(res.user);
-        }, 800);
+        if (onAuthSuccess) onAuthSuccess(res.user);
       }
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify your credentials.');
@@ -133,10 +137,7 @@ export default function AuthPage({
       };
 
       const res = await api.auth.googleLogin(googleMockUser);
-      setSuccessMsg(`Google Authentication verified! Signed in as ${res.user.fullName}`);
-      setTimeout(() => {
-        if (onAuthSuccess) onAuthSuccess(res.user);
-      }, 700);
+      if (onAuthSuccess) onAuthSuccess(res.user);
     } catch (err) {
       setError(err.message || 'Google sign-in could not be completed.');
     } finally {
