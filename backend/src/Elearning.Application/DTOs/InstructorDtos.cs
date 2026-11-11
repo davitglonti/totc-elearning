@@ -66,6 +66,42 @@ public class CreateFullLessonDto
     public bool IsFreePreview { get; set; } = false;
     public string LessonType { get; set; } = "Video";
     public int OrderIndex { get; set; }
+    public List<LessonResourceDto>? Resources { get; set; } = new();
+    public CreateLessonQuizDto? Quiz { get; set; }
+}
+
+public class LessonResourceDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string FileUrl { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public string Type { get; set; } = "File";
+    public string? Desc { get; set; }
+}
+
+public class CreateLessonQuizDto
+{
+    public Guid? Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int PassingScorePercentage { get; set; } = 70;
+    public List<CreateQuizQuestionDto> Questions { get; set; } = new();
+}
+
+public class CreateQuizQuestionDto
+{
+    public Guid? Id { get; set; }
+    public string QuestionText { get; set; } = string.Empty;
+    public string Explanation { get; set; } = string.Empty;
+    public int OrderIndex { get; set; }
+    public List<CreateQuizOptionDto> Options { get; set; } = new();
+}
+
+public class CreateQuizOptionDto
+{
+    public Guid? Id { get; set; }
+    public string OptionText { get; set; } = string.Empty;
+    public bool IsCorrect { get; set; }
 }
 
 public class UpdateFullCourseDto : CreateFullCourseDto

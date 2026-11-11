@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, Plus, Trash2, Video, FileText, CheckCircle, 
   HelpCircle, Clock, Sparkles, BookOpen, Layers, DollarSign, 
   Image as ImageIcon, Globe, Eye, EyeOff, Save, AlertCircle, RefreshCw,
-  UploadCloud, Check, Loader2, Play
+  UploadCloud, Check, Loader2, Play, Paperclip, FileCode, FolderArchive,
+  Download, ChevronDown, ChevronUp, CheckSquare, X
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -52,6 +53,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           isFreePreview: true,
           lessonType: 'Video',
           orderIndex: 1,
+          resources: [],
+          quiz: null
         },
         {
           id: 'les-2',
@@ -62,6 +65,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           isFreePreview: false,
           lessonType: 'Video',
           orderIndex: 2,
+          resources: [],
+          quiz: null
         }
       ]
     }
@@ -111,12 +116,28 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
             lessons: (s.lessons || []).map(l => ({
               id: l.id,
               title: l.title,
-              videoUrl: l.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+              videoUrl: l.videoUrl || '',
               durationMinutes: l.durationMinutes || 15,
               contentText: l.contentText || '',
               isFreePreview: !!l.isFreePreview,
               lessonType: l.lessonType || 'Video',
-              orderIndex: l.orderIndex
+              orderIndex: l.orderIndex,
+              resources: l.resources || [],
+              quiz: l.quiz ? {
+                title: l.quiz.title || `Knowledge Check: ${l.title}`,
+                description: l.quiz.description || 'Test your understanding of this lecture.',
+                passingScorePercentage: l.quiz.passingScorePercentage || 70,
+                questions: (l.quiz.questions || []).map(q => ({
+                  id: q.id || `q-${Math.random()}`,
+                  questionText: q.questionText || '',
+                  explanation: q.explanation || '',
+                  options: (q.options || []).map(opt => ({
+                    id: opt.id || `opt-${Math.random()}`,
+                    optionText: opt.optionText || '',
+                    isCorrect: !!opt.isCorrect
+                  }))
+                }))
+              } : null
             }))
           })));
         }
@@ -145,12 +166,14 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           {
             id: `les-${Date.now()}`,
             title: `Lesson 1: Core Implementation`,
-            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            videoUrl: '',
             durationMinutes: 15,
             contentText: 'Practical walkthrough, demonstration, and hands-on code exercises.',
             isFreePreview: false,
             lessonType: 'Video',
             orderIndex: 1,
+            resources: [],
+            quiz: null
           }
         ]
       }
@@ -184,6 +207,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       isFreePreview: false,
       lessonType: 'Video',
       orderIndex: newLesNum,
+      resources: [],
+      quiz: null
     });
     setSections(updated);
   };
@@ -201,6 +226,204 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   const handleLessonChange = (secIndex, lesIndex, field, value) => {
     const updated = [...sections];
     updated[secIndex].lessons[lesIndex][field] = value;
+    setSections(updated);
+  };
+
+  // Custom Course Artwork Upload State & Handler
+  const [uploadingArtwork, setUploadingArtwork] = useState(false);
+  const handleArtworkUpload = async (file) => {
+    if (!file) return;
+    setUploadingArtwork(true);
+    try {
+      const res = await api.instructor.uploadMedia(file);
+      const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
+      setThumbnailUrl(fullUrl);
+      setSuccessMessage('✓ Course cover artwork uploaded successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Artwork upload error:', err);
+      alert('Failed to upload course image: ' + (err.message || 'Network error'));
+    } finally {
+      setUploadingArtwork(false);
+    }
+  };
+
+  // Downloadable Materials / Lesson Resources Upload State & Handlers
+  const [uploadingResourceKey, setUploadingResourceKey] = useState(null); // e.g. "sIdx-lIdx"
+
+  const handleResourceUpload = async (sIdx, lIdx, file) => {
+    if (!file) return;
+    const itemKey = `${sIdx}-${lIdx}`;
+    setUploadingResourceKey(itemKey);
+
+    try {
+      const res = await api.instructor.uploadMedia(file);
+      const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
+
+      // Format readable size
+      const sizeStr = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.max(1, Math.round(file.size / 1024))} KB`;
+
+      // Determine readable file category
+      let fType = 'Document';
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext === 'pdf') fType = 'PDF Document';
+      else if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) fType = 'Archive (ZIP)';
+      else if (['js', 'jsx', 'ts', 'tsx', 'py', 'cs', 'java', 'html', 'css', 'json'].includes(ext)) fType = 'Source Code';
+      else if (['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(ext)) fType = 'Image Asset';
+
+      const newResource = {
+        id: `res-${Date.now()}`,
+        name: file.name,
+        fileUrl: fullUrl,
+        size: sizeStr,
+        type: fType,
+        desc: `Lecture attachment (${sizeStr})`
+      };
+
+      const updated = [...sections];
+      const currentRes = updated[sIdx].lessons[lIdx].resources || [];
+      updated[sIdx].lessons[lIdx].resources = [...currentRes, newResource];
+      setSections(updated);
+    } catch (err) {
+      console.error('Resource upload failed:', err);
+      alert('Failed to upload file attachment: ' + (err.message || 'Network error'));
+    } finally {
+      setUploadingResourceKey(null);
+    }
+  };
+
+  const handleRemoveResource = (sIdx, lIdx, rIdx) => {
+    const updated = [...sections];
+    const currentRes = updated[sIdx].lessons[lIdx].resources || [];
+    updated[sIdx].lessons[lIdx].resources = currentRes.filter((_, idx) => idx !== rIdx);
+    setSections(updated);
+  };
+
+  // Knowledge Check Quiz Builder Handlers per Lesson
+  const [expandedQuizKey, setExpandedQuizKey] = useState(null); // e.g. "sIdx-lIdx"
+
+  const handleToggleQuiz = (sIdx, lIdx) => {
+    const updated = [...sections];
+    const currentLesson = updated[sIdx].lessons[lIdx];
+    const itemKey = `${sIdx}-${lIdx}`;
+
+    if (currentLesson.quiz) {
+      if (window.confirm('Are you sure you want to remove the quiz from this lecture?')) {
+        currentLesson.quiz = null;
+        if (expandedQuizKey === itemKey) setExpandedQuizKey(null);
+        setSections(updated);
+      }
+    } else {
+      currentLesson.quiz = {
+        title: `Knowledge Check: ${currentLesson.title || 'Lecture Assessment'}`,
+        description: 'Answer these questions to test your understanding of this lecture.',
+        passingScorePercentage: 70,
+        questions: [
+          {
+            id: `q-${Date.now()}`,
+            questionText: 'What is the primary architectural takeaway from this lecture?',
+            explanation: 'Review the lecture video to verify key principles.',
+            options: [
+              { id: `opt-${Date.now()}-1`, optionText: 'First key takeaway', isCorrect: true },
+              { id: `opt-${Date.now()}-2`, optionText: 'Alternative option', isCorrect: false }
+            ]
+          }
+        ]
+      };
+      setSections(updated);
+      setExpandedQuizKey(itemKey);
+    }
+  };
+
+  const handleAddQuizQuestion = (sIdx, lIdx) => {
+    const updated = [...sections];
+    const quiz = updated[sIdx].lessons[lIdx].quiz;
+    if (!quiz) return;
+
+    const qNum = (quiz.questions?.length || 0) + 1;
+    quiz.questions = [
+      ...(quiz.questions || []),
+      {
+        id: `q-${Date.now()}`,
+        questionText: `Question ${qNum}`,
+        explanation: '',
+        options: [
+          { id: `opt-${Date.now()}-1`, optionText: 'Option A (Correct)', isCorrect: true },
+          { id: `opt-${Date.now()}-2`, optionText: 'Option B', isCorrect: false }
+        ]
+      }
+    ];
+    setSections(updated);
+  };
+
+  const handleRemoveQuizQuestion = (sIdx, lIdx, qIdx) => {
+    const updated = [...sections];
+    const quiz = updated[sIdx].lessons[lIdx].quiz;
+    if (!quiz || !quiz.questions) return;
+    if (quiz.questions.length <= 1) {
+      alert('A quiz must have at least one question.');
+      return;
+    }
+    quiz.questions = quiz.questions.filter((_, idx) => idx !== qIdx);
+    setSections(updated);
+  };
+
+  const handleQuizQuestionChange = (sIdx, lIdx, qIdx, field, val) => {
+    const updated = [...sections];
+    const quiz = updated[sIdx].lessons[lIdx].quiz;
+    if (!quiz || !quiz.questions?.[qIdx]) return;
+    quiz.questions[qIdx][field] = val;
+    setSections(updated);
+  };
+
+  const handleAddQuizOption = (sIdx, lIdx, qIdx) => {
+    const updated = [...sections];
+    const question = updated[sIdx].lessons[lIdx].quiz?.questions?.[qIdx];
+    if (!question) return;
+    question.options = [
+      ...(question.options || []),
+      {
+        id: `opt-${Date.now()}-${(question.options?.length || 0) + 1}`,
+        optionText: `Option ${(question.options?.length || 0) + 1}`,
+        isCorrect: false
+      }
+    ];
+    setSections(updated);
+  };
+
+  const handleRemoveQuizOption = (sIdx, lIdx, qIdx, oIdx) => {
+    const updated = [...sections];
+    const question = updated[sIdx].lessons[lIdx].quiz?.questions?.[qIdx];
+    if (!question || !question.options) return;
+    if (question.options.length <= 2) {
+      alert('A question must have at least 2 options.');
+      return;
+    }
+    const wasCorrect = question.options[oIdx].isCorrect;
+    question.options = question.options.filter((_, idx) => idx !== oIdx);
+    if (wasCorrect && question.options.length > 0) {
+      question.options[0].isCorrect = true;
+    }
+    setSections(updated);
+  };
+
+  const handleQuizOptionChange = (sIdx, lIdx, qIdx, oIdx, text) => {
+    const updated = [...sections];
+    const question = updated[sIdx].lessons[lIdx].quiz?.questions?.[qIdx];
+    if (!question || !question.options?.[oIdx]) return;
+    question.options[oIdx].optionText = text;
+    setSections(updated);
+  };
+
+  const handleSetCorrectOption = (sIdx, lIdx, qIdx, oIdx) => {
+    const updated = [...sections];
+    const question = updated[sIdx].lessons[lIdx].quiz?.questions?.[qIdx];
+    if (!question || !question.options) return;
+    question.options.forEach((opt, idx) => {
+      opt.isCorrect = (idx === oIdx);
+    });
     setSections(updated);
   };
 
@@ -300,6 +523,28 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
             isFreePreview: !!l.isFreePreview,
             lessonType: l.lessonType || 'Video',
             orderIndex: lIdx + 1,
+            resources: (l.resources || []).map(r => ({
+              name: r.name?.trim() || 'Lecture Resource',
+              fileUrl: r.fileUrl,
+              size: r.size || r.fileSize || '1 MB',
+              type: r.type || r.fileType || 'File',
+              desc: r.desc || r.description || ''
+            })),
+            quiz: l.quiz && l.quiz.questions?.length > 0 ? {
+              title: l.quiz.title?.trim() || `Knowledge Check: ${l.title}`,
+              description: l.quiz.description?.trim() || 'Test your knowledge of this lecture.',
+              passingScorePercentage: parseInt(l.quiz.passingScorePercentage, 10) || 70,
+              questions: l.quiz.questions.map((q, qIdx) => ({
+                questionText: q.questionText?.trim() || `Question ${qIdx + 1}`,
+                explanation: q.explanation?.trim() || '',
+                orderIndex: qIdx + 1,
+                options: (q.options || []).map((o, oIdx) => ({
+                  optionText: o.optionText?.trim() || `Option ${oIdx + 1}`,
+                  isCorrect: Boolean(o.isCorrect),
+                  orderIndex: oIdx + 1
+                }))
+              }))
+            } : null
           }))
         }))
       };
@@ -572,6 +817,42 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                   alt="Thumbnail Preview"
                   className="w-full h-full object-cover"
                 />
+              </div>
+
+              {/* Custom Image File Upload Dropzone */}
+              <div>
+                <label className={`cursor-pointer w-full p-4 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-1.5 text-center ${
+                  uploadingArtwork
+                    ? 'bg-amber-50 border-amber-300 pointer-events-none'
+                    : 'bg-teal-50/40 hover:bg-teal-50 border-teal-200 hover:border-totc-teal'
+                }`}>
+                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-totc-teal flex items-center justify-center shrink-0">
+                    {uploadingArtwork ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                    ) : (
+                      <UploadCloud className="w-5 h-5 text-totc-teal" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-totc-navy">
+                      {uploadingArtwork ? 'Uploading Cover Image...' : 'ატვირთე საჩვენებელი ფოტო (Upload Cover)'}
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      Select PNG, JPG, or WebP from your device (Max 10MB)
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingArtwork}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleArtworkUpload(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
               {/* Presets */}
@@ -897,6 +1178,249 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               placeholder="Key concepts or cheat sheet notes for this lecture..."
                               className="w-full px-3 py-1.5 rounded-lg border border-gray-100 bg-gray-50/70 focus:bg-white focus:border-totc-teal outline-none text-[11px] text-totc-gray transition-colors"
                             />
+                          </div>
+
+                          {/* Attached Downloadable Resources */}
+                          <div className="pt-2 border-t border-gray-100 space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-totc-navy flex items-center gap-1.5">
+                                <Paperclip className="w-3.5 h-3.5 text-totc-teal" />
+                                <span>Downloadable Materials ({lesson.resources?.length || 0})</span>
+                              </span>
+
+                              <label className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
+                                uploadingResourceKey === `${sIdx}-${lIdx}`
+                                  ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
+                                  : 'bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                              }`}>
+                                {uploadingResourceKey === `${sIdx}-${lIdx}` ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                                    <span>Uploading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <UploadCloud className="w-3 h-3" />
+                                    <span>+ Attach File (PDF, ZIP, Code)</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  disabled={uploadingResourceKey === `${sIdx}-${lIdx}`}
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                      handleResourceUpload(sIdx, lIdx, e.target.files[0]);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+
+                            {/* Files list */}
+                            {lesson.resources && lesson.resources.length > 0 && (
+                              <div className="space-y-1.5">
+                                {lesson.resources.map((res, rIdx) => (
+                                  <div
+                                    key={res.id || rIdx}
+                                    className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-between gap-3 text-xs"
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <FileText className="w-3.5 h-3.5 text-totc-teal shrink-0" />
+                                      <span className="font-semibold text-totc-navy truncate max-w-[200px] sm:max-w-xs">
+                                        {res.name}
+                                      </span>
+                                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
+                                        ({res.size || res.fileSize})
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveResource(sIdx, lIdx, rIdx)}
+                                      className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors shrink-0"
+                                      title="Remove attachment"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Knowledge Check Quiz Section */}
+                          <div className="pt-2 border-t border-gray-100">
+                            <div className="flex items-center justify-between">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!lesson.quiz) {
+                                    handleToggleQuiz(sIdx, lIdx);
+                                  } else {
+                                    setExpandedQuizKey(expandedQuizKey === `${sIdx}-${lIdx}` ? null : `${sIdx}-${lIdx}`);
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 transition-colors"
+                              >
+                                <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
+                                <span>
+                                  {lesson.quiz 
+                                    ? `Knowledge Check Quiz (${lesson.quiz.questions?.length || 0} Questions)`
+                                    : '+ Add Knowledge Check Quiz'}
+                                </span>
+                                {lesson.quiz && (
+                                  expandedQuizKey === `${sIdx}-${lIdx}` ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+
+                              {lesson.quiz && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleQuiz(sIdx, lIdx)}
+                                  className="text-[10px] text-red-500 hover:underline font-semibold"
+                                >
+                                  Remove Quiz
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Expanded Quiz Editor */}
+                            {lesson.quiz && expandedQuizKey === `${sIdx}-${lIdx}` && (
+                              <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-200/80 space-y-4 animate-in fade-in">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div className="sm:col-span-2 space-y-1">
+                                    <label className="text-[10px] font-bold text-purple-900 uppercase">Quiz Title</label>
+                                    <input
+                                      type="text"
+                                      value={lesson.quiz.title}
+                                      onChange={(e) => {
+                                        const updated = [...sections];
+                                        updated[sIdx].lessons[lIdx].quiz.title = e.target.value;
+                                        setSections(updated);
+                                      }}
+                                      placeholder="e.g. Knowledge Check: Cloud Architecture"
+                                      className="w-full px-3 py-1.5 bg-white rounded-lg border border-purple-200 text-xs font-semibold text-totc-navy"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-purple-900 uppercase">Passing Score %</label>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      max="100"
+                                      value={lesson.quiz.passingScorePercentage || 70}
+                                      onChange={(e) => {
+                                        const updated = [...sections];
+                                        updated[sIdx].lessons[lIdx].quiz.passingScorePercentage = parseInt(e.target.value, 10) || 70;
+                                        setSections(updated);
+                                      }}
+                                      className="w-full px-3 py-1.5 bg-white rounded-lg border border-purple-200 text-xs font-bold text-totc-navy"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Questions */}
+                                <div className="space-y-3">
+                                  {lesson.quiz.questions?.map((q, qIdx) => (
+                                    <div key={q.id || qIdx} className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs space-y-2.5">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 flex-1">
+                                          <span className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                            Q{qIdx + 1}
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={q.questionText}
+                                            onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'questionText', e.target.value)}
+                                            placeholder="Write question text here..."
+                                            className="flex-1 px-2.5 py-1 rounded-lg border border-gray-200 focus:border-purple-600 outline-none text-xs font-semibold text-totc-navy"
+                                          />
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveQuizQuestion(sIdx, lIdx, qIdx)}
+                                          className="text-gray-400 hover:text-red-500 p-1"
+                                          title="Remove question"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </div>
+
+                                      {/* Options */}
+                                      <div className="space-y-1.5 pl-7">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                                          Options (select the green radio for the correct answer):
+                                        </span>
+                                        {q.options?.map((opt, oIdx) => (
+                                          <div key={opt.id || oIdx} className="flex items-center gap-2">
+                                            <input
+                                              type="radio"
+                                              name={`correct-q-${sIdx}-${lIdx}-${qIdx}`}
+                                              checked={Boolean(opt.isCorrect)}
+                                              onChange={() => handleSetCorrectOption(sIdx, lIdx, qIdx, oIdx)}
+                                              className="text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                              title="Mark as correct answer"
+                                            />
+                                            <input
+                                              type="text"
+                                              value={opt.optionText}
+                                              onChange={(e) => handleQuizOptionChange(sIdx, lIdx, qIdx, oIdx, e.target.value)}
+                                              placeholder={`Option ${oIdx + 1}`}
+                                              className={`flex-1 px-2.5 py-1 rounded-lg border text-xs ${
+                                                opt.isCorrect 
+                                                  ? 'border-emerald-400 bg-emerald-50/50 text-emerald-950 font-bold'
+                                                  : 'border-gray-200 text-totc-navy'
+                                              }`}
+                                            />
+                                            {opt.isCorrect && (
+                                              <span className="text-[10px] text-emerald-600 font-bold shrink-0">✓ Correct</span>
+                                            )}
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveQuizOption(sIdx, lIdx, qIdx, oIdx)}
+                                              className="text-gray-400 hover:text-red-500 p-1"
+                                              title="Remove option"
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAddQuizOption(sIdx, lIdx, qIdx)}
+                                          className="text-[11px] font-bold text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 mt-1"
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                          <span>Add Option</span>
+                                        </button>
+                                      </div>
+
+                                      {/* Explanation */}
+                                      <div className="pl-7 pt-1">
+                                        <input
+                                          type="text"
+                                          value={q.explanation || ''}
+                                          onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'explanation', e.target.value)}
+                                          placeholder="Explanation for students after answering (optional)..."
+                                          className="w-full px-2.5 py-1 rounded-lg border border-purple-100 bg-purple-50/30 text-[11px] text-totc-gray"
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddQuizQuestion(sIdx, lIdx)}
+                                    className="w-full py-2 rounded-xl bg-purple-100/70 hover:bg-purple-100 text-purple-800 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Add Question to Quiz</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

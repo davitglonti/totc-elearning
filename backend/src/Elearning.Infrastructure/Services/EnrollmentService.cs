@@ -146,6 +146,18 @@ public class EnrollmentService : IEnrollmentService
                     var hasProgress = userProgressMap.TryGetValue(l.Id, out var lp);
                     var canAccess = isEnrolled || l.IsFreePreview;
 
+                    List<LessonResourceDto> resourcesList = new();
+                    if (!string.IsNullOrWhiteSpace(l.ResourcesJson))
+                    {
+                        try
+                        {
+                            resourcesList = System.Text.Json.JsonSerializer.Deserialize<List<LessonResourceDto>>(
+                                l.ResourcesJson, 
+                                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                        }
+                        catch { }
+                    }
+
                     return new LessonLearnDto
                     {
                         Id = l.Id,
@@ -158,7 +170,8 @@ public class EnrollmentService : IEnrollmentService
                         LessonType = l.LessonType ?? "Video",
                         HasQuiz = l.Quiz != null,
                         IsCompleted = hasProgress && lp!.IsCompleted,
-                        LastWatchedPositionSeconds = hasProgress ? lp!.LastWatchedPositionSeconds : 0
+                        LastWatchedPositionSeconds = hasProgress ? lp!.LastWatchedPositionSeconds : 0,
+                        Resources = canAccess ? resourcesList : new List<LessonResourceDto>()
                     };
                 }).ToList()
             }).ToList()

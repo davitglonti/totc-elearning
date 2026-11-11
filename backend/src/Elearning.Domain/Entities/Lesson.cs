@@ -16,6 +16,7 @@ public class Lesson
     public bool IsFreePreview { get; set; } = false;
     public int OrderIndex { get; set; }
     public string LessonType { get; set; } = "Video"; // "Video", "Quiz", "Assignment"
+    public string? ResourcesJson { get; set; }
 
     // Navigation properties
     public Quiz? Quiz { get; set; }

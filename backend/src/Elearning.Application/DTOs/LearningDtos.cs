@@ -44,4 +44,5 @@ public class LessonLearnDto
     public bool HasQuiz { get; set; } = false;
     public bool IsCompleted { get; set; }
     public int LastWatchedPositionSeconds { get; set; }
+    public List<LessonResourceDto> Resources { get; set; } = new();
 }

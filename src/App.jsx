@@ -338,6 +338,7 @@ export default function App() {
           <CoursePlayerPage
             activeCourse={activeCourseToPlay}
             setActivePage={handleSafePageTransition}
+            currentUser={currentUser}
           />
         )}
 

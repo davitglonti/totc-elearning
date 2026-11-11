@@ -211,8 +211,46 @@ public class InstructorCoursesController : BaseApiController
                             ContentText = lDto.ContentText ?? string.Empty,
                             IsFreePreview = lDto.IsFreePreview,
                             LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType,
-                            OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lessonOrder++
+                            OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lessonOrder++,
+                            ResourcesJson = lDto.Resources != null && lDto.Resources.Count > 0 
+                                ? System.Text.Json.JsonSerializer.Serialize(lDto.Resources) 
+                                : null
                         };
+
+                        if (lDto.Quiz != null && lDto.Quiz.Questions != null && lDto.Quiz.Questions.Count > 0)
+                        {
+                            var quiz = new Quiz
+                            {
+                                Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim(),
+                                Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.",
+                                PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70
+                            };
+
+                            int qIdx = 1;
+                            foreach (var qDto in lDto.Quiz.Questions)
+                            {
+                                var question = new QuizQuestion
+                                {
+                                    QuestionText = qDto.QuestionText.Trim(),
+                                    Explanation = qDto.Explanation ?? string.Empty,
+                                    OrderIndex = qIdx++
+                                };
+
+                                foreach (var optDto in qDto.Options)
+                                {
+                                    question.Options.Add(new QuizOption
+                                    {
+                                        OptionText = optDto.OptionText.Trim(),
+                                        IsCorrect = optDto.IsCorrect
+                                    });
+                                }
+
+                                quiz.Questions.Add(question);
+                            }
+
+                            lesson.Quiz = quiz;
+                            lesson.LessonType = "Quiz";
+                        }
 
                         section.Lessons.Add(lesson);
                     }
@@ -427,6 +465,9 @@ public class InstructorCoursesController : BaseApiController
             .Include(c => c.Category)
             .Include(c => c.Sections.OrderBy(s => s.OrderIndex))
                 .ThenInclude(s => s.Lessons.OrderBy(l => l.OrderIndex))
+                    .ThenInclude(l => l.Quiz)
+                        .ThenInclude(q => q.Questions.OrderBy(qu => qu.OrderIndex))
+                            .ThenInclude(qu => qu.Options)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (course == null) return NotFound(new { message = "Course not found." });
@@ -452,16 +493,58 @@ public class InstructorCoursesController : BaseApiController
                 Id = s.Id,
                 Title = s.Title,
                 OrderIndex = s.OrderIndex,
-                Lessons = s.Lessons.Select(l => new CreateFullLessonDto
+                Lessons = s.Lessons.Select(l =>
                 {
-                    Id = l.Id,
-                    Title = l.Title,
-                    VideoUrl = l.VideoUrl,
-                    DurationMinutes = l.DurationMinutes,
-                    ContentText = l.ContentText,
-                    IsFreePreview = l.IsFreePreview,
-                    LessonType = l.LessonType ?? "Video",
-                    OrderIndex = l.OrderIndex
+                    List<LessonResourceDto> resList = new();
+                    if (!string.IsNullOrWhiteSpace(l.ResourcesJson))
+                    {
+                        try
+                        {
+                            resList = System.Text.Json.JsonSerializer.Deserialize<List<LessonResourceDto>>(
+                                l.ResourcesJson,
+                                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                        }
+                        catch { }
+                    }
+
+                    CreateLessonQuizDto? quizDto = null;
+                    if (l.Quiz != null)
+                    {
+                        quizDto = new CreateLessonQuizDto
+                        {
+                            Id = l.Quiz.Id,
+                            Title = l.Quiz.Title,
+                            Description = l.Quiz.Description,
+                            PassingScorePercentage = l.Quiz.PassingScorePercentage,
+                            Questions = l.Quiz.Questions.Select(qu => new CreateQuizQuestionDto
+                            {
+                                Id = qu.Id,
+                                QuestionText = qu.QuestionText,
+                                Explanation = qu.Explanation,
+                                OrderIndex = qu.OrderIndex,
+                                Options = qu.Options.Select(o => new CreateQuizOptionDto
+                                {
+                                    Id = o.Id,
+                                    OptionText = o.OptionText,
+                                    IsCorrect = o.IsCorrect
+                                }).ToList()
+                            }).ToList()
+                        };
+                    }
+
+                    return new CreateFullLessonDto
+                    {
+                        Id = l.Id,
+                        Title = l.Title,
+                        VideoUrl = l.VideoUrl,
+                        DurationMinutes = l.DurationMinutes,
+                        ContentText = l.ContentText,
+                        IsFreePreview = l.IsFreePreview,
+                        LessonType = l.LessonType ?? "Video",
+                        OrderIndex = l.OrderIndex,
+                        Resources = resList,
+                        Quiz = quizDto
+                    };
                 }).ToList()
             }).ToList()
         };
@@ -534,6 +617,9 @@ public class InstructorCoursesController : BaseApiController
         // Load existing sections and lessons
         var existingSections = await _context.Sections
             .Include(s => s.Lessons)
+                .ThenInclude(l => l.Quiz)
+                    .ThenInclude(q => q.Questions)
+                        .ThenInclude(qu => qu.Options)
             .Where(s => s.CourseId == id)
             .ToListAsync();
 
@@ -605,7 +691,10 @@ public class InstructorCoursesController : BaseApiController
                         ContentText = lDto.ContentText ?? string.Empty,
                         IsFreePreview = lDto.IsFreePreview,
                         LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType,
-                        OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lOrder
+                        OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lOrder,
+                        ResourcesJson = lDto.Resources != null && lDto.Resources.Count > 0 
+                            ? System.Text.Json.JsonSerializer.Serialize(lDto.Resources) 
+                            : null
                     };
                     _context.Lessons.Add(lesson);
                 }
@@ -620,6 +709,51 @@ public class InstructorCoursesController : BaseApiController
                     lesson.IsFreePreview = lDto.IsFreePreview;
                     lesson.LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType;
                     lesson.OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lOrder;
+                    lesson.ResourcesJson = lDto.Resources != null && lDto.Resources.Count > 0 
+                        ? System.Text.Json.JsonSerializer.Serialize(lDto.Resources) 
+                        : null;
+                }
+
+                if (lDto.Quiz != null && lDto.Quiz.Questions != null && lDto.Quiz.Questions.Count > 0)
+                {
+                    if (lesson.Quiz == null)
+                    {
+                        lesson.Quiz = new Quiz
+                        {
+                            Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim(),
+                            Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.",
+                            PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70
+                        };
+                    }
+                    else
+                    {
+                        lesson.Quiz.Title = string.IsNullOrWhiteSpace(lDto.Quiz.Title) ? $"{lesson.Title} Quiz" : lDto.Quiz.Title.Trim();
+                        lesson.Quiz.Description = lDto.Quiz.Description ?? "Test your understanding of this lecture.";
+                        lesson.Quiz.PassingScorePercentage = lDto.Quiz.PassingScorePercentage > 0 ? lDto.Quiz.PassingScorePercentage : 70;
+                        lesson.Quiz.Questions.Clear();
+                    }
+
+                    int qIdx = 1;
+                    foreach (var qDto in lDto.Quiz.Questions)
+                    {
+                        var question = new QuizQuestion
+                        {
+                            QuestionText = qDto.QuestionText.Trim(),
+                            Explanation = qDto.Explanation ?? string.Empty,
+                            OrderIndex = qIdx++
+                        };
+
+                        foreach (var optDto in qDto.Options)
+                        {
+                            question.Options.Add(new QuizOption
+                            {
+                                OptionText = optDto.OptionText.Trim(),
+                                IsCorrect = optDto.IsCorrect
+                            });
+                        }
+                        lesson.Quiz.Questions.Add(question);
+                    }
+                    lesson.LessonType = "Quiz";
                 }
                 lOrder++;
             }

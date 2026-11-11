@@ -146,6 +146,38 @@ export const api = {
       });
     },
 
+    async uploadMedia(file) {
+      const token = localStorage.getItem('totc_token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/instructor/media/upload`);
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+        xhr.onload = () => {
+          try {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              let errorMsg = `Media upload failed (Status ${xhr.status})`;
+              try {
+                const errData = JSON.parse(xhr.responseText);
+                if (errData.message || errData.error) errorMsg = errData.message || errData.error;
+              } catch (_) {}
+              reject(new Error(errorMsg));
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network connection error during file upload.'));
+        xhr.send(formData);
+      });
+    },
+
     async uploadVideo(file, title, onProgress) {
       const token = localStorage.getItem('totc_token');
       const formData = new FormData();

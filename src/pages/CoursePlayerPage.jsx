@@ -4,12 +4,12 @@ import {
   Clock, Award, Download, MessageSquare, FileText, Share2, 
   Volume2, Maximize, Check, HelpCircle, Code, ThumbsUp, Send, 
   Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass,
-  Video, ExternalLink, Loader2
+  Video, ExternalLink, Loader2, Lock, FolderArchive, Paperclip, X
 } from 'lucide-react';
 import { api } from '../services/api';
 import BunnyPlayer from '../components/BunnyPlayer';
 
-export default function CoursePlayerPage({ activeCourse, setActivePage }) {
+export default function CoursePlayerPage({ activeCourse, setActivePage, currentUser }) {
   const [courseContent, setCourseContent] = useState(null);
   const [activeLesson, setActiveLesson] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -227,19 +227,19 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
             });
             setCompletedLessonIds(initialCompleted);
 
-            const allLessons = data.sections.flatMap(s => s.lessons);
+            const allLessonsList = data.sections.flatMap(s => s.lessons);
             let targetLesson = null;
             if (activeCourse?.targetLessonId) {
-              targetLesson = allLessons.find(l => l.id === activeCourse.targetLessonId);
+              targetLesson = allLessonsList.find(l => l.id === activeCourse.targetLessonId);
             }
             if (!targetLesson) {
-              const firstIncomplete = allLessons.find(l => !l.isCompleted);
-              targetLesson = firstIncomplete || allLessons[0];
+              const firstIncomplete = allLessonsList.find(l => !l.isCompleted);
+              targetLesson = firstIncomplete || allLessonsList[0];
             }
 
             if (targetLesson) {
               setActiveLesson(targetLesson);
-              loadQuizForLesson(targetLesson.id);
+              loadQuizForLesson(targetLesson.id, targetLesson);
             }
             setLoading(false);
             return;
@@ -262,10 +262,36 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
     fetchCourseDetails();
   }, [activeCourse]);
 
+  // All lessons in sequential order for progress & locking
+  const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
+  const completedCount = allLessons.filter(l => completedLessonIds.has(l.id)).length;
+  const currentProgressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+
+  // Resolve current user & progression gating permissions
+  const resolvedUser = currentUser || api.auth.getCurrentUser();
+  const isAuthorOrAdmin = resolvedUser?.role === 'Admin' || resolvedUser?.role === 'Instructor';
+
+  // Check if a specific lesson is unlocked for the current student
+  const isLessonUnlocked = (lessonId) => {
+    if (isAuthorOrAdmin) return true; // Instructors & Admins have full author preview access
+    const idx = allLessons.findIndex(l => l.id === lessonId);
+    if (idx <= 0) return true; // First lesson is always unlocked
+    const previousLesson = allLessons[idx - 1];
+    return completedLessonIds.has(previousLesson?.id);
+  };
+
+  const isCurrentLessonLocked = activeLesson ? !isLessonUnlocked(activeLesson.id) : false;
+
   // Load Quiz when lesson changes
-  const loadQuizForLesson = async (lessonId) => {
+  const loadQuizForLesson = async (lessonId, lessonObj = null) => {
     setSelectedAnswers({});
     setQuizResult(null);
+
+    // If lesson has embedded quiz
+    if (lessonObj?.quiz && lessonObj.quiz.questions && lessonObj.quiz.questions.length > 0) {
+      setQuizData(lessonObj.quiz);
+      return;
+    }
 
     try {
       const q = await api.quizzes.getByLesson(lessonId);
@@ -274,12 +300,24 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         return;
       }
     } catch (e) {
-      // Use fallback quiz
-      setQuizData(fallbackQuiz);
+      // Use fallback quiz for demo
+      if (lessonId === 'les-1' || !activeCourse?.id || activeCourse?.id === 'demo') {
+        setQuizData(fallbackQuiz);
+        return;
+      }
+      setQuizData(null);
     }
   };
 
   const handleLessonSwitch = (lesson) => {
+    if (!isLessonUnlocked(lesson.id)) {
+      const idx = allLessons.findIndex(l => l.id === lesson.id);
+      const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
+      setSuccessNotice(`🔒 Please complete the previous lecture ("${prevLesson?.title || 'Preceding lesson'}") before unlocking this lecture and its materials.`);
+      setTimeout(() => setSuccessNotice(''), 4500);
+      return;
+    }
+
     setActiveLesson(lesson);
     setIsPlaying(false);
     setCurrentVideoTime(0);
@@ -289,7 +327,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
       setActiveTab('quiz');
     }
 
-    loadQuizForLesson(lesson.id);
+    loadQuizForLesson(lesson.id, lesson);
   };
 
   // Handle Mark as Complete
@@ -432,10 +470,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
     setIsPlaying(true);
   };
 
-  const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
-  const completedCount = allLessons.filter(l => completedLessonIds.has(l.id)).length;
-  const currentProgressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
-
   const formatSeconds = (sec) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -490,20 +524,46 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         {/* Left Column: Player & Interactive Tabs (8 Cols) */}
         <div className="lg:col-span-8 p-6 lg:p-8 flex flex-col space-y-6">
           
-          {/* Video Container with Bunny Stream Player */}
+          {/* Video Container with Bunny Stream Player or Locked Barrier */}
           <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center border border-slate-800">
-            <BunnyPlayer
-              key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
-              src={activeLesson?.videoUrl}
-              title={activeLesson?.title}
-              moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
-              onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
-              onEnded={() => {
-                if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
-                  handleCompleteCurrentLesson();
-                }
-              }}
-            />
+            {isCurrentLessonLocked ? (
+              <div className="text-center p-8 space-y-4 max-w-md animate-in fade-in">
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto shadow-lg">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-xl text-white">Lecture Locked</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    თქვენ ჯერ არ გაგივლიათ წინა ლექცია. წინა მასალების (ვიდეო, ქვიზი) გავლის შემდეგ ეს გაკვეთილი გაიხსნება.
+                  </p>
+                </div>
+                {allLessons.findIndex(l => l.id === activeLesson?.id) > 0 && (
+                  <button
+                    onClick={() => {
+                      const idx = allLessons.findIndex(l => l.id === activeLesson?.id);
+                      handleLessonSwitch(allLessons[idx - 1]);
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Go to Previous Incomplete Lecture</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <BunnyPlayer
+                key={activeLesson?.id || activeLesson?.videoUrl || 'no-lesson'}
+                src={activeLesson?.videoUrl}
+                title={activeLesson?.title}
+                moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
+                onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
+                onEnded={() => {
+                  if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {
+                    handleCompleteCurrentLesson();
+                  }
+                }}
+              />
+            )}
           </div>
 
           {/* Active Lecture Header Bar */}
@@ -555,8 +615,20 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
             <div className="flex border-b border-slate-700 gap-4 sm:gap-8 overflow-x-auto pb-1 text-sm font-semibold">
               {[
                 { id: 'overview', label: 'Overview', icon: BookOpen, badge: null },
-                { id: 'quiz', label: 'Knowledge Check Quiz', icon: HelpCircle, badge: quizData?.questions?.length || 3 },
-                { id: 'resources', label: 'Resources & Code', icon: Download, badge: '3 files' },
+                { 
+                  id: 'quiz', 
+                  label: 'Knowledge Check Quiz', 
+                  icon: HelpCircle, 
+                  badge: (quizData?.questions?.length || activeLesson?.quiz?.questions?.length || (activeLesson?.hasQuiz ? 1 : 0)) || null 
+                },
+                { 
+                  id: 'resources', 
+                  label: 'Resources & Code', 
+                  icon: Download, 
+                  badge: activeLesson?.resources?.length > 0 
+                    ? `${activeLesson.resources.length} files` 
+                    : (activeLesson?.id === 'les-1' ? '2 files' : null) 
+                },
                 { id: 'qa', label: 'Q&A Discussion', icon: MessageSquare, badge: questionsList.length },
                 { id: 'notes', label: 'Personal Notes', icon: FileText, badge: notesList.length },
               ].map(tab => {
@@ -586,271 +658,331 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
               })}
             </div>
 
-            {/* TAB 1: OVERVIEW */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6 text-sm text-slate-300 leading-relaxed animate-in fade-in duration-200">
-                <div className="space-y-2">
-                  <h4 className="font-bold text-base text-white">About this Lecture</h4>
-                  <p className="text-slate-300 text-sm">
-                    {activeLesson?.contentText || 'Master state-of-the-art cloud architecture, distributed systems, resilient virtual classroom pipelines, and certification preparation.'}
-                  </p>
+            {/* If current lesson is locked: show locked barrier instead of tab content */}
+            {isCurrentLessonLocked ? (
+              <div className="p-10 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-3 animate-in fade-in">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
+                  <Lock className="w-6 h-6" />
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                  <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Duration</p>
-                      <p className="font-bold text-white">{activeLesson?.durationMinutes || 15} minutes</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                    <Award className="w-5 h-5 text-totc-teal shrink-0" />
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Skill Level</p>
-                      <p className="font-bold text-white">Intermediate to Advanced</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-[11px] text-slate-400 uppercase font-semibold">Prerequisite</p>
-                      <p className="font-bold text-white">Basic Networking</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-2">
-                  <h5 className="font-bold text-xs uppercase tracking-wider text-totc-cyan">Key Takeaways:</h5>
-                  <ul className="list-disc pl-5 text-xs text-slate-300 space-y-1.5">
-                    <li>Establishing high-availability VPC topologies across minimum 2 Availability Zones.</li>
-                    <li>Configuring private subnet routing through Network Address Translation (NAT) gateways.</li>
-                    <li>Enforcing zero-trust network boundary rules via stateless Network ACLs and stateful Security Groups.</li>
-                  </ul>
-                </div>
+                <h4 className="font-bold text-base text-white">Lesson Materials & Quiz Locked</h4>
+                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                  ამ ლექციის ქვიზზე, გადმოსაწერ რესურსებსა და მასალებზე წვდომა შეზღუდულია, სანამ წინა ლექციას არ გაივლით და არ მონიშნავთ დასრულებულად.
+                </p>
               </div>
-            )}
+            ) : (
+              <>
+                {/* TAB 1: OVERVIEW */}
+                {activeTab === 'overview' && (
+                  <div className="space-y-6 text-sm text-slate-300 leading-relaxed animate-in fade-in duration-200">
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-base text-white">About this Lecture</h4>
+                      <p className="text-slate-300 text-sm">
+                        {activeLesson?.contentText || 'Master state-of-the-art cloud architecture, distributed systems, resilient virtual classroom pipelines, and certification preparation.'}
+                      </p>
+                    </div>
 
-            {/* TAB 2: INTERACTIVE QUIZ (Knowledge Check) */}
-            {activeTab === 'quiz' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
-                  <div>
-                    <h3 className="font-bold text-lg text-white">
-                      {quizData?.title || 'Knowledge Check: Cloud Fundamentals'}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      Answer the questions below to test your understanding and unlock your lecture completion badge.
-                    </p>
-                  </div>
-
-                  <div className="px-3 py-1 rounded-full bg-totc-teal/15 text-totc-teal text-xs font-bold shrink-0">
-                    Passing: {quizData?.passingScorePercentage || 70}%
-                  </div>
-                </div>
-
-                {/* Questions List */}
-                <div className="space-y-6">
-                  {quizData?.questions?.map((q, qIndex) => {
-                    const selectedOptId = selectedAnswers[q.id];
-                    const feedback = quizResult?.questionFeedbacks?.find(f => f.questionId === q.id);
-
-                    return (
-                      <div
-                        key={q.id}
-                        className={`p-5 rounded-2xl border transition-all ${
-                          feedback
-                            ? feedback.isCorrect
-                              ? 'bg-emerald-950/20 border-emerald-500/50'
-                              : 'bg-red-950/20 border-red-500/50'
-                            : 'bg-slate-800/60 border-slate-700/60'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3 mb-4">
-                          <span className="w-6 h-6 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                            {qIndex + 1}
-                          </span>
-                          <h4 className="font-bold text-sm text-white leading-snug">
-                            {q.questionText}
-                          </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
+                        <Clock className="w-5 h-5 text-amber-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Duration</p>
+                          <p className="font-bold text-white">{activeLesson?.durationMinutes || 15} minutes</p>
                         </div>
+                      </div>
 
-                        {/* Options */}
-                        <div className="space-y-2.5 pl-9">
-                          {q.options?.map((opt) => {
-                            const isSelected = selectedOptId === opt.id;
-                            const isCorrectAnswer = feedback && feedback.correctOptionId === opt.id;
-                            const isSelectedWrong = feedback && isSelected && !feedback.isCorrect;
+                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
+                        <Award className="w-5 h-5 text-totc-teal shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Skill Level</p>
+                          <p className="font-bold text-white">Intermediate to Advanced</p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Prerequisite</p>
+                          <p className="font-bold text-white">Basic Networking</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-2">
+                      <h5 className="font-bold text-xs uppercase tracking-wider text-totc-cyan">Key Takeaways:</h5>
+                      <ul className="list-disc pl-5 text-xs text-slate-300 space-y-1.5">
+                        <li>Establishing high-availability VPC topologies across minimum 2 Availability Zones.</li>
+                        <li>Configuring private subnet routing through Network Address Translation (NAT) gateways.</li>
+                        <li>Enforcing zero-trust network boundary rules via stateless Network ACLs and stateful Security Groups.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: INTERACTIVE QUIZ (Knowledge Check) */}
+                {activeTab === 'quiz' && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
+                      <div>
+                        <h3 className="font-bold text-lg text-white">
+                          {quizData?.title || `Knowledge Check: ${activeLesson?.title || 'Lecture Assessment'}`}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          {quizData?.description || 'Answer the questions below to test your understanding of this lecture.'}
+                        </p>
+                      </div>
+
+                      {quizData && (
+                        <div className="px-3 py-1 rounded-full bg-totc-teal/15 text-totc-teal text-xs font-bold shrink-0">
+                          Passing: {quizData.passingScorePercentage || 70}%
+                        </div>
+                      )}
+                    </div>
+
+                    {(!quizData || !quizData.questions || quizData.questions.length === 0) ? (
+                      <div className="p-8 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-2">
+                        <HelpCircle className="w-8 h-8 text-slate-500 mx-auto" />
+                        <h4 className="font-bold text-sm text-white">No Quiz for this Lecture</h4>
+                        <p className="text-xs text-slate-400">
+                          ლექტორს ამ ლექციისთვის ქვიზი ჯერ არ დაუმატებია.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Questions List */}
+                        <div className="space-y-6">
+                          {quizData.questions.map((q, qIndex) => {
+                            const selectedOptId = selectedAnswers[q.id];
+                            const feedback = quizResult?.questionFeedbacks?.find(f => f.questionId === q.id);
 
                             return (
-                              <button
-                                key={opt.id}
-                                disabled={quizResult !== null}
-                                onClick={() => handleSelectOption(q.id, opt.id)}
-                                className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center justify-between ${
-                                  isCorrectAnswer
-                                    ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
-                                    : isSelectedWrong
-                                    ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
-                                    : isSelected
-                                    ? 'bg-totc-teal/20 border-totc-teal text-white shadow-sm'
-                                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700/60'
+                              <div
+                                key={q.id || qIndex}
+                                className={`p-5 rounded-2xl border transition-all ${
+                                  feedback
+                                    ? feedback.isCorrect
+                                      ? 'bg-emerald-950/20 border-emerald-500/50'
+                                      : 'bg-red-950/20 border-red-500/50'
+                                    : 'bg-slate-800/60 border-slate-700/60'
                                 }`}
                               >
-                                <span>{opt.optionText}</span>
-                                {isCorrectAnswer && <Check className="w-4 h-4 text-emerald-400" />}
-                                {isSelectedWrong && <X className="w-4 h-4 text-red-400" />}
-                              </button>
+                                <div className="flex items-start gap-3 mb-4">
+                                  <span className="w-6 h-6 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                                    {qIndex + 1}
+                                  </span>
+                                  <h4 className="font-bold text-sm text-white leading-snug">
+                                    {q.questionText}
+                                  </h4>
+                                </div>
+
+                                {/* Options */}
+                                <div className="space-y-2.5 pl-9">
+                                  {q.options?.map((opt) => {
+                                    const isSelected = selectedOptId === opt.id;
+                                    const isCorrectAnswer = feedback && feedback.correctOptionId === opt.id;
+                                    const isSelectedWrong = feedback && isSelected && !feedback.isCorrect;
+
+                                    return (
+                                      <button
+                                        key={opt.id}
+                                        disabled={quizResult !== null}
+                                        onClick={() => handleSelectOption(q.id, opt.id)}
+                                        className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center justify-between ${
+                                          isCorrectAnswer
+                                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
+                                            : isSelectedWrong
+                                            ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
+                                            : isSelected
+                                            ? 'bg-totc-teal/20 border-totc-teal text-white shadow-sm'
+                                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700/60'
+                                        }`}
+                                      >
+                                        <span>{opt.optionText}</span>
+                                        {isCorrectAnswer && <Check className="w-4 h-4 text-emerald-400" />}
+                                        {isSelectedWrong && <X className="w-4 h-4 text-red-400" />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Explanation Feedback */}
+                                {feedback && (
+                                  <div className={`mt-4 p-3 rounded-xl text-xs flex items-start gap-2 ${
+                                    feedback.isCorrect
+                                      ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                                      : 'bg-red-500/10 text-red-300 border border-red-500/20'
+                                  }`}>
+                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span><strong>Explanation:</strong> {feedback.explanation}</span>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </div>
 
-                        {/* Explanation Feedback */}
-                        {feedback && (
-                          <div className={`mt-4 p-3 rounded-xl text-xs flex items-start gap-2 ${
-                            feedback.isCorrect
-                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                              : 'bg-red-500/10 text-red-300 border border-red-500/20'
-                          }`}>
-                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                            <span><strong>Explanation:</strong> {feedback.explanation}</span>
+                        {/* Quiz Action / Result Summary */}
+                        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-700">
+                          {quizResult ? (
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                                quizResult.passed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                              }`}>
+                                {quizResult.scorePercentage}%
+                              </div>
+                              <div>
+                                <p className={`font-bold text-sm ${quizResult.passed ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {quizResult.passed ? 'Assessment Passed! 🎉' : 'Assessment Failed'}
+                                </p>
+                                <p className="text-xs text-slate-400">{quizResult.feedbackMessage}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400">
+                              Answer all questions to submit for grading.
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3">
+                            {quizResult ? (
+                              <button
+                                onClick={() => {
+                                  setSelectedAnswers({});
+                                  setQuizResult(null);
+                                }}
+                                className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+                              >
+                                Retake Quiz
+                              </button>
+                            ) : (
+                              <button
+                                onClick={handleSubmitQuiz}
+                                disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1)}
+                                className={`px-8 py-3 rounded-full font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
+                                  Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1)
+                                    ? 'bg-totc-teal text-white hover:bg-totc-teal-dark'
+                                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                                }`}
+                              >
+                                {isSubmittingQuiz ? 'Grading...' : 'Check My Answers'}
+                              </button>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Quiz Action / Result Summary */}
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-700">
-                  {quizResult ? (
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                        quizResult.passed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                      }`}>
-                        {quizResult.scorePercentage}%
-                      </div>
-                      <div>
-                        <p className={`font-bold text-sm ${quizResult.passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {quizResult.passed ? 'Assessment Passed! 🎉' : 'Assessment Failed'}
-                        </p>
-                        <p className="text-xs text-slate-400">{quizResult.feedbackMessage}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">
-                      Answer all questions to submit for grading.
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    {quizResult ? (
-                      <button
-                        onClick={() => {
-                          setSelectedAnswers({});
-                          setQuizResult(null);
-                        }}
-                        className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors"
-                      >
-                        Retake Quiz
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleSubmitQuiz}
-                        disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1)}
-                        className={`px-8 py-3 rounded-full font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
-                          Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1)
-                            ? 'bg-totc-teal text-white hover:bg-totc-teal-dark'
-                            : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        {isSubmittingQuiz ? 'Grading...' : 'Check My Answers'}
-                      </button>
+                        </div>
+                      </>
                     )}
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* TAB 3: RESOURCES & CODE */}
-            {activeTab === 'resources' && (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="pb-2 border-b border-slate-700">
-                  <h4 className="font-bold text-base text-white">Downloadable Assets & Source Code</h4>
-                  <p className="text-xs text-slate-400">
-                    All lab configuration code, cheatsheets, and slides used in this lecture.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    {
-                      name: 'aws_vpc_multi_az_starter_template.zip',
-                      desc: 'Terraform and CloudFormation starter templates with public/private subnet declarations.',
-                      size: '4.8 MB',
-                      type: 'Source Code'
-                    },
-                    {
-                      name: 'cloud_architect_lecture_slides_module1.pdf',
-                      desc: 'Full high-res presentation slides and architectural decision rubrics.',
-                      size: '12.4 MB',
-                      type: 'Slides'
-                    },
-                    {
-                      name: 'dynamodb_gradebook_schema_cheatsheet.pdf',
-                      desc: 'Single-table design patterns, partition keys, and secondary index configuration guide.',
-                      size: '1.2 MB',
-                      type: 'Cheatsheet'
-                    }
-                  ].map((res, i) => (
-                    <div
-                      key={i}
-                      className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-totc-teal/50 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-totc-teal/15 text-totc-teal flex items-center justify-center shrink-0 mt-0.5">
-                          <Code className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-white">{res.name}</p>
-                          <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{res.desc}</p>
-                          <span className="inline-block mt-1 text-[10px] font-semibold text-totc-cyan">
-                            {res.type} • {res.size}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => alert(`Starting download for ${res.name}`)}
-                        className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Download</span>
-                      </button>
+                {/* TAB 3: RESOURCES & CODE */}
+                {activeTab === 'resources' && (
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    <div className="pb-2 border-b border-slate-700">
+                      <h4 className="font-bold text-base text-white">Downloadable Assets & Source Code</h4>
+                      <p className="text-xs text-slate-400">
+                        All configuration code, attachments, guides, and slides uploaded for this lecture.
+                      </p>
                     </div>
-                  ))}
-                </div>
 
-                {/* External GitHub Repo Banner */}
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-800 to-indigo-950/60 border border-slate-700 flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="font-bold text-xs text-white">Course GitHub Repository</p>
-                    <p className="text-[11px] text-slate-400">Clone the complete repo: git clone https://github.com/davitglonti/totc-elearning.git</p>
+                    <div className="space-y-3">
+                      {((activeLesson?.resources && activeLesson.resources.length > 0)
+                        ? activeLesson.resources
+                        : (activeLesson?.id === 'les-1' ? [
+                            {
+                              name: 'aws_vpc_multi_az_starter_template.zip',
+                              desc: 'Terraform and CloudFormation starter templates with public/private subnet declarations.',
+                              size: '4.8 MB',
+                              type: 'Source Code',
+                              fileUrl: '#'
+                            },
+                            {
+                              name: 'cloud_architect_lecture_slides_module1.pdf',
+                              desc: 'Full high-res presentation slides and architectural decision rubrics.',
+                              size: '12.4 MB',
+                              type: 'Slides',
+                              fileUrl: '#'
+                            }
+                          ] : [])
+                      ).map((res, i) => {
+                        const isCode = res.type?.toLowerCase().includes('code') || res.name?.match(/\.(js|jsx|ts|tsx|py|cs|html|css|json)$/i);
+                        const isZip = res.type?.toLowerCase().includes('zip') || res.type?.toLowerCase().includes('archive') || res.name?.match(/\.(zip|rar|tar|gz|7z)$/i);
+
+                        return (
+                          <div
+                            key={res.id || i}
+                            className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-totc-teal/50 transition-colors"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-totc-teal/15 text-totc-teal flex items-center justify-center shrink-0 mt-0.5">
+                                {isCode ? (
+                                  <Code className="w-5 h-5" />
+                                ) : isZip ? (
+                                  <FolderArchive className="w-5 h-5" />
+                                ) : (
+                                  <FileText className="w-5 h-5" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-sm text-white truncate">{res.name}</p>
+                                <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{res.desc || res.description || 'Downloadable lecture attachment'}</p>
+                                <span className="inline-block mt-1 text-[10px] font-semibold text-totc-cyan">
+                                  {res.type || 'File'} • {res.size || res.fileSize || 'Attachment'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {res.fileUrl && res.fileUrl !== '#' ? (
+                              <a
+                                href={resolveVideoUrl(res.fileUrl)}
+                                download={res.name}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                              >
+                                <Download className="w-4 h-4" />
+                                <span>Download File</span>
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => alert(`Downloading: ${res.name}`)}
+                                className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                              >
+                                <Download className="w-4 h-4" />
+                                <span>Download</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {(!activeLesson?.resources || activeLesson.resources.length === 0) && activeLesson?.id !== 'les-1' && (
+                        <div className="p-8 text-center bg-slate-800/40 rounded-2xl border border-slate-700/60 space-y-2">
+                          <Download className="w-8 h-8 text-slate-500 mx-auto" />
+                          <h4 className="font-bold text-sm text-white">No Attached Files</h4>
+                          <p className="text-xs text-slate-400">
+                            ამ ლექციისთვის გადმოსაწერი ფაილები ან კოდი ჯერ არ არის ატვირთული.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* External GitHub Repo Banner */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-800 to-indigo-950/60 border border-slate-700 flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="font-bold text-xs text-white">Course GitHub Repository</p>
+                        <p className="text-[11px] text-slate-400">Clone the complete repo: git clone https://github.com/davitglonti/totc-elearning.git</p>
+                      </div>
+                      <a
+                        href="https://github.com/davitglonti/totc-elearning"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-totc-teal hover:underline flex items-center gap-1 shrink-0"
+                      >
+                        <span>View Repository</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
-                  <a
-                    href="https://github.com/davitglonti/totc-elearning"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-totc-teal hover:underline flex items-center gap-1 shrink-0"
-                  >
-                    <span>View Repository</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
-            )}
+                )}
 
             {/* TAB 4: Q&A DISCUSSION */}
             {activeTab === 'qa' && (
@@ -1024,6 +1156,8 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                 </div>
               </div>
             )}
+              </>
+            )}
 
           </div>
         </div>
@@ -1053,6 +1187,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                   {section.lessons?.map((lesson, lIdx) => {
                     const isCurrent = activeLesson?.id === lesson.id;
                     const isDone = completedLessonIds.has(lesson.id);
+                    const isUnlocked = isLessonUnlocked(lesson.id);
                     const type = lesson.lessonType || 'Video';
 
                     return (
@@ -1060,7 +1195,9 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                         key={lesson.id || lIdx}
                         onClick={() => handleLessonSwitch(lesson)}
                         className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
-                          isCurrent
+                          !isUnlocked
+                            ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
+                            : isCurrent
                             ? 'bg-totc-teal/15 text-white font-medium border-l-4 border-totc-teal'
                             : 'hover:bg-slate-700/40 text-slate-300'
                         }`}
@@ -1069,6 +1206,8 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                         <div className="mt-0.5 shrink-0">
                           {isDone ? (
                             <CheckCircle className="w-4 h-4 text-emerald-400" />
+                          ) : !isUnlocked ? (
+                            <Lock className="w-4 h-4 text-slate-500" />
                           ) : type === 'Quiz' ? (
                             <HelpCircle className="w-4 h-4 text-purple-400" />
                           ) : type === 'Assignment' ? (
@@ -1081,9 +1220,17 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs line-clamp-2 ${isCurrent ? 'font-bold text-totc-cyan' : ''}`}>
-                            {lesson.title}
-                          </p>
+                          <div className="flex items-center justify-between gap-1.5">
+                            <p className={`text-xs line-clamp-2 ${isCurrent ? 'font-bold text-totc-cyan' : ''}`}>
+                              {lesson.title}
+                            </p>
+                            {!isUnlocked && (
+                              <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[9px] font-bold shrink-0 flex items-center gap-1">
+                                <Lock className="w-2.5 h-2.5" />
+                                <span>Locked</span>
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                               type === 'Quiz'
@@ -1098,6 +1245,12 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                               <Clock className="w-3 h-3" />
                               {lesson.durationMinutes || 15} mins
                             </span>
+                            {lesson.resources && lesson.resources.length > 0 && (
+                              <span className="text-[10px] text-totc-cyan font-semibold flex items-center gap-0.5">
+                                <Download className="w-2.5 h-2.5" />
+                                {lesson.resources.length}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </button>
