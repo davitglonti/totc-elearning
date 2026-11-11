@@ -50,27 +50,6 @@ export default function BunnyPlayer({
   const [drmNotice, setDrmNotice] = useState('');
   const drmNoticeTimeoutRef = useRef(null);
 
-  // Anti-Screen Recording Dynamic Floating Watermark Positions
-  const watermarkPositions = [
-    'top-16 left-6',
-    'top-24 right-8',
-    'bottom-28 left-8',
-    'bottom-24 right-8',
-    'top-1/3 left-10',
-    'bottom-1/3 right-10',
-    'top-1/2 left-1/4',
-    'top-1/2 right-1/4'
-  ];
-  const [watermarkIndex, setWatermarkIndex] = useState(0);
-
-  // Periodically relocate watermark every 12s across video canvas to deter screen recorders/cameras
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setWatermarkIndex(prev => (prev + 1) % watermarkPositions.length);
-    }, 12000);
-    return () => clearInterval(timer);
-  }, [watermarkPositions.length]);
-
   const triggerDrmNotice = useCallback((msg) => {
     setDrmNotice(msg);
     if (drmNoticeTimeoutRef.current) clearTimeout(drmNoticeTimeoutRef.current);
@@ -466,28 +445,6 @@ export default function BunnyPlayer({
         onDragStart={(e) => { e.preventDefault(); return false; }}
         className="absolute inset-0 z-5 pointer-events-none"
       />
-
-      {/* =========================================================================
-          Anti-Screen Recording Dynamic Forensic Watermark (Coursera/Udemy Enterprise DRM)
-          Relocates every 12s so screen recorders cannot crop or blur learner's identity
-          ========================================================================= */}
-      <div
-        className={`absolute z-15 transition-all duration-1000 ease-in-out pointer-events-none select-none ${watermarkPositions[watermarkIndex]} opacity-35 hover:opacity-50`}
-        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.95)' }}
-      >
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-xs border border-white/10 text-[10px] font-mono text-white/90 shadow-md">
-          <Shield className="w-3 h-3 text-[#00CBB8] shrink-0" />
-          <span className="font-semibold">{activeUser?.fullName || 'Verified Learner'}</span>
-          {activeUser?.email && (
-            <>
-              <span className="text-white/40">•</span>
-              <span className="text-white/80">{activeUser.email}</span>
-            </>
-          )}
-          <span className="text-white/40">•</span>
-          <span className="text-[#00CBB8] font-bold">DRM PROTECTED</span>
-        </div>
-      </div>
 
       {/* DRM Security Toast Notification */}
       {drmNotice && (
