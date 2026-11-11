@@ -69,31 +69,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setError('');
-    setGoogleLoading(true);
-
-    try {
-      const googleMock = {
-        email: form.email && form.email.includes('@') ? form.email : (role === 'Instructor' ? 'dr.alex.google@gmail.com' : 'alex.student.google@gmail.com'),
-        fullName: form.name || (role === 'Instructor' ? 'Dr. Alex Vance' : 'Alex Student'),
-        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
-        role: role,
-        headline: role === 'Instructor' ? (form.headline || 'Senior Cloud Educator') : null,
-      };
-
-      const res = await api.auth.googleLogin(googleMock);
-      if (onAuthSuccess) onAuthSuccess(res.user);
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
-        onClose();
-      }, 1000);
-    } catch (err) {
-      setError(err.message || 'Google authentication failed.');
-    } finally {
-      setGoogleLoading(false);
-    }
+  const handleGoogleAuth = () => {
+    setError('🔒 Google ავტორიზაცია დროებით გამორთულია უსაფრთხოების მიზნით. გთხოვთ გაიაროთ ავტორიზაცია ელ-ფოსტით.');
   };
 
   return (
@@ -168,11 +145,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
             <button
               type="button"
               onClick={handleGoogleAuth}
-              disabled={googleLoading || loading}
-              className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+              className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm opacity-85"
+              title="Google OAuth ავტორიზაცია დროებით გამორთულია უსაფრთხოების გაძლიერების მიზნით"
             >
               <GoogleIcon className="w-4 h-4" />
-              <span>{googleLoading ? 'Connecting...' : mode === 'login' ? 'Continue with Google' : `Sign Up with Google (${role})`}</span>
+              <span>{mode === 'login' ? 'Continue with Google' : `Sign Up with Google (${role})`}</span>
+              <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-300">
+                გამორთულია
+              </span>
             </button>
             <div className="relative my-3 text-center">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>

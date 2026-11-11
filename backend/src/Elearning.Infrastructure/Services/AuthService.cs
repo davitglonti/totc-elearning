@@ -23,6 +23,12 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
+        // Enforce role restriction: Only Student (0) or Instructor (1) are permitted for public self-registration
+        if (dto.Role == UserRole.Admin || (int)dto.Role > 1 || (int)dto.Role < 0)
+        {
+            throw new InvalidOperationException("Direct registration as Administrator is strictly prohibited. Administrator accounts can only be provisioned via database seed or by an existing Administrator from the Admin panel.");
+        }
+
         var existing = await _context.Users.AnyAsync(u => u.Email.ToLower() == dto.Email.ToLower());
         if (existing)
         {
@@ -74,46 +80,10 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponseDto> GoogleAuthAsync(GoogleAuthDto dto)
+    public Task<AuthResponseDto> GoogleAuthAsync(GoogleAuthDto dto)
     {
-        var email = dto.Email.Trim().ToLower();
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
-
-        if (user == null)
-        {
-            user = new User
-            {
-                FullName = string.IsNullOrWhiteSpace(dto.FullName) ? "Google User" : dto.FullName.Trim(),
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
-                Role = dto.Role,
-                AvatarUrl = !string.IsNullOrWhiteSpace(dto.AvatarUrl) 
-                    ? dto.AvatarUrl.Trim() 
-                    : (dto.Role == UserRole.Instructor ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" : "/assets/testimonial_avatar.png"),
-                Headline = dto.Headline?.Trim(),
-                Bio = dto.Bio?.Trim(),
-                Education = dto.Education?.Trim(),
-                Experience = dto.Experience?.Trim()
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-        }
-        else
-        {
-            if (!string.IsNullOrWhiteSpace(dto.AvatarUrl) && (string.IsNullOrWhiteSpace(user.AvatarUrl) || user.AvatarUrl == "/assets/testimonial_avatar.png"))
-            {
-                user.AvatarUrl = dto.AvatarUrl.Trim();
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        var token = _tokenService.GenerateToken(user);
-        return new AuthResponseDto
-        {
-            Token = token,
-            User = MapToProfile(user)
-        };
+        // Strictly disabled for security hardening pending server-side GoogleJsonWebSignature verification with ClientId
+        throw new NotSupportedException("Google authentication endpoint is temporarily disabled for security hardening. Server-side Google ID token signature verification (GoogleJsonWebSignature) is required before Google OAuth can be enabled.");
     }
 
     public async Task<UserProfileDto> GetProfileAsync(Guid userId)

@@ -16,20 +16,15 @@ public class BunnyStreamService : IBunnyStreamService
     private readonly IConfiguration _configuration;
     private readonly string _localUploadRoot;
 
-    // Active Bunny credentials (can be updated live via Admin API)
-    private static BunnyConfigDto _activeConfig = new()
-    {
-        LibraryId = "805955",
-        ApiKey = "be0cd974-98c2-41ce-8e4ba9b094b1-170d-4ae7",
-        CdnHostname = "vz-f0959c15-d92.b-cdn.net"
-    };
+    // Active Bunny credentials (loaded from configuration or updated live via Admin API)
+    private static BunnyConfigDto _activeConfig = new();
 
     public BunnyStreamService(HttpClient httpClient, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _configuration = configuration;
 
-        // Initialize from appsettings if configured
+        // Initialize from configuration (environment variables / user-secrets / appsettings.Local.json)
         var libId = _configuration["BunnyStream:LibraryId"];
         var key = _configuration["BunnyStream:ApiKey"];
         var cdn = _configuration["BunnyStream:CdnHostname"];
@@ -37,6 +32,13 @@ public class BunnyStreamService : IBunnyStreamService
         if (!string.IsNullOrWhiteSpace(libId)) _activeConfig.LibraryId = libId.Trim();
         if (!string.IsNullOrWhiteSpace(key)) _activeConfig.ApiKey = key.Trim();
         if (!string.IsNullOrWhiteSpace(cdn)) _activeConfig.CdnHostname = cdn.Trim();
+
+        if (string.IsNullOrWhiteSpace(_activeConfig.ApiKey) || string.IsNullOrWhiteSpace(_activeConfig.LibraryId))
+        {
+            throw new InvalidOperationException(
+                "FATAL SECURITY CONFIGURATION ERROR: BunnyStream credentials are not configured. " +
+                "Configure 'BunnyStream:ApiKey' and 'BunnyStream:LibraryId' via environment variables, user-secrets, or appsettings.Local.json.");
+        }
 
         _localUploadRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
         if (!Directory.Exists(_localUploadRoot))

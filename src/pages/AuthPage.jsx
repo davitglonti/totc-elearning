@@ -118,31 +118,10 @@ export default function AuthPage({
   };
 
   /**
-   * One-click Google Sign-in / Registration
+   * Google Sign-in / Registration - Temporarily disabled for security hardening
    */
-  const handleGoogleAuth = async () => {
-    setError('');
-    setGoogleLoading(true);
-
-    try {
-      // Simulate real Google account profile or connect with Google OAuth
-      const googleMockUser = {
-        email: email && email.includes('@') ? email : (role === 'Instructor' ? 'dr.instructor.google@gmail.com' : 'student.google@gmail.com'),
-        fullName: fullName || (role === 'Instructor' ? 'Dr. Alex Vance' : 'Alex Vance'),
-        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
-        role: role,
-        headline: role === 'Instructor' ? (headline || 'Google Certified Educator & AI Researcher') : null,
-        education: role === 'Instructor' ? (education || 'M.S. in Computer Science • Stanford University') : null,
-        experience: role === 'Instructor' ? (experience || 'Senior Researcher at Google Cloud • 10+ Years Mentoring') : null,
-      };
-
-      const res = await api.auth.googleLogin(googleMockUser);
-      if (onAuthSuccess) onAuthSuccess(res.user);
-    } catch (err) {
-      setError(err.message || 'Google sign-in could not be completed.');
-    } finally {
-      setGoogleLoading(false);
-    }
+  const handleGoogleAuth = () => {
+    setError('🔒 Google ავტორიზაცია დროებით გამორთულია უსაფრთხოების მიზნით (საჭიროებს Google OAuth 2.0 Client ID-ს და სერვერულ ვალიდაციას GoogleJsonWebSignature-ით). გთხოვთ გამოიყენოთ სტანდარტული რეგისტრაცია/ავტორიზაცია ელ-ფოსტით.');
   };
 
   return (
@@ -313,21 +292,22 @@ export default function AuthPage({
             </div>
           )}
 
-          {/* GOOGLE CONTINUATION BUTTON */}
+          {/* GOOGLE CONTINUATION BUTTON (DISABLED FOR SECURITY HARDENING) */}
           <div>
             <button
               type="button"
               onClick={handleGoogleAuth}
-              disabled={googleLoading || loading}
-              className="w-full py-3.5 px-4 rounded-2xl border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50/80 text-totc-navy font-semibold text-sm sm:text-base flex items-center justify-center gap-3 transition-all duration-200 shadow-sm active:scale-98"
+              className="w-full py-3.5 px-4 rounded-2xl border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-totc-navy font-semibold text-sm sm:text-base flex items-center justify-center gap-3 transition-all duration-200 shadow-sm opacity-85"
+              title="Google OAuth ავტორიზაცია დროებით გამორთულია უსაფრთხოების გაძლიერების მიზნით"
             >
               <GoogleIcon className="w-5 h-5" />
               <span>
-                {googleLoading
-                  ? 'Connecting to Google...'
-                  : mode === 'login'
+                {mode === 'login'
                   ? 'Sign in with Google (Google-ით შესვლა)'
                   : `Continue with Google as ${role} (Google-ით რეგისტრაცია)`}
+              </span>
+              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-300 shrink-0">
+                დროებით გამორთულია
               </span>
             </button>
 
@@ -336,7 +316,7 @@ export default function AuthPage({
                 <div className="w-full border-t border-gray-200" />
               </div>
               <span className="relative px-4 bg-slate-50 text-xs font-semibold text-totc-gray uppercase tracking-wider">
-                Or continue with email
+                გაიარეთ ავტორიზაცია ელ-ფოსტით
               </span>
             </div>
           </div>

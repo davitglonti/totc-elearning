@@ -36,6 +36,10 @@ backend/src/Elearning.API/wwwroot/uploads/*
 .env.development.local
 .env.test.local
 .env.production.local
+appsettings.Local.json
+backend/**/appsettings.Local.json
+backend/**/appsettings.*.local.json
+*.local.json
 
 # Logs
 npm-debug.log*

@@ -24,6 +24,11 @@ public class AuthController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
+        if (dto.Role == Elearning.Domain.Enums.UserRole.Admin || (int)dto.Role > 1 || (int)dto.Role < 0)
+        {
+            return BadRequest(new { message = "Direct registration as Administrator is strictly prohibited. Administrator accounts can only be provisioned via database seed or by an existing Administrator from the Admin panel." });
+        }
+
         try
         {
             var response = await _authService.RegisterAsync(dto);
@@ -56,20 +61,15 @@ public class AuthController : BaseApiController
 
     /// <summary>
     /// Authenticate or register with Google OAuth profile.
+    /// Temporarily disabled for security hardening pending GoogleJsonWebSignature client ID verification.
     /// </summary>
     [HttpPost("google")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthDto dto)
+    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
+    public IActionResult GoogleAuth([FromBody] GoogleAuthDto dto)
     {
-        try
+        return StatusCode(StatusCodes.Status501NotImplemented, new
         {
-            var response = await _authService.GoogleAuthAsync(dto);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            message = "Google authentication endpoint is temporarily disabled for security hardening. Server-side Google ID token signature verification (GoogleJsonWebSignature) is required before Google OAuth can be enabled."
+        });
     }
 }

@@ -14,6 +14,7 @@ public class RegisterDto
     [Required, MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
+    [Range(0, 1, ErrorMessage = "Role can only be Student (0) or Instructor (1). Direct Administrator registration is strictly prohibited.")]
     public UserRole Role { get; set; } = UserRole.Student;
 
     public string? Headline { get; set; }
@@ -43,7 +44,10 @@ public class GoogleAuthDto
 
     public string? AvatarUrl { get; set; }
     public string? Credential { get; set; }
+
+    [Range(0, 1, ErrorMessage = "Role can only be Student (0) or Instructor (1). Direct Administrator registration is strictly prohibited.")]
     public UserRole Role { get; set; } = UserRole.Student;
+
     public string? Headline { get; set; }
     public string? Bio { get; set; }
     public string? Education { get; set; }

@@ -22,7 +22,11 @@ public class TokenService : ITokenService
 
     public string GenerateToken(User user)
     {
-        var secret = _config["Jwt:Secret"] ?? "TOTC_Super_Secret_Key_For_JWT_Authentication_2026_Minimum_32_Chars!";
+        var secret = _config["Jwt:Secret"];
+        if (string.IsNullOrWhiteSpace(secret) || secret.Length < 32)
+        {
+            throw new InvalidOperationException("FATAL SECURITY CONFIGURATION ERROR: 'Jwt:Secret' is missing, empty, or insecure.");
+        }
         var issuer = _config["Jwt:Issuer"] ?? "TOTC-LMS";
         var audience = _config["Jwt:Audience"] ?? "TOTC-Students";
         var expiresDays = int.TryParse(_config["Jwt:ExpiresInDays"], out var days) ? days : 7;

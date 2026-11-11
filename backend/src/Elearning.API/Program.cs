@@ -10,6 +10,11 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load optional local configuration, environment variables, and command-line arguments
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
+
 // Configure Kestrel to support large video file uploads (up to 2 GB)
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -52,10 +57,25 @@ builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IMediaService, LocalMediaService>();
+// 2. Validate and Register Bunny Stream Service
+var bunnyApiKey = builder.Configuration["BunnyStream:ApiKey"];
+var bunnyLibId = builder.Configuration["BunnyStream:LibraryId"];
+if (string.IsNullOrWhiteSpace(bunnyApiKey) || string.IsNullOrWhiteSpace(bunnyLibId))
+{
+    throw new InvalidOperationException(
+        "FATAL SECURITY CONFIGURATION ERROR: 'BunnyStream:ApiKey' or 'BunnyStream:LibraryId' is missing or unconfigured. " +
+        "Configure them via environment variables (BunnyStream__ApiKey, BunnyStream__LibraryId), .NET user-secrets, or appsettings.Local.json.");
+}
 builder.Services.AddSingleton<IBunnyStreamService, BunnyStreamService>();
 
 // 3. Configure JWT Authentication
-var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "TOTC_Super_Secret_Key_For_JWT_Authentication_2026_Minimum_32_Chars!";
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+{
+    throw new InvalidOperationException(
+        "FATAL SECURITY CONFIGURATION ERROR: 'Jwt:Secret' is missing, empty, or insecure (must be at least 32 characters). " +
+        "Configure 'Jwt:Secret' via environment variables (Jwt__Secret), .NET user-secrets, or appsettings.Local.json.");
+}
 var key = Encoding.UTF8.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>

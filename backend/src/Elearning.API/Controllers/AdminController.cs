@@ -372,13 +372,19 @@ public class AdminController : BaseApiController
     }
 
     /// <summary>
-    /// Retrieve current Bunny Stream Video CDN settings.
+    /// Retrieve current Bunny Stream Video CDN settings with masked secret API key.
     /// </summary>
     [HttpGet("bunny-stream")]
     public IActionResult GetBunnyStreamSettings()
     {
         var config = _bunnyService.GetConfig();
-        return Ok(config);
+        var safeConfig = new BunnyConfigDto
+        {
+            LibraryId = config.LibraryId,
+            CdnHostname = config.CdnHostname,
+            ApiKey = MaskApiKey(config.ApiKey)
+        };
+        return Ok(safeConfig);
     }
 
     /// <summary>
@@ -387,8 +393,33 @@ public class AdminController : BaseApiController
     [HttpPut("bunny-stream")]
     public IActionResult UpdateBunnyStreamSettings([FromBody] BunnyConfigDto dto)
     {
+        var current = _bunnyService.GetConfig();
+        // If incoming ApiKey is omitted or masked, retain current active key
+        if (string.IsNullOrWhiteSpace(dto.ApiKey) || dto.ApiKey.Contains("****") || dto.ApiKey.Contains("*****"))
+        {
+            dto.ApiKey = current.ApiKey;
+        }
+
         _bunnyService.UpdateConfig(dto);
-        return Ok(new { message = "Bunny Stream configuration updated successfully.", config = _bunnyService.GetConfig() });
+        var updated = _bunnyService.GetConfig();
+        return Ok(new 
+        { 
+            message = "Bunny Stream configuration updated successfully.", 
+            config = new BunnyConfigDto
+            {
+                LibraryId = updated.LibraryId,
+                CdnHostname = updated.CdnHostname,
+                ApiKey = MaskApiKey(updated.ApiKey)
+            } 
+        });
+    }
+
+    private static string MaskApiKey(string? apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey)) return string.Empty;
+        var trimmed = apiKey.Trim();
+        if (trimmed.Length <= 8) return "********";
+        return $"{trimmed[..4]}****{trimmed[^4..]}";
     }
 
     /// <summary>
