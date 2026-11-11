@@ -16,6 +16,9 @@ public abstract class BaseApiController : ControllerBase
         }
     }
 
+    protected string? CurrentUserEmail => 
+        User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+
     protected string? CurrentUserRole => User.FindFirst(ClaimTypes.Role)?.Value;
 
     protected bool IsAdmin => CurrentUserRole == "Admin";

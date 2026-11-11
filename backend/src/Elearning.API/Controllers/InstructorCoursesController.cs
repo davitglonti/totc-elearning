@@ -37,7 +37,18 @@ public class InstructorCoursesController : BaseApiController
     [ProducesResponseType(typeof(InstructorSummaryDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyInstructorCourses()
     {
-        if (!CurrentUserId.HasValue) return Unauthorized();
+        // Resolve instructor user: by CurrentUserId or fallback by email claim
+        User? instructor = null;
+        if (CurrentUserId.HasValue)
+        {
+            instructor = await _context.Users.FindAsync(CurrentUserId.Value);
+        }
+        if (instructor == null && !string.IsNullOrWhiteSpace(CurrentUserEmail))
+        {
+            instructor = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == CurrentUserEmail.ToLower());
+        }
+
+        if (instructor == null) return Unauthorized(new { message = "Session expired. Please log out and log in again." });
 
         var query = _context.Courses
             .AsNoTracking()
@@ -49,9 +60,9 @@ public class InstructorCoursesController : BaseApiController
             .AsQueryable();
 
         // If not Admin, show ONLY courses authored by this specific instructor
-        if (!IsAdmin)
+        if (instructor.Role != UserRole.Admin)
         {
-            query = query.Where(c => c.InstructorId == CurrentUserId.Value);
+            query = query.Where(c => c.InstructorId == instructor.Id);
         }
 
         var courses = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
@@ -111,13 +122,31 @@ public class InstructorCoursesController : BaseApiController
     [ProducesResponseType(typeof(InstructorCourseItemDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateFullCourse([FromBody] CreateFullCourseDto dto)
     {
-        if (!CurrentUserId.HasValue) return Unauthorized();
-
         if (string.IsNullOrWhiteSpace(dto.Title))
             return BadRequest(new { message = "Course title is required." });
 
+        // Resolve instructor user: by CurrentUserId or fallback by email claim
+        User? instructor = null;
+        if (CurrentUserId.HasValue)
+        {
+            instructor = await _context.Users.FindAsync(CurrentUserId.Value);
+        }
+        if (instructor == null && !string.IsNullOrWhiteSpace(CurrentUserEmail))
+        {
+            instructor = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == CurrentUserEmail.ToLower());
+        }
+
+        if (instructor == null)
+        {
+            return Unauthorized(new { message = "Session expired or user account not found. Please log out and log back in." });
+        }
+
         // Verify or fallback category
-        var category = await _context.Categories.FindAsync(dto.CategoryId);
+        Category? category = null;
+        if (dto.CategoryId != Guid.Empty)
+        {
+            category = await _context.Categories.FindAsync(dto.CategoryId);
+        }
         if (category == null)
         {
             category = await _context.Categories.FirstOrDefaultAsync();
@@ -127,13 +156,12 @@ public class InstructorCoursesController : BaseApiController
                 _context.Categories.Add(category);
                 await _context.SaveChangesAsync();
             }
-            dto.CategoryId = category.Id;
         }
 
-        // If creator is Admin, approve and publish immediately;
-        // If Instructor, course requires Admin moderation and approval!
-        var approvalStatus = IsAdmin ? "Approved" : "PendingApproval";
-        var isPublished = IsAdmin ? dto.IsPublished : false;
+        // Check if role is admin
+        var isUserAdmin = instructor.Role == UserRole.Admin || IsAdmin;
+        var approvalStatus = isUserAdmin ? "Approved" : "PendingApproval";
+        var isPublished = isUserAdmin ? dto.IsPublished : false;
 
         var course = new Course
         {
@@ -142,8 +170,8 @@ public class InstructorCoursesController : BaseApiController
             ThumbnailUrl = string.IsNullOrWhiteSpace(dto.ThumbnailUrl) ? "/assets/explore_row_1.png" : dto.ThumbnailUrl.Trim(),
             Price = dto.Price >= 0 ? dto.Price : 49m,
             Level = dto.Level,
-            CategoryId = dto.CategoryId,
-            InstructorId = CurrentUserId.Value,
+            CategoryId = category.Id,
+            InstructorId = instructor.Id,
             ApprovalStatus = approvalStatus,
             IsPublished = isPublished,
             CreatedAt = DateTime.UtcNow

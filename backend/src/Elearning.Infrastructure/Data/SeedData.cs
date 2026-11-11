@@ -16,20 +16,21 @@ public static class SeedData
             return; // Data already seeded
         }
 
-        // 1. Seed Categories
-        var devCategory = new Category { Name = "Development", Slug = "development", IconUrl = "code" };
-        var designCategory = new Category { Name = "Design", Slug = "design", IconUrl = "layout" };
-        var photoCategory = new Category { Name = "Photography", Slug = "photography", IconUrl = "camera" };
-        var businessCategory = new Category { Name = "Business", Slug = "business", IconUrl = "briefcase" };
-        var marketingCategory = new Category { Name = "Marketing", Slug = "marketing", IconUrl = "trending-up" };
+        // 1. Seed Categories with deterministic IDs
+        var devCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Development", Slug = "development", IconUrl = "code" };
+        var designCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Design", Slug = "design", IconUrl = "layout" };
+        var photoCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "Photography", Slug = "photography", IconUrl = "camera" };
+        var businessCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000004"), Name = "Business", Slug = "business", IconUrl = "briefcase" };
+        var marketingCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000005"), Name = "Marketing", Slug = "marketing", IconUrl = "trending-up" };
 
         context.Categories.AddRange(devCategory, designCategory, photoCategory, businessCategory, marketingCategory);
 
-        // 2. Seed Users & Instructors
+        // 2. Seed Users & Instructors with deterministic IDs
         var defaultPasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!");
 
         var adminUser = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
             FullName = "TOTC Administrator",
             Email = "admin@totc.com",
             PasswordHash = defaultPasswordHash,
@@ -40,6 +41,7 @@ public static class SeedData
 
         var instructorLina = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
             FullName = "Lina Wilson",
             Email = "lina@totc.com",
             PasswordHash = defaultPasswordHash,
@@ -50,6 +52,7 @@ public static class SeedData
 
         var instructorMarcus = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000003"),
             FullName = "Marcus Chen",
             Email = "marcus@totc.com",
             PasswordHash = defaultPasswordHash,
@@ -60,6 +63,7 @@ public static class SeedData
 
         var instructorSophia = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000004"),
             FullName = "Sophia Perez",
             Email = "sophia@totc.com",
             PasswordHash = defaultPasswordHash,
@@ -70,6 +74,7 @@ public static class SeedData
 
         var studentUser = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000005"),
             FullName = "Gloria Rose",
             Email = "student@totc.com",
             PasswordHash = defaultPasswordHash,
@@ -80,6 +85,7 @@ public static class SeedData
 
         var proUser = new User
         {
+            Id = Guid.Parse("20000000-0000-0000-0000-000000000006"),
             FullName = "Davit Glonti",
             Email = "davit@test.com",
             PasswordHash = defaultPasswordHash,

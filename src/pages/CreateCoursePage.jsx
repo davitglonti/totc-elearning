@@ -165,7 +165,7 @@ export default function CreateCoursePage({ currentUser, setActivePage, setSelect
         description: description.trim() || 'Comprehensive hands-on curriculum created in Instructor Studio.',
         price: parseFloat(price) || 0,
         level: level,
-        categoryId: categoryId || (categories[0]?.id),
+        categoryId: categoryId || (categories[0]?.id) || '10000000-0000-0000-0000-000000000001',
         thumbnailUrl: thumbnailUrl.trim() || '/assets/explore_row_1.png',
         isPublished: publishImmediately,
         sections: sections.map((s, sIdx) => ({
@@ -351,9 +351,11 @@ export default function CreateCoursePage({ currentUser, setActivePage, setSelect
                 ))}
                 {categories.length === 0 && (
                   <>
-                    <option value="a060b466-5aba-4c96-8d0f-953d409f5cfe">Design & UX</option>
-                    <option value="b060b466-5aba-4c96-8d0f-953d409f5cfe">Development & Cloud</option>
-                    <option value="c060b466-5aba-4c96-8d0f-953d409f5cfe">Business & Management</option>
+                    <option value="10000000-0000-0000-0000-000000000001">Development</option>
+                    <option value="10000000-0000-0000-0000-000000000002">Design</option>
+                    <option value="10000000-0000-0000-0000-000000000003">Photography</option>
+                    <option value="10000000-0000-0000-0000-000000000004">Business</option>
+                    <option value="10000000-0000-0000-0000-000000000005">Marketing</option>
                   </>
                 )}
               </select>
