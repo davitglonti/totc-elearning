@@ -269,7 +269,24 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
   // Resolve current user & progression gating permissions
   const resolvedUser = currentUser || api.auth.getCurrentUser();
-  const isAuthorOrAdmin = resolvedUser?.role === 'Admin' || resolvedUser?.role === 'Instructor';
+  const userEmail = (resolvedUser?.email || '').toLowerCase().trim();
+  const authorEmail = (courseContent?.instructorEmail || activeCourse?.instructorEmail || '').toLowerCase().trim();
+  const currentUserId = (resolvedUser?.id || '').toString().toLowerCase().trim();
+  const authorId = (courseContent?.instructorId || activeCourse?.instructorId || '').toString().toLowerCase().trim();
+  const userFullName = (resolvedUser?.fullName || '').toLowerCase().trim();
+  const authorName = (courseContent?.instructorName || activeCourse?.instructorName || '').toLowerCase().trim();
+
+  // Only the actual creator/instructor of THIS specific course or an Admin has author bypass
+  const isCourseAuthor = Boolean(
+    resolvedUser && (
+      (authorId && currentUserId && authorId === currentUserId) ||
+      (authorEmail && userEmail && authorEmail === userEmail) ||
+      (!authorId && !authorEmail && authorName && userFullName && authorName === userFullName)
+    )
+  );
+
+  const isAdmin = resolvedUser?.role === 'Admin';
+  const isAuthorOrAdmin = isCourseAuthor || isAdmin;
 
   // Check if a specific lesson is unlocked for the current student
   const isLessonUnlocked = (lessonId) => {

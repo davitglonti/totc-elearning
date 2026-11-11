@@ -40,9 +40,11 @@ export default function CourseDetailPage({
     return {
       ...defaultFallback,
       ...selectedCourse,
-      instructor: selectedCourse.instructor || selectedCourse.instructorName || defaultFallback.instructor,
-      instructorEmail: selectedCourse.instructorEmail || defaultFallback.instructorEmail,
-      category: selectedCourse.category || selectedCourse.categoryName || defaultFallback.category,
+      id: selectedCourse.id || selectedCourse.courseId,
+      instructor: selectedCourse.instructor || selectedCourse.instructorName || '',
+      instructorEmail: selectedCourse.instructorEmail || '',
+      instructorId: selectedCourse.instructorId || '',
+      category: selectedCourse.category || selectedCourse.categoryName || '',
       price: selectedCourse.price ? (String(selectedCourse.price).startsWith('$') ? selectedCourse.price : `$${selectedCourse.price}`) : defaultFallback.price
     };
   });
@@ -67,9 +69,9 @@ export default function CourseDetailPage({
             description: data.description || prev.description,
             category: data.categoryName || prev.category,
             instructor: data.instructorName || prev.instructor,
-            instructorEmail: data.instructorEmail || prev.instructorEmail,
+            instructorEmail: data.instructorEmail || '',
             instructorAvatar: data.instructorAvatar || prev.instructorAvatar,
-            instructorId: data.instructorId || prev.instructorId,
+            instructorId: data.instructorId || '',
             rating: data.averageRating || prev.rating,
             reviews: data.reviewsCount || prev.reviews,
             students: data.studentsCount ? data.studentsCount.toLocaleString() : prev.students,
@@ -89,22 +91,21 @@ export default function CourseDetailPage({
     return () => { isMounted = false; };
   }, [selectedCourse]);
 
-  // Determine current user permissions and author ownership
+  // Determine current user permissions and strict author ownership
   const courseId = courseData.id || courseData.courseId;
   const userEmail = (currentUser?.email || '').toLowerCase().trim();
   const authorEmail = (courseData.instructorEmail || '').toLowerCase().trim();
   const userFullName = (currentUser?.fullName || '').toLowerCase().trim();
   const authorName = (courseData.instructor || courseData.instructorName || '').toLowerCase().trim();
+  const courseInstructorId = (courseData.instructorId || '').toString().toLowerCase().trim();
+  const currentUserId = (currentUser?.id || '').toString().toLowerCase().trim();
 
+  // An instructor is author IF AND ONLY IF they are the verified author of THIS specific course
   const isAuthor = Boolean(
-    currentUser && (
-      currentUser.role === 'Instructor' && (
-        (courseData.instructorId && currentUser.id === courseData.instructorId) ||
-        (authorEmail && userEmail === authorEmail) ||
-        (authorName && (userFullName === authorName || userEmail.includes('lina'))) ||
-        courseData.isAuthor ||
-        courseData.isInstructor
-      )
+    currentUser && (currentUser.role === 'Instructor' || currentUser.role === 'Admin') && (
+      (courseInstructorId && currentUserId && courseInstructorId === currentUserId) ||
+      (authorEmail && userEmail && authorEmail === userEmail) ||
+      (!courseInstructorId && !authorEmail && authorName && userFullName && authorName === userFullName)
     )
   );
 
