@@ -27,12 +27,14 @@ builder.Services.AddDbContext<ElearningDbContext>(options =>
 });
 
 // 2. Register Application and Infrastructure Services
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IMediaService, LocalMediaService>();
+builder.Services.AddSingleton<IBunnyStreamService, BunnyStreamService>();
 
 // 3. Configure JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? "TOTC_Super_Secret_Key_For_JWT_Authentication_2026_Minimum_32_Chars!";

@@ -145,6 +145,44 @@ export const api = {
         method: 'DELETE',
       });
     },
+
+    async uploadVideo(file, title, onProgress) {
+      const token = localStorage.getItem('totc_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      if (title) formData.append('title', title);
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/instructor/media/upload-video`);
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+        if (xhr.upload && onProgress) {
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(data);
+            } else {
+              reject(new Error(data.message || data.error || 'Video upload failed.'));
+            }
+          } catch (err) {
+            reject(new Error('Invalid server response.'));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error during video upload.'));
+        xhr.send(formData);
+      });
+    },
   },
 
   // Student Enrollments & Learning Progression
@@ -308,6 +346,23 @@ export const api = {
 
     async getOrders() {
       return request('/admin/orders');
+    },
+
+    async getBunnyConfig() {
+      return request('/admin/bunny-stream');
+    },
+
+    async updateBunnyConfig(config) {
+      return request('/admin/bunny-stream', {
+        method: 'PUT',
+        body: JSON.stringify(config),
+      });
+    },
+
+    async testBunnyConnection() {
+      return request('/admin/bunny-stream/test', {
+        method: 'POST',
+      });
     },
   },
 };

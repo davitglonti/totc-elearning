@@ -471,41 +471,70 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         {/* Left Column: Player & Interactive Tabs (8 Cols) */}
         <div className="lg:col-span-8 p-6 lg:p-8 flex flex-col space-y-6">
           
-          {/* Video Container */}
+          {/* Video Container with Bunny Stream / HTML5 / Poster Support */}
           <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center group border border-slate-800">
-            <img
-              src="/assets/classroom_feature.png"
-              alt="Lecture Stream"
-              className={`w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-90' : 'opacity-65'}`}
-            />
+            {activeLesson?.videoUrl && (activeLesson.videoUrl.includes('iframe.mediadelivery.net') || activeLesson.videoUrl.includes('embed')) ? (
+              <iframe
+                key={activeLesson.id || activeLesson.videoUrl}
+                src={activeLesson.videoUrl}
+                loading="lazy"
+                className="w-full h-full border-0 absolute inset-0"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowFullScreen={true}
+                title={activeLesson.title || 'Lecture Video Stream'}
+              />
+            ) : activeLesson?.videoUrl && (
+                activeLesson.videoUrl.endsWith('.mp4') || 
+                activeLesson.videoUrl.includes('/uploads/videos/') || 
+                activeLesson.videoUrl.includes('.webm') || 
+                activeLesson.videoUrl.includes('sample/') ||
+                activeLesson.videoUrl.includes('.m3u8')
+              ) ? (
+              <video
+                key={activeLesson.id || activeLesson.videoUrl}
+                src={activeLesson.videoUrl}
+                controls
+                className="w-full h-full object-contain absolute inset-0 bg-black"
+                poster="/assets/classroom_feature.png"
+                playsInline
+              />
+            ) : (
+              <>
+                <img
+                  src="/assets/classroom_feature.png"
+                  alt="Lecture Stream"
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-90' : 'opacity-65'}`}
+                />
 
-            {/* Play/Pause Button */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="absolute w-20 h-20 rounded-full bg-totc-teal/90 text-white flex items-center justify-center shadow-2xl hover:scale-110 hover:bg-totc-teal transition-all duration-200"
-            >
-              {isPlaying ? (
-                <Pause className="w-8 h-8 fill-white" />
-              ) : (
-                <Play className="w-8 h-8 fill-white ml-1" />
-              )}
-            </button>
-
-            {/* Custom Video Controls */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-xs text-white">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-totc-teal">
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {/* Play/Pause Button */}
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="absolute w-20 h-20 rounded-full bg-totc-teal/90 text-white flex items-center justify-center shadow-2xl hover:scale-110 hover:bg-totc-teal transition-all duration-200"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-8 h-8 fill-white" />
+                  ) : (
+                    <Play className="w-8 h-8 fill-white ml-1" />
+                  )}
                 </button>
-                <span className="font-mono text-totc-cyan">{formatSeconds(currentVideoTime)}</span>
-                <span className="text-slate-400">/ {activeLesson?.durationMinutes || 15}:00</span>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <Volume2 className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
-                <Maximize className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
-              </div>
-            </div>
+                {/* Custom Video Controls */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-xs text-white">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-totc-teal">
+                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </button>
+                    <span className="font-mono text-totc-cyan">{formatSeconds(currentVideoTime)}</span>
+                    <span className="text-slate-400">/ {activeLesson?.durationMinutes || 15}:00</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <Volume2 className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
+                    <Maximize className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Active Lecture Header Bar */}

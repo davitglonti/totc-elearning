@@ -1,4 +1,5 @@
 using Elearning.Application.DTOs;
+using Elearning.Application.Interfaces;
 using Elearning.Domain.Entities;
 using Elearning.Domain.Enums;
 using Elearning.Infrastructure.Data;
@@ -17,10 +18,12 @@ namespace Elearning.API.Controllers;
 public class AdminController : BaseApiController
 {
     private readonly ElearningDbContext _context;
+    private readonly IBunnyStreamService _bunnyService;
 
-    public AdminController(ElearningDbContext context)
+    public AdminController(ElearningDbContext context, IBunnyStreamService bunnyService)
     {
         _context = context;
+        _bunnyService = bunnyService;
     }
 
     /// <summary>
@@ -366,5 +369,40 @@ public class AdminController : BaseApiController
             .ToListAsync();
 
         return Ok(orders);
+    }
+
+    /// <summary>
+    /// Retrieve current Bunny Stream Video CDN settings.
+    /// </summary>
+    [HttpGet("bunny-stream")]
+    public IActionResult GetBunnyStreamSettings()
+    {
+        var config = _bunnyService.GetConfig();
+        return Ok(config);
+    }
+
+    /// <summary>
+    /// Update Bunny Stream Video CDN settings.
+    /// </summary>
+    [HttpPut("bunny-stream")]
+    public IActionResult UpdateBunnyStreamSettings([FromBody] BunnyConfigDto dto)
+    {
+        _bunnyService.UpdateConfig(dto);
+        return Ok(new { message = "Bunny Stream configuration updated successfully.", config = _bunnyService.GetConfig() });
+    }
+
+    /// <summary>
+    /// Test live connection to Bunny Stream Video Library API.
+    /// </summary>
+    [HttpPost("bunny-stream/test")]
+    public async Task<IActionResult> TestBunnyStreamConnection()
+    {
+        var result = await _bunnyService.TestConnectionAsync();
+        return Ok(new
+        {
+            success = result.Success,
+            message = result.Message,
+            totalVideos = result.TotalVideos
+        });
     }
 }

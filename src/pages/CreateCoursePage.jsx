@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Plus, Trash2, Video, FileText, CheckCircle, 
   HelpCircle, Clock, Sparkles, BookOpen, Layers, DollarSign, 
-  Image as ImageIcon, Globe, Eye, EyeOff, Save, AlertCircle, RefreshCw
+  Image as ImageIcon, Globe, Eye, EyeOff, Save, AlertCircle, RefreshCw,
+  UploadCloud, Check, Loader2, Play
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -201,6 +202,68 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const updated = [...sections];
     updated[secIndex].lessons[lesIndex][field] = value;
     setSections(updated);
+  };
+
+  // Direct Video Upload to Bunny Stream CDN with Live Progress
+  const [uploadingKey, setUploadingKey] = useState(null); // e.g. "sIdx-lIdx"
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadNotice, setUploadNotice] = useState(null); // { key, message, isSuccess }
+
+  const handleVideoUpload = async (sIdx, lIdx, file, lessonTitle) => {
+    if (!file) return;
+    const itemKey = `${sIdx}-${lIdx}`;
+    setUploadingKey(itemKey);
+    setUploadProgress(0);
+    setUploadNotice(null);
+
+    // Try extracting duration from local file metadata
+    try {
+      const tempVideo = document.createElement('video');
+      tempVideo.preload = 'metadata';
+      tempVideo.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(tempVideo.src);
+        if (tempVideo.duration && !isNaN(tempVideo.duration)) {
+          const mins = Math.max(1, Math.round(tempVideo.duration / 60));
+          handleLessonChange(sIdx, lIdx, 'durationMinutes', mins);
+        }
+      };
+      tempVideo.src = URL.createObjectURL(file);
+    } catch (e) {
+      console.warn('Could not read video duration metadata:', e);
+    }
+
+    try {
+      const res = await api.instructor.uploadVideo(
+        file,
+        lessonTitle || `Lecture ${sIdx + 1}.${lIdx + 1}`,
+        (percent) => {
+          setUploadProgress(percent);
+        }
+      );
+
+      // Preferred video URL: embedUrl (Bunny iframe) or directPlayUrl
+      const finalUrl = res.embedUrl || res.directPlayUrl || res.hlsUrl;
+      if (finalUrl) {
+        handleLessonChange(sIdx, lIdx, 'videoUrl', finalUrl);
+      }
+
+      setUploadNotice({
+        key: itemKey,
+        isSuccess: true,
+        message: res.isBunnyStream 
+          ? `✓ Transcoded & hosted on Bunny Stream CDN (Library: ${res.libraryId || '805955'})`
+          : `✓ Video saved to server CDN storage: ${res.fileName}`
+      });
+    } catch (err) {
+      console.error('Video upload error:', err);
+      setUploadNotice({
+        key: itemKey,
+        isSuccess: false,
+        message: 'Upload failed: ' + (err.message || 'Network error')
+      });
+    } finally {
+      setUploadingKey(null);
+    }
   };
 
   // Submit Course to Backend (Create or Update)
@@ -640,42 +703,137 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                             </button>
                           </div>
 
-                          {/* Video URL & Runtime */}
-                          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
-                            <div className="sm:col-span-8 relative">
-                              <Video className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                              <input
-                                type="url"
-                                value={lesson.videoUrl}
-                                onChange={(e) => handleLessonChange(sIdx, lIdx, 'videoUrl', e.target.value)}
-                                placeholder="Video Stream URL (MP4 / HLS / CDN)"
-                                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-mono text-totc-navy"
-                              />
+                          {/* Video Upload & Stream Settings */}
+                          <div className="space-y-2 pt-1">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <label className="text-[11px] font-bold text-totc-navy flex items-center gap-1.5">
+                                <Video className="w-3.5 h-3.5 text-totc-teal" />
+                                <span>Lecture Video Source</span>
+                              </label>
+
+                              {/* Direct Bunny Upload Button */}
+                              <label className={`cursor-pointer px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-xs border ${
+                                uploadingKey === `${sIdx}-${lIdx}`
+                                  ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
+                                  : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                              }`}>
+                                {uploadingKey === `${sIdx}-${lIdx}` ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                                    <span>Uploading ({uploadProgress}%)...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
+                                    <span>Upload Video File (Bunny CDN)</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="video/*"
+                                  disabled={uploadingKey === `${sIdx}-${lIdx}`}
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                      handleVideoUpload(sIdx, lIdx, e.target.files[0], lesson.title);
+                                    }
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
                             </div>
 
-                            <div className="sm:col-span-4 flex items-center gap-2">
-                              <div className="relative flex-1">
-                                <Clock className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            {/* Active Upload Progress Bar */}
+                            {uploadingKey === `${sIdx}-${lIdx}` && (
+                              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 animate-in fade-in">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-amber-800">
+                                  <span className="flex items-center gap-1.5">
+                                    <UploadCloud className="w-4 h-4 animate-bounce text-amber-600" />
+                                    Uploading binary stream to Bunny CDN pipeline...
+                                  </span>
+                                  <span className="font-mono">{uploadProgress}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-amber-200/60 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-200 rounded-full"
+                                    style={{ width: `${uploadProgress}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Upload Notice */}
+                            {uploadNotice?.key === `${sIdx}-${lIdx}` && (
+                              <div className={`p-2.5 rounded-xl text-[11px] font-semibold flex items-center justify-between gap-2 ${
+                                uploadNotice.isSuccess 
+                                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
+                                  : 'bg-red-50 border border-red-200 text-red-800'
+                              }`}>
+                                <span>{uploadNotice.message}</span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setUploadNotice(null)} 
+                                  className="text-gray-400 hover:text-gray-600 text-xs font-bold"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Bunny Stream CDN Ready Badge */}
+                            {lesson.videoUrl && (lesson.videoUrl.includes('mediadelivery.net') || lesson.videoUrl.includes('b-cdn.net')) && (
+                              <div className="px-3 py-1.5 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-lg flex items-center justify-between text-[11px]">
+                                <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                                  ⚡ Bunny Stream CDN Transcoded & Ready
+                                </span>
+                                <a 
+                                  href={lesson.videoUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-teal-700 hover:text-teal-900 font-semibold underline text-[10px]"
+                                >
+                                  Preview Stream
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Video URL & Runtime Row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
+                              <div className="sm:col-span-8 relative">
+                                <Video className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
-                                  type="number"
-                                  min="1"
-                                  value={lesson.durationMinutes}
-                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'durationMinutes', e.target.value)}
-                                  placeholder="Minutes"
-                                  className="w-full pl-7 pr-2 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-bold text-totc-navy"
-                                  title="Duration in minutes"
+                                  type="url"
+                                  value={lesson.videoUrl}
+                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'videoUrl', e.target.value)}
+                                  placeholder="Video Stream URL or Bunny Embed URL"
+                                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-mono text-totc-navy"
                                 />
                               </div>
 
-                              <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-totc-navy font-semibold shrink-0">
-                                <input
-                                  type="checkbox"
-                                  checked={lesson.isFreePreview}
-                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
-                                  className="rounded text-totc-teal focus:ring-totc-teal"
-                                />
-                                <span>Free</span>
-                              </label>
+                              <div className="sm:col-span-4 flex items-center gap-2">
+                                <div className="relative flex-1">
+                                  <Clock className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={lesson.durationMinutes}
+                                    onChange={(e) => handleLessonChange(sIdx, lIdx, 'durationMinutes', e.target.value)}
+                                    placeholder="Minutes"
+                                    className="w-full pl-7 pr-2 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-[11px] font-bold text-totc-navy"
+                                    title="Duration in minutes"
+                                  />
+                                </div>
+
+                                <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-totc-navy font-semibold shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={lesson.isFreePreview}
+                                    onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
+                                    className="rounded text-totc-teal focus:ring-totc-teal"
+                                  />
+                                  <span>Free</span>
+                                </label>
+                              </div>
                             </div>
                           </div>
 

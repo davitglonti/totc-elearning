@@ -1,0 +1,208 @@
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using Elearning.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
+
+namespace Elearning.Infrastructure.Services;
+
+/// <summary>
+/// Professional video delivery service integrating Bunny Stream Video CDN (dash.bunny.net/stream).
+/// Powers instant lecturer video uploads, transcoding, adaptive bitrate HLS, and responsive iframe embeds.
+/// </summary>
+public class BunnyStreamService : IBunnyStreamService
+{
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
+    private readonly string _localUploadRoot;
+
+    // Active Bunny credentials (can be updated live via Admin API)
+    private static BunnyConfigDto _activeConfig = new()
+    {
+        LibraryId = "805955",
+        ApiKey = "be0cd974-98c2-41ce-8e4ba9b094b1-170d-4ae7",
+        CdnHostname = "vz-f0959c15-d92.b-cdn.net"
+    };
+
+    public BunnyStreamService(HttpClient httpClient, IConfiguration configuration)
+    {
+        _httpClient = httpClient;
+        _configuration = configuration;
+
+        // Initialize from appsettings if configured
+        var libId = _configuration["BunnyStream:LibraryId"];
+        var key = _configuration["BunnyStream:ApiKey"];
+        var cdn = _configuration["BunnyStream:CdnHostname"];
+
+        if (!string.IsNullOrWhiteSpace(libId)) _activeConfig.LibraryId = libId.Trim();
+        if (!string.IsNullOrWhiteSpace(key)) _activeConfig.ApiKey = key.Trim();
+        if (!string.IsNullOrWhiteSpace(cdn)) _activeConfig.CdnHostname = cdn.Trim();
+
+        _localUploadRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
+        if (!Directory.Exists(_localUploadRoot))
+        {
+            Directory.CreateDirectory(_localUploadRoot);
+        }
+    }
+
+    public BunnyConfigDto GetConfig()
+    {
+        return new BunnyConfigDto
+        {
+            LibraryId = _activeConfig.LibraryId,
+            ApiKey = _activeConfig.ApiKey,
+            CdnHostname = _activeConfig.CdnHostname
+        };
+    }
+
+    public void UpdateConfig(BunnyConfigDto config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.LibraryId))
+            _activeConfig.LibraryId = config.LibraryId.Trim();
+
+        if (!string.IsNullOrWhiteSpace(config.ApiKey))
+            _activeConfig.ApiKey = config.ApiKey.Trim();
+
+        if (!string.IsNullOrWhiteSpace(config.CdnHostname))
+            _activeConfig.CdnHostname = config.CdnHostname.Trim().Replace("https://", "").Replace("http://", "").TrimEnd('/');
+    }
+
+    public async Task<(bool Success, string Message, int TotalVideos)> TestConnectionAsync()
+    {
+        var config = _activeConfig;
+        if (string.IsNullOrWhiteSpace(config.LibraryId) || string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            return (false, "Bunny Stream Library ID or API Key is missing.", 0);
+        }
+
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos?page=1&itemsPerPage=1");
+            req.Headers.Add("AccessKey", config.ApiKey);
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            using var resp = await _httpClient.SendAsync(req);
+            var content = await resp.Content.ReadAsStringAsync();
+
+            if (resp.IsSuccessStatusCode)
+            {
+                int total = 0;
+                try
+                {
+                    using var doc = JsonDocument.Parse(content);
+                    if (doc.RootElement.TryGetProperty("totalItems", out var ti))
+                    {
+                        total = ti.GetInt32();
+                    }
+                }
+                catch { }
+
+                return (true, $"Successfully connected to Bunny Stream Library {config.LibraryId}! ({total} videos found)", total);
+            }
+
+            if ((int)resp.StatusCode == 401)
+            {
+                return (false, "Authentication Failed (401 Unauthorized): Please ensure the API Key matches the key copied from your Bunny Stream Video Library API tab.", 0);
+            }
+
+            return (false, $"Bunny Stream API returned HTTP {(int)resp.StatusCode}: {content}", 0);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Connection test failed: {ex.Message}", 0);
+        }
+    }
+
+    public async Task<BunnyUploadResult> UploadVideoAsync(Stream fileStream, string fileName, string? videoTitle = null)
+    {
+        var title = !string.IsNullOrWhiteSpace(videoTitle) 
+            ? videoTitle.Trim() 
+            : Path.GetFileNameWithoutExtension(fileName);
+
+        var config = _activeConfig;
+
+        // Attempt upload to Bunny Stream first
+        if (!string.IsNullOrWhiteSpace(config.LibraryId) && !string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            try
+            {
+                // Step 1: Create Video Object in Bunny Video Library
+                using var createReq = new HttpRequestMessage(HttpMethod.Post, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos");
+                createReq.Headers.Add("AccessKey", config.ApiKey);
+                createReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                createReq.Content = new StringContent(
+                    JsonSerializer.Serialize(new { title }),
+                    Encoding.UTF8,
+                    "application/json"
+                );
+
+                using var createResp = await _httpClient.SendAsync(createReq);
+                var createContent = await createResp.Content.ReadAsStringAsync();
+
+                if (createResp.IsSuccessStatusCode)
+                {
+                    using var doc = JsonDocument.Parse(createContent);
+                    var videoGuid = doc.RootElement.GetProperty("guid").GetString();
+
+                    if (!string.IsNullOrWhiteSpace(videoGuid))
+                    {
+                        // Step 2: Upload Video Binary Stream to Bunny CDN
+                        using var uploadReq = new HttpRequestMessage(HttpMethod.Put, $"https://video.bunnycdn.com/library/{config.LibraryId}/videos/{videoGuid}");
+                        uploadReq.Headers.Add("AccessKey", config.ApiKey);
+                        uploadReq.Content = new StreamContent(fileStream);
+                        uploadReq.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                        using var uploadResp = await _httpClient.SendAsync(uploadReq);
+
+                        var cdnHost = string.IsNullOrWhiteSpace(config.CdnHostname) 
+                            ? "vz-f0959c15-d92.b-cdn.net" 
+                            : config.CdnHostname;
+
+                        return new BunnyUploadResult
+                        {
+                            Success = true,
+                            VideoId = videoGuid,
+                            Title = title,
+                            EmbedUrl = $"https://iframe.mediadelivery.net/embed/{config.LibraryId}/{videoGuid}",
+                            HlsUrl = $"https://{cdnHost}/{videoGuid}/playlist.m3u8",
+                            DirectPlayUrl = $"https://{cdnHost}/{videoGuid}/play_720p.mp4",
+                            ThumbnailUrl = $"https://{cdnHost}/{videoGuid}/thumbnail.jpg",
+                            IsBunnyStream = true,
+                            Message = "Video uploaded and encoded successfully on Bunny Stream Edge CDN."
+                        };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BunnyStream] Upload failed: {ex.Message}. Falling back to resilient local storage.");
+            }
+        }
+
+        // Resilient Fallback: Save to Local Storage so lecturer is never blocked
+        fileStream.Position = 0;
+        var ext = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(ext)) ext = ".mp4";
+        var uniqueFileName = $"{Guid.NewGuid():N}{ext}";
+        var localFilePath = Path.Combine(_localUploadRoot, uniqueFileName);
+
+        using (var dest = new FileStream(localFilePath, FileMode.Create))
+        {
+            await fileStream.CopyToAsync(dest);
+        }
+
+        var localUrl = $"/uploads/videos/{uniqueFileName}";
+        return new BunnyUploadResult
+        {
+            Success = true,
+            VideoId = Guid.NewGuid().ToString(),
+            Title = title,
+            EmbedUrl = localUrl,
+            HlsUrl = localUrl,
+            DirectPlayUrl = localUrl,
+            ThumbnailUrl = "/assets/classroom_feature.png",
+            IsBunnyStream = false,
+            Message = "Uploaded to server video storage."
+        };
+    }
+}

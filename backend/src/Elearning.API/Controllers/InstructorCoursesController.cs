@@ -18,15 +18,18 @@ public class InstructorCoursesController : BaseApiController
 {
     private readonly ICourseService _courseService;
     private readonly IMediaService _mediaService;
+    private readonly IBunnyStreamService _bunnyStreamService;
     private readonly ElearningDbContext _context;
 
     public InstructorCoursesController(
         ICourseService courseService, 
         IMediaService mediaService,
+        IBunnyStreamService bunnyStreamService,
         ElearningDbContext context)
     {
         _courseService = courseService;
         _mediaService = mediaService;
+        _bunnyStreamService = bunnyStreamService;
         _context = context;
     }
 
@@ -380,6 +383,23 @@ public class InstructorCoursesController : BaseApiController
         var url = await _mediaService.UploadFileAsync(stream, file.FileName, file.ContentType);
 
         return Ok(new { url });
+    }
+
+    /// <summary>
+    /// Upload a video file directly to Bunny Stream Video CDN (with adaptive transcoding, HLS & iframe embed).
+    /// </summary>
+    [HttpPost("media/upload-video")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(BunnyUploadResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UploadVideoToBunny(IFormFile file, [FromForm] string? title = null)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { message = "No video file provided." });
+
+        using var stream = file.OpenReadStream();
+        var result = await _bunnyStreamService.UploadVideoAsync(stream, file.FileName, title);
+
+        return Ok(result);
     }
 
     /// <summary>

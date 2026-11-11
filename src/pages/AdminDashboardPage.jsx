@@ -32,6 +32,18 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const [rejectDialogCourse, setRejectDialogCourse] = useState(null);
   const [rejectionFeedback, setRejectionFeedback] = useState('');
 
+  // Bunny Stream CDN settings
+  const [bunnyConfig, setBunnyConfig] = useState({
+    libraryId: '805955',
+    apiKey: 'be0cd974-98c2-41ce-8e4ba9b094b1-170d-4ae7',
+    cdnHostname: 'vz-f0959c15-d92.b-cdn.net',
+    pullZone: 'vz-f0959c15-d92'
+  });
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [testingBunny, setTestingBunny] = useState(false);
+  const [savingBunny, setSavingBunny] = useState(false);
+  const [bunnyTestResult, setBunnyTestResult] = useState(null);
+
   // Fetch all real admin data from the API
   const loadAdminData = async () => {
     try {
@@ -58,7 +70,53 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
   useEffect(() => {
     loadAdminData();
+    api.admin.getBunnyConfig()
+      .then(cfg => {
+        if (cfg) setBunnyConfig(prev => ({ ...prev, ...cfg }));
+      })
+      .catch(err => console.warn('Could not load Bunny config:', err));
   }, []);
+
+  const handleTestBunnyConnection = async () => {
+    setTestingBunny(true);
+    setBunnyTestResult(null);
+    try {
+      const res = await api.admin.testBunnyConnection();
+      setBunnyTestResult(res);
+      if (res.success) {
+        setActionMessage({ 
+          type: 'success', 
+          text: `✓ Bunny Stream CDN Connected Successfully! (HTTP ${res.statusCode} OK - Library: ${res.libraryId || bunnyConfig.libraryId})` 
+        });
+      } else {
+        setActionMessage({ 
+          type: 'error', 
+          text: `Bunny Stream Authentication: ${res.message}. Please verify the API key copied from dash.bunny.net.` 
+        });
+      }
+    } catch (err) {
+      setBunnyTestResult({ success: false, message: err.message });
+      setActionMessage({ type: 'error', text: `Bunny Stream Test Failed: ${err.message}` });
+    } finally {
+      setTestingBunny(false);
+    }
+  };
+
+  const handleSaveBunnyConfig = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSavingBunny(true);
+    try {
+      const res = await api.admin.updateBunnyConfig(bunnyConfig);
+      setActionMessage({ 
+        type: 'success', 
+        text: '✓ Bunny Stream CDN configuration updated and active in backend pipeline!' 
+      });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Failed to update Bunny settings: ' + err.message });
+    } finally {
+      setSavingBunny(false);
+    }
+  };
 
   // Inspect full course curriculum (all modules & lessons)
   const handleOpenReviewModal = async (courseId) => {
@@ -360,6 +418,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             { id: 'users', label: 'Users & Roles', icon: Users, count: usersList.length, alert: false },
             { id: 'courses', label: 'Courses Management', icon: BookOpen, count: coursesList.length, alert: false },
             { id: 'orders', label: 'Orders & Revenue', icon: CreditCard, count: ordersList.length, alert: false },
+            { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
             { id: 'system', label: 'System Architecture', icon: Server, count: null, alert: false },
           ].map(tab => {
             const Icon = tab.icon;
@@ -961,6 +1020,236 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   No orders recorded yet.
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Bunny Stream CDN Configuration */}
+        {activeTab === 'bunny' && (
+          <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-600 rounded-[28px] p-6 sm:p-8 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold uppercase tracking-wider">
+                  <Video className="w-3.5 h-3.5 text-white" />
+                  <span>Video Transcoding & Delivery Pipeline</span>
+                </div>
+                <h3 className="font-poppins font-black text-2xl sm:text-3xl text-white">
+                  Bunny.net Stream Video CDN
+                </h3>
+                <p className="text-xs sm:text-sm text-white/90 max-w-2xl">
+                  Automated video ingestion pipeline: when instructors upload videos in Course Studio, files are streamed directly to Bunny Stream, transcoded to adaptive multi-bitrate HLS, and served via edge caching.
+                </p>
+              </div>
+
+              <a
+                href="https://dash.bunny.net/stream/805955/api"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 rounded-full bg-white text-orange-600 hover:bg-orange-50 font-bold text-xs transition-all shadow-md shrink-0 flex items-center gap-2 self-start md:self-center"
+              >
+                <span>Bunny Dashboard</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+
+            {/* Quick Specs Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">Video Library ID</span>
+                <p className="font-poppins font-black text-xl text-totc-navy mt-1 font-mono">
+                  {bunnyConfig.libraryId || '805955'}
+                </p>
+                <p className="text-[10px] text-totc-gray mt-0.5">Assigned Bunny Stream Library</p>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">Edge Pull Zone</span>
+                <p className="font-poppins font-black text-xl text-totc-teal mt-1 font-mono">
+                  {bunnyConfig.pullZone || 'vz-f0959c15-d92'}
+                </p>
+                <p className="text-[10px] text-totc-gray mt-0.5">Global Anycast CDN Distribution</p>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">CDN Hostname</span>
+                <p className="font-bold text-sm text-indigo-700 mt-1 font-mono truncate">
+                  {bunnyConfig.cdnHostname || 'vz-f0959c15-d92.b-cdn.net'}
+                </p>
+                <p className="text-[10px] text-totc-gray mt-0.5">HLS playlist & segment endpoint</p>
+              </div>
+            </div>
+
+            {/* Credentials & Test Form */}
+            <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                <div>
+                  <h4 className="font-poppins font-bold text-lg text-totc-navy">Bunny Stream API Credentials</h4>
+                  <p className="text-xs text-totc-gray">Manage and verify connection parameters between TOTC LMS and Bunny.net.</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestBunnyConnection}
+                    disabled={testingBunny}
+                    className="px-5 py-2.5 rounded-full border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingBunny ? 'animate-spin' : ''}`} />
+                    <span>{testingBunny ? 'Testing Connection...' : 'Test Bunny Connection'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Test Result Message Box */}
+              {bunnyTestResult && (
+                <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between gap-4 ${
+                  bunnyTestResult.success 
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {bunnyTestResult.success ? (
+                      <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                    )}
+                    <div>
+                      <p className="font-bold">{bunnyTestResult.success ? 'Bunny API Connected' : 'Bunny Connection Notice'}</p>
+                      <p className="font-normal">{bunnyTestResult.message}</p>
+                    </div>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setBunnyTestResult(null)} 
+                    className="text-gray-400 hover:text-gray-600 text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveBunnyConfig} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-totc-navy mb-1">
+                      Video Library ID
+                    </label>
+                    <input
+                      type="text"
+                      value={bunnyConfig.libraryId}
+                      onChange={(e) => setBunnyConfig({ ...bunnyConfig, libraryId: e.target.value })}
+                      placeholder="805955"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-totc-navy mb-1">
+                      CDN Hostname
+                    </label>
+                    <input
+                      type="text"
+                      value={bunnyConfig.cdnHostname}
+                      onChange={(e) => setBunnyConfig({ ...bunnyConfig, cdnHostname: e.target.value })}
+                      placeholder="vz-f0959c15-d92.b-cdn.net"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-totc-navy mb-1">
+                      Pull Zone Name
+                    </label>
+                    <input
+                      type="text"
+                      value={bunnyConfig.pullZone}
+                      onChange={(e) => setBunnyConfig({ ...bunnyConfig, pullZone: e.target.value })}
+                      placeholder="vz-f0959c15-d92"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-totc-navy">
+                        API Access Key
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        className="text-[11px] text-totc-teal hover:underline flex items-center gap-1 font-semibold"
+                      >
+                        {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showApiKey ? 'Hide' : 'Reveal'}</span>
+                      </button>
+                    </div>
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={bunnyConfig.apiKey}
+                      onChange={(e) => setBunnyConfig({ ...bunnyConfig, apiKey: e.target.value })}
+                      placeholder="Paste API Key from dash.bunny.net"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <button
+                    type="submit"
+                    disabled={savingBunny}
+                    className="px-6 py-2.5 rounded-full bg-totc-navy hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingBunny ? 'Saving Credentials...' : 'Save Configuration'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Architecture Explainer Card */}
+            <div className="bg-slate-900 rounded-[28px] p-6 sm:p-8 text-white space-y-4">
+              <h4 className="font-poppins font-bold text-lg text-totc-teal flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-totc-teal" />
+                <span>How Lecturer Video Ingestion Operates</span>
+              </h4>
+              <p className="text-xs text-slate-300">
+                Lecturers upload lectures directly inside the Instructor Studio. Here is what happens behind the scenes:
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 font-black text-xs flex items-center justify-center">
+                    1
+                  </div>
+                  <h5 className="font-bold text-xs text-white">Browser Chunk Streaming</h5>
+                  <p className="text-[11px] text-slate-400">
+                    The lecturer selects an MP4/MOV file. TOTC shows live progress (0-100%) as bytes transfer.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <div className="w-7 h-7 rounded-lg bg-totc-teal/20 text-totc-teal font-black text-xs flex items-center justify-center">
+                    2
+                  </div>
+                  <h5 className="font-bold text-xs text-white">Bunny Stream Transcoding</h5>
+                  <p className="text-[11px] text-slate-400">
+                    The API creates a video entry in Library 805955 and streams raw binary chunks to Bunny's transcode cluster.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center">
+                    3
+                  </div>
+                  <h5 className="font-bold text-xs text-white">Adaptive Classroom Playback</h5>
+                  <p className="text-[11px] text-slate-400">
+                    The classroom player renders the embed with automatic bitrate switching (1080p down to 360p) for students.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
