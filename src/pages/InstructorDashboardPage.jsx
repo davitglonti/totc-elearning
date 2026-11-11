@@ -113,48 +113,60 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
           </div>
         )}
 
-        {/* 4 Instructor Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
-          <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">My Courses</p>
-              <h3 className="font-poppins font-bold text-2xl text-totc-navy">{courses.length}</h3>
-            </div>
-          </div>
+        {/* 4 Instructor Metrics - Dynamically calculated from real courses */}
+        {(() => {
+          const totalStudents = courses.reduce((acc, c) => acc + (c.studentsCount || 0), 0);
+          const totalRevenue = courses.reduce((acc, c) => acc + ((c.studentsCount || 0) * (c.price || 0)), 0);
+          const avgRating = courses.length > 0 
+            ? (courses.reduce((acc, c) => acc + (c.averageRating || 5), 0) / courses.length).toFixed(1)
+            : '5.0';
 
-          <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Students</p>
-              <h3 className="font-poppins font-bold text-2xl text-totc-navy">2,480</h3>
-            </div>
-          </div>
+          return (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
+              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">My Courses</p>
+                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{courses.length}</h3>
+                </div>
+              </div>
 
-          <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-              <DollarSign className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Revenue</p>
-              <h3 className="font-poppins font-bold text-2xl text-totc-navy">$18,420</h3>
-            </div>
-          </div>
+              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Students</p>
+                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{totalStudents}</h3>
+                </div>
+              </div>
 
-          <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-              <Star className="w-6 h-6 fill-amber-500" />
+              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Revenue</p>
+                  <h3 className="font-poppins font-bold text-2xl text-emerald-600">
+                    ${Number(totalRevenue).toLocaleString()}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                  <Star className="w-6 h-6 fill-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Avg. Rating</p>
+                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{avgRating} / 5.0</h3>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Avg. Rating</p>
-              <h3 className="font-poppins font-bold text-2xl text-totc-navy">4.9 / 5.0</h3>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Courses Table */}
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden mb-12">

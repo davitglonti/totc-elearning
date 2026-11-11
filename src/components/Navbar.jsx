@@ -27,15 +27,32 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Base navigation links
-  const navLinks = [
-    { name: 'Home', id: 'home' },
-    { name: 'Courses', id: 'courses' },
-    // If user is authenticated, prominently show "My Learning" in main nav
-    ...(currentUser ? [{ name: 'My Learning', id: 'dashboard' }] : []),
-    { name: 'Membership', id: 'membership' },
-    { name: 'Blog', id: 'blog' },
-  ];
+  // Role-tailored navigation links
+  let navLinks = [];
+  if (currentUser?.role === 'Admin') {
+    navLinks = [
+      { name: 'Admin Console', id: 'admin-dashboard' },
+      { name: 'Course Catalog', id: 'courses' },
+      { name: 'Public Site', id: 'home' },
+      { name: 'Blog', id: 'blog' },
+    ];
+  } else if (currentUser?.role === 'Instructor') {
+    navLinks = [
+      { name: 'Instructor Studio', id: 'instructor-dashboard' },
+      { name: 'Course Catalog', id: 'courses' },
+      { name: 'Home', id: 'home' },
+      { name: 'Blog', id: 'blog' },
+    ];
+  } else {
+    // Student or Guest
+    navLinks = [
+      { name: 'Home', id: 'home' },
+      { name: 'Courses', id: 'courses' },
+      ...(currentUser ? [{ name: 'My Learning', id: 'dashboard' }] : []),
+      { name: 'Membership', id: 'membership' },
+      { name: 'Blog', id: 'blog' },
+    ];
+  }
 
   const handleNavClick = (id) => {
     setActivePage(id);
@@ -167,58 +184,90 @@ export default function Navbar({
                     </div>
                   </div>
 
-                  {/* Navigation Links */}
+                  {/* Navigation Links Tailored to Role */}
                   <div className="py-1">
-                    <button
-                      onClick={() => handleNavClick('dashboard')}
-                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                        activePage === 'dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
-                      }`}
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-totc-teal" />
-                      <span>My Learning Dashboard</span>
-                    </button>
+                    {currentUser.role === 'Admin' && (
+                      <>
+                        <button
+                          onClick={() => handleNavClick('admin-dashboard')}
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
+                            activePage === 'admin-dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
+                          }`}
+                        >
+                          <Shield className="w-4 h-4 text-indigo-600" />
+                          <span>Admin Console</span>
+                        </button>
 
-                    <button
-                      onClick={() => handleNavClick('courses')}
-                      className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                    >
-                      <BookOpen className="w-4 h-4 text-totc-cyan" />
-                      <span>Explore Courses</span>
-                    </button>
+                        <button
+                          onClick={() => handleNavClick('courses')}
+                          className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <BookOpen className="w-4 h-4 text-totc-teal" />
+                          <span>Course Catalog</span>
+                        </button>
 
-                    <button
-                      onClick={() => handleNavClick('membership')}
-                      className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                    >
-                      <CreditCard className="w-4 h-4 text-totc-orange" />
-                      <span>Membership & Billing</span>
-                    </button>
-
-                    {/* Role specific links: Instructor Panel */}
-                    {(currentUser.role === 'Instructor' || currentUser.role === 'Admin') && (
-                      <button
-                        onClick={() => handleNavClick('instructor-dashboard')}
-                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                          activePage === 'instructor-dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
-                        }`}
-                      >
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                        <span>Instructor Studio</span>
-                      </button>
+                        <button
+                          onClick={() => handleNavClick('instructor-dashboard')}
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
+                            activePage === 'instructor-dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
+                          }`}
+                        >
+                          <Sparkles className="w-4 h-4 text-purple-600" />
+                          <span>Instructor Studio</span>
+                        </button>
+                      </>
                     )}
 
-                    {/* Role specific links: Admin Console */}
-                    {currentUser.role === 'Admin' && (
-                      <button
-                        onClick={() => handleNavClick('admin-dashboard')}
-                        className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
-                          activePage === 'admin-dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
-                        }`}
-                      >
-                        <Shield className="w-4 h-4 text-indigo-600" />
-                        <span>Admin Console</span>
-                      </button>
+                    {currentUser.role === 'Instructor' && (
+                      <>
+                        <button
+                          onClick={() => handleNavClick('instructor-dashboard')}
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
+                            activePage === 'instructor-dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
+                          }`}
+                        >
+                          <Sparkles className="w-4 h-4 text-purple-600" />
+                          <span>Instructor Studio</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleNavClick('courses')}
+                          className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <BookOpen className="w-4 h-4 text-totc-teal" />
+                          <span>Course Catalog</span>
+                        </button>
+                      </>
+                    )}
+
+                    {currentUser.role === 'Student' && (
+                      <>
+                        <button
+                          onClick={() => handleNavClick('dashboard')}
+                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors ${
+                            activePage === 'dashboard' ? 'bg-totc-teal-light text-totc-teal font-semibold' : 'text-totc-navy hover:bg-gray-50'
+                          }`}
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-totc-teal" />
+                          <span>My Learning Dashboard</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleNavClick('courses')}
+                          className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <BookOpen className="w-4 h-4 text-totc-cyan" />
+                          <span>Explore Courses</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleNavClick('membership')}
+                          className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <CreditCard className="w-4 h-4 text-totc-orange" />
+                          <span>Membership & Billing</span>
+                        </button>
+                      </>
                     )}
                   </div>
 
@@ -309,7 +358,7 @@ export default function Navbar({
               </button>
             ))}
 
-            {currentUser && (currentUser.role === 'Instructor' || currentUser.role === 'Admin') && (
+            {currentUser && currentUser.role === 'Admin' && (
               <button
                 onClick={() => handleNavClick('instructor-dashboard')}
                 className={`text-left text-base py-2.5 px-3 rounded-lg font-medium transition-colors ${

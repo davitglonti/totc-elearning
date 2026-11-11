@@ -78,7 +78,20 @@ public static class SeedData
             Bio = "Passionate online student mastering full-stack cloud and interactive design."
         };
 
-        context.Users.AddRange(adminUser, instructorLina, instructorMarcus, instructorSophia, studentUser);
+        var proUser = new User
+        {
+            FullName = "Davit Glonti",
+            Email = "davit@test.com",
+            PasswordHash = defaultPasswordHash,
+            Role = UserRole.Student,
+            IsSubscribed = true,
+            SubscriptionPlan = "Pro",
+            SubscriptionExpiresAt = DateTime.UtcNow.AddYears(1),
+            AvatarUrl = "/assets/testimonial_avatar.png",
+            Bio = "Pro Member with unlimited access to all courses."
+        };
+
+        context.Users.AddRange(adminUser, instructorLina, instructorMarcus, instructorSophia, studentUser, proUser);
 
         // 3. Seed Course 1: AWS Certified Solutions Architect
         var courseAws = new Course

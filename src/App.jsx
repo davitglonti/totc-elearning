@@ -330,6 +330,10 @@ export default function App() {
           <AdminDashboardPage
             currentUser={currentUser}
             setActivePage={handleSafePageTransition}
+            setSelectedCourse={(course) => {
+              setSelectedCourse(course);
+              handleSafePageTransition('course-detail', course);
+            }}
           />
         )}
 

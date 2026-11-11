@@ -212,4 +212,48 @@ export const api = {
       });
     },
   },
+
+  // Super Admin Platform Telemetry & Management
+  admin: {
+    async getStats() {
+      return request('/admin/stats');
+    },
+
+    async getUsers() {
+      return request('/admin/users');
+    },
+
+    async updateUserRole(userId, role) {
+      return request(`/admin/users/${userId}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      });
+    },
+
+    async deleteUser(userId) {
+      return request(`/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    async getCourses() {
+      return request('/admin/courses');
+    },
+
+    async toggleCoursePublish(courseId) {
+      return request(`/admin/courses/${courseId}/toggle-publish`, {
+        method: 'PUT',
+      });
+    },
+
+    async deleteCourse(courseId) {
+      return request(`/admin/courses/${courseId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    async getOrders() {
+      return request('/admin/orders');
+    },
+  },
 };
