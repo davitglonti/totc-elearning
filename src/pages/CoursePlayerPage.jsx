@@ -952,7 +952,10 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         <div className="lg:col-span-8 p-6 lg:p-8 flex flex-col space-y-6">
           
           {/* Video Container with Bunny Stream Player or Locked Barrier */}
-          <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center border border-slate-800">
+          <div 
+            onContextMenu={(e) => e.preventDefault()}
+            className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center border border-slate-800"
+          >
             {(() => {
               const activeSecIdx = courseContent?.sections?.findIndex(s => s.lessons?.some(l => l.id === activeLesson?.id)) ?? -1;
               const isCurrentSectionLocked = activeSecIdx > 0 && !isSectionUnlocked(activeSecIdx);
@@ -1023,6 +1026,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                   src={activeLesson?.videoUrl}
                   title={activeLesson?.title}
                   moduleTitle={courseContent?.sections?.find(s => s.lessons?.some(l => l.id === activeLesson?.id))?.title}
+                  currentUser={currentUser}
                   onTimeUpdate={(seconds) => setCurrentVideoTime(seconds)}
                   onEnded={() => {
                     if (activeLesson?.id && !completedLessonIds.has(activeLesson.id)) {

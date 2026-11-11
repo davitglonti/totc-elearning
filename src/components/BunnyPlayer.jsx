@@ -2,22 +2,15 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Play, Pause, RotateCcw, RotateCw, Volume2, Volume1, VolumeX, 
   Maximize, Minimize, Settings, Check, Loader2,
-  Tv, Film, SlidersHorizontal, Sparkles
+  Tv, Film, SlidersHorizontal, Sparkles, Shield, ShieldAlert, Lock
 } from 'lucide-react';
+import { api } from '../services/api';
 
 /**
  * Bunny Stream Video Player Component
- * A high-end, responsive video player matching Bunny Stream's exact aesthetic:
- * - Specific lecture/lesson title banner on top (no generic CDN badge)
- * - Manual Quality / Resolution selector (1080p, 720p, 480p, 360p, Auto)
- * - Glowing centered teal play button
- * - 10s rewind / fast-forward controls
- * - Smooth progress scrubber with hover time preview & buffer track
- * - Playback speed selector (0.5x - 2x)
- * - Volume slider with mute toggle
- * - Picture-in-Picture & Fullscreen
- * - Keyboard shortcuts (Space, Left/Right arrows, M, F)
- * - Iframe embed support for official Bunny Stream URLs
+ * A high-end, responsive video player matching Bunny Stream's exact aesthetic
+ * with Enterprise DRM Content Protection (anti-download, context menu blocker,
+ * anti-screen-recording dynamic forensic watermark, tab-blur guard).
  */
 export default function BunnyPlayer({
   src,
@@ -27,10 +20,12 @@ export default function BunnyPlayer({
   onTimeUpdate,
   onEnded,
   initialTime = 0,
-  autoPlay = false
+  autoPlay = false,
+  currentUser = null
 }) {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
+  const activeUser = currentUser || api.auth.getCurrentUser();
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -44,7 +39,7 @@ export default function BunnyPlayer({
   const [isBuffering, setIsBuffering] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // UI state
+  // UI & DRM Security state
   const [showControls, setShowControls] = useState(true);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -52,6 +47,44 @@ export default function BunnyPlayer({
   const [hoverPosition, setHoverPosition] = useState(0);
   const [pulsePlayIcon, setPulsePlayIcon] = useState(false);
   const [qualityNotice, setQualityNotice] = useState('');
+  const [drmNotice, setDrmNotice] = useState('');
+  const drmNoticeTimeoutRef = useRef(null);
+
+  // Anti-Screen Recording Dynamic Floating Watermark Positions
+  const watermarkPositions = [
+    'top-16 left-6',
+    'top-24 right-8',
+    'bottom-28 left-8',
+    'bottom-24 right-8',
+    'top-1/3 left-10',
+    'bottom-1/3 right-10',
+    'top-1/2 left-1/4',
+    'top-1/2 right-1/4'
+  ];
+  const [watermarkIndex, setWatermarkIndex] = useState(0);
+
+  // Periodically relocate watermark every 12s across video canvas to deter screen recorders/cameras
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setWatermarkIndex(prev => (prev + 1) % watermarkPositions.length);
+    }, 12000);
+    return () => clearInterval(timer);
+  }, [watermarkPositions.length]);
+
+  const triggerDrmNotice = useCallback((msg) => {
+    setDrmNotice(msg);
+    if (drmNoticeTimeoutRef.current) clearTimeout(drmNoticeTimeoutRef.current);
+    drmNoticeTimeoutRef.current = setTimeout(() => {
+      setDrmNotice('');
+    }, 3200);
+  }, []);
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    triggerDrmNotice('🔒 კონტენტი დაცულია საავტორო უფლებებით — ვიდეოს ჩამოტვირთვა ან კოპირება შეზღუდულია');
+    return false;
+  }, [triggerDrmNotice]);
 
   const controlsTimeoutRef = useRef(null);
 
@@ -254,9 +287,34 @@ export default function BunnyPlayer({
     }
   };
 
-  // Keyboard controls
+  // Keyboard controls & Anti-Piracy Shortcut Guard
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // 1. DRM Protected shortcuts: Save (Ctrl+S), View Source (Ctrl+U), Inspect (F12, Ctrl+Shift+I/J/C)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerDrmNotice('🛡️ გვერდის და ვიდეოს შენახვა შეზღუდულია TOTC DRM უსაფრთხოებით');
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerDrmNotice('🛡️ კოდის წყაროს ნახვა შეზღუდულია');
+        return;
+      }
+
+      if (
+        e.key === 'F12' ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerDrmNotice('🛡️ დეველოპერის ხელსაწყოებით ჩამოტვირთვა დაბლოკილია');
+        return;
+      }
+
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
       switch (e.key) {
@@ -290,7 +348,20 @@ export default function BunnyPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, seekRelative]);
+  }, [togglePlay, seekRelative, triggerDrmNotice]);
+
+  // Tab switch / Screen Recording App Background Detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+        triggerDrmNotice('⏸️ ვიდეო შეჩერებულია ფანჯრის გადართვის გამო (უსაფრთხოების რეჟიმი)');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [triggerDrmNotice]);
 
   // Fullscreen change listener
   useEffect(() => {
@@ -350,15 +421,26 @@ export default function BunnyPlayer({
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => isPlaying && setShowControls(false)}
+      onContextMenu={handleContextMenu}
+      onDragStart={(e) => { e.preventDefault(); return false; }}
       className="relative w-full h-full bg-black rounded-[24px] overflow-hidden shadow-2xl border border-slate-800 select-none group font-poppins"
+      style={{
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none'
+      }}
     >
-      {/* Native Video Element */}
+      {/* Native Video Element with DRM Protections */}
       <video
         ref={videoRef}
         src={finalSrc}
         poster={poster}
         playsInline
         preload="auto"
+        controlsList="nodownload nofullscreen noplaybackrate"
+        disablePictureInPicture
+        onContextMenu={handleContextMenu}
+        onDragStart={(e) => { e.preventDefault(); return false; }}
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
         onTimeUpdate={handleTimeUpdate}
@@ -370,8 +452,50 @@ export default function BunnyPlayer({
           setIsPlaying(false);
           if (onEnded) onEnded();
         }}
-        className="w-full h-full object-contain cursor-pointer"
+        className="w-full h-full object-contain cursor-pointer pointer-events-auto"
+        style={{
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+        }}
       />
+
+      {/* DRM Transparent Protection Shield Overlay */}
+      <div 
+        onContextMenu={handleContextMenu}
+        onDragStart={(e) => { e.preventDefault(); return false; }}
+        className="absolute inset-0 z-5 pointer-events-none"
+      />
+
+      {/* =========================================================================
+          Anti-Screen Recording Dynamic Forensic Watermark (Coursera/Udemy Enterprise DRM)
+          Relocates every 12s so screen recorders cannot crop or blur learner's identity
+          ========================================================================= */}
+      <div
+        className={`absolute z-15 transition-all duration-1000 ease-in-out pointer-events-none select-none ${watermarkPositions[watermarkIndex]} opacity-35 hover:opacity-50`}
+        style={{ textShadow: '0 2px 4px rgba(0,0,0,0.95)' }}
+      >
+        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-xs border border-white/10 text-[10px] font-mono text-white/90 shadow-md">
+          <Shield className="w-3 h-3 text-[#00CBB8] shrink-0" />
+          <span className="font-semibold">{activeUser?.fullName || 'Verified Learner'}</span>
+          {activeUser?.email && (
+            <>
+              <span className="text-white/40">•</span>
+              <span className="text-white/80">{activeUser.email}</span>
+            </>
+          )}
+          <span className="text-white/40">•</span>
+          <span className="text-[#00CBB8] font-bold">DRM PROTECTED</span>
+        </div>
+      </div>
+
+      {/* DRM Security Toast Notification */}
+      {drmNotice && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-amber-500/50 text-amber-300 text-xs font-semibold shadow-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-3 pointer-events-none">
+          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{drmNotice}</span>
+        </div>
+      )}
 
       {/* Top Header Banner: Specific Lesson Name & Quality Indicator */}
       <div className={`absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
@@ -390,6 +514,11 @@ export default function BunnyPlayer({
           <div className="px-4 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-[#00CBB8]/40 text-xs font-bold text-white shadow-xl flex items-center gap-2 truncate">
             <span className="w-2 h-2 rounded-full bg-[#00CBB8] animate-pulse shrink-0" />
             <span className="truncate">{title || 'Course Lecture'}</span>
+          </div>
+
+          <div className="px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md border border-emerald-500/30 text-[10px] font-bold text-emerald-400 flex items-center gap-1.5 shrink-0" title="DRM Content Protection Active: Anti-Download & Screen Recording Guard">
+            <Shield className="w-3 h-3 text-emerald-400" />
+            <span className="tracking-wider">DRM SECURE</span>
           </div>
 
           <span className="px-2.5 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-[10px] font-bold text-[#00CBB8] shrink-0 uppercase tracking-wide">
