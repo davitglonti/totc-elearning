@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Elearning.API.Controllers;
 
 /// <summary>
-/// Endpoints for inspecting and managing the authenticated user's profile.
+/// Endpoints for inspecting and managing user profiles and public instructor bios.
 /// </summary>
 [Authorize]
 public class UsersController : BaseApiController
@@ -45,6 +45,30 @@ public class UsersController : BaseApiController
         {
             var updated = await _authService.UpdateProfileAsync(CurrentUserId.Value, dto);
             return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Retrieve public instructor bio, qualifications, and authored courses.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("instructors/{idOrName}")]
+    [ProducesResponseType(typeof(InstructorPublicProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInstructorPublicProfile(string idOrName)
+    {
+        try
+        {
+            var profile = await _authService.GetInstructorPublicProfileAsync(idOrName);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
         }
         catch (Exception ex)
         {

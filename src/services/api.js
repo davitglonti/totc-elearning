@@ -47,10 +47,43 @@ export const api = {
       return result;
     },
 
-    async register(fullName, email, password, role = 'Student') {
+    async register(fullName, email, password, role = 'Student', extra = {}) {
+      const roleEnum = role === 'Instructor' || role === 1 ? 1 : 0;
       const result = await request('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ fullName, email, password, role }),
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          role: roleEnum,
+          headline: extra.headline,
+          bio: extra.bio,
+          education: extra.education,
+          experience: extra.experience,
+          website: extra.website,
+          avatarUrl: extra.avatarUrl,
+        }),
+      });
+      if (result.token) {
+        localStorage.setItem('totc_token', result.token);
+        localStorage.setItem('totc_user', JSON.stringify(result.user));
+      }
+      return result;
+    },
+
+    async googleLogin({ email, fullName, avatarUrl, role = 'Student', headline, education, experience }) {
+      const roleEnum = role === 'Instructor' || role === 1 ? 1 : 0;
+      const result = await request('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          fullName,
+          avatarUrl,
+          role: roleEnum,
+          headline,
+          education,
+          experience,
+        }),
       });
       if (result.token) {
         localStorage.setItem('totc_token', result.token);
@@ -83,6 +116,9 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(profileData),
       });
+    },
+    async getInstructorProfile(idOrName) {
+      return request(`/users/instructors/${encodeURIComponent(idOrName)}`);
     },
   },
 

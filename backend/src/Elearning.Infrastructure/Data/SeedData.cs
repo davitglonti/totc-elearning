@@ -47,7 +47,11 @@ public static class SeedData
             PasswordHash = defaultPasswordHash,
             Role = UserRole.Instructor,
             AvatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-            Bio = "Principal Cloud Architect and Senior EdTech Consultant with 12+ years experience."
+            Headline = "Principal Cloud Architect & Senior EdTech Consultant",
+            Bio = "Lina is a seasoned Cloud Solutions Architect with 12+ years of experience engineering high-scale distributed systems and interactive online learning infrastructure. She is an author, keynote speaker, and has mentored over 45,000 students globally.",
+            Education = "M.S. in Computer Science - Stanford University (2014) • B.S. in Software Engineering - MIT (2012) • AWS Certified Solutions Architect Professional",
+            Experience = "Principal Cloud Architect at CloudScale Global (2019-Present) • Senior Infrastructure Engineer at TechCorp (2015-2019) • EdTech Curriculum Fellow",
+            Website = "https://totc.edu/instructors/lina-wilson"
         };
 
         var instructorMarcus = new User
@@ -58,7 +62,11 @@ public static class SeedData
             PasswordHash = defaultPasswordHash,
             Role = UserRole.Instructor,
             AvatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-            Bio = "Lead Product Designer & UX Strategist specialized in interactive learning environments."
+            Headline = "Lead Product Designer & Design Systems Strategist",
+            Bio = "Marcus Chen focuses on modern human-computer interaction, interactive prototypes, and scalable design systems. He leads UX initiatives for global platforms and teaches design thinking.",
+            Education = "M.Des in Human-Computer Interaction - Carnegie Mellon University • Certified Usability Analyst (HFI)",
+            Experience = "Staff Product Designer at CanvasHQ (2018-Present) • Senior UI/UX Specialist at StudioDesign (2014-2018)",
+            Website = "https://totc.edu/instructors/marcus-chen"
         };
 
         var instructorSophia = new User
@@ -69,7 +77,11 @@ public static class SeedData
             PasswordHash = defaultPasswordHash,
             Role = UserRole.Instructor,
             AvatarUrl = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80",
-            Bio = "Award-winning commercial photographer and visual educator."
+            Headline = "Commercial Lighting Director & Master Visual Storyteller",
+            Bio = "Sophia Perez is an internationally acclaimed photographer and digital artist with works featured in top publications. She specializes in cinematic lighting, digital post-production, and visual storytelling.",
+            Education = "B.F.A. in Visual Arts & Digital Media - Rhode Island School of Design (RISD) • Master Class Certification in Cinematography",
+            Experience = "Creative Director at Luminance Studio (2017-Present) • Editorial Lighting Specialist for Global Publications (2013-2017)",
+            Website = "https://totc.edu/instructors/sophia-perez"
         };
 
         var studentUser = new User
@@ -300,6 +312,44 @@ public static class SeedData
             Comment = "Thank you so much for your help. It's exactly what I've been looking for. You won't regret it. It really saves me time and effort. TOTC is exactly what our business has been lacking.",
             CreatedAt = DateTime.UtcNow.AddDays(-3)
         });
+
+        await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Enriches existing instructor accounts with education, experience, and headlines if not present.
+    /// </summary>
+    public static async Task EnrichInstructorProfilesAsync(ElearningDbContext context)
+    {
+        var lina = await context.Users.FirstOrDefaultAsync(u => u.Email == "lina@totc.com");
+        if (lina != null && string.IsNullOrWhiteSpace(lina.Headline))
+        {
+            lina.Headline = "Principal Cloud Architect & Senior EdTech Consultant";
+            lina.Bio = "Lina is a seasoned Cloud Solutions Architect with 12+ years of experience engineering high-scale distributed systems and interactive online learning infrastructure. She is an author, keynote speaker, and has mentored over 45,000 students globally.";
+            lina.Education = "M.S. in Computer Science - Stanford University (2014) • B.S. in Software Engineering - MIT (2012) • AWS Certified Solutions Architect Professional";
+            lina.Experience = "Principal Cloud Architect at CloudScale Global (2019-Present) • Senior Infrastructure Engineer at TechCorp (2015-2019) • EdTech Curriculum Fellow";
+            lina.Website = "https://totc.edu/instructors/lina-wilson";
+        }
+
+        var sophia = await context.Users.FirstOrDefaultAsync(u => u.Email == "sophia@totc.com");
+        if (sophia != null && string.IsNullOrWhiteSpace(sophia.Headline))
+        {
+            sophia.Headline = "Commercial Lighting Director & Master Visual Storyteller";
+            sophia.Bio = "Sophia Perez is an internationally acclaimed photographer and digital artist with works featured in top publications. She specializes in cinematic lighting, digital post-production, and visual storytelling.";
+            sophia.Education = "B.F.A. in Visual Arts & Digital Media - Rhode Island School of Design (RISD) • Master Class Certification in Cinematography";
+            sophia.Experience = "Creative Director at Luminance Studio (2017-Present) • Editorial Lighting Specialist for Global Publications (2013-2017)";
+            sophia.Website = "https://totc.edu/instructors/sophia-perez";
+        }
+
+        var marcus = await context.Users.FirstOrDefaultAsync(u => u.Email == "marcus@totc.com");
+        if (marcus != null && string.IsNullOrWhiteSpace(marcus.Headline))
+        {
+            marcus.Headline = "Lead Product Designer & Design Systems Strategist";
+            marcus.Bio = "Marcus Chen focuses on modern human-computer interaction, interactive prototypes, and scalable design systems. He leads UX initiatives for global platforms and teaches design thinking.";
+            marcus.Education = "M.Des in Human-Computer Interaction - Carnegie Mellon University • Certified Usability Analyst (HFI)";
+            marcus.Experience = "Staff Product Designer at CanvasHQ (2018-Present) • Senior UI/UX Specialist at StudioDesign (2014-2018)";
+            marcus.Website = "https://totc.edu/instructors/marcus-chen";
+        }
 
         await context.SaveChangesAsync();
     }

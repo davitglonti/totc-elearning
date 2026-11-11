@@ -208,16 +208,33 @@ export default function CourseDetailPage({
             </p>
 
             <div className="flex flex-wrap items-center gap-6 pt-2 text-sm text-totc-gray">
-              <div className="flex items-center gap-2">
+              {/* Clickable Instructor / Author Profile Trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  const instPayload = {
+                    id: courseData.instructorId,
+                    instructorId: courseData.instructorId,
+                    fullName: courseData.instructor,
+                    instructorName: courseData.instructor,
+                    avatarUrl: courseData.instructorAvatar,
+                    email: courseData.instructorEmail
+                  };
+                  setActivePage('instructor-profile', instPayload);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center gap-2 group text-left transition-colors focus:outline-none"
+                title="Click to view Instructor Bio, Education, Experience & Authored Courses"
+              >
                 <img
                   src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
                   alt={courseData.instructor}
-                  className="w-8 h-8 rounded-full object-cover border border-totc-teal"
+                  className="w-8 h-8 rounded-full object-cover border border-totc-teal group-hover:scale-105 transition-transform shadow-sm"
                 />
-                <span className="font-medium text-totc-navy">
-                  Created by {courseData.instructor} {isAuthor && <span className="text-purple-600 font-bold">(You)</span>}
+                <span className="font-medium text-totc-navy group-hover:text-totc-teal group-hover:underline">
+                  Created by <span className="font-bold">{courseData.instructor}</span> {isAuthor && <span className="text-purple-600 font-bold">(You)</span>}
                 </span>
-              </div>
+              </button>
 
               <div className="flex items-center gap-1.5 text-totc-orange">
                 <Star className="w-4 h-4 fill-totc-orange" />
@@ -417,20 +434,43 @@ export default function CourseDetailPage({
 
             {/* Tab: Instructor */}
             {activeTab === 'instructor' && (
-              <div className="bg-white p-8 rounded-[24px] border border-gray-100 space-y-4">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
-                    alt={courseData.instructor}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-totc-teal"
-                  />
-                  <div>
-                    <h3 className="font-poppins font-bold text-xl text-totc-navy">{courseData.instructor}</h3>
-                    <p className="text-totc-gray text-sm">{courseData.instructorEmail || 'Principal EdTech Consultant & Systems Architect'}</p>
+              <div className="bg-white p-8 rounded-[24px] border border-gray-100 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                      alt={courseData.instructor}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-totc-teal shadow"
+                    />
+                    <div>
+                      <h3 className="font-poppins font-bold text-xl text-totc-navy">{courseData.instructor}</h3>
+                      <p className="text-totc-gray text-sm">{courseData.instructorEmail || 'Verified TOTC Lecturer'}</p>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const instPayload = {
+                        id: courseData.instructorId,
+                        instructorId: courseData.instructorId,
+                        fullName: courseData.instructor,
+                        instructorName: courseData.instructor,
+                        avatarUrl: courseData.instructorAvatar,
+                        email: courseData.instructorEmail
+                      };
+                      setActivePage('instructor-profile', instPayload);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs transition-colors self-start sm:self-center flex items-center gap-2 shadow-sm"
+                  >
+                    <span>View Full Bio & Courses</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+
                 <p className="text-totc-gray text-sm leading-relaxed">
-                  Lina has over 12 years of experience leading educational technology design at Ivy League universities and global edtech corporations. She has personally mentored more than 40,000 students worldwide.
+                  {courseData.instructor} is an experienced industry educator specializing in hands-on, high-impact coursework. Visit the instructor profile to inspect academic degrees, career experience, and browse all video lectures authored by this instructor.
                 </p>
               </div>
             )}

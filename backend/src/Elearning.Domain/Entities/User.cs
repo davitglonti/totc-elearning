@@ -13,7 +13,11 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Student;
     public string? AvatarUrl { get; set; }
+    public string? Headline { get; set; }
     public string? Bio { get; set; }
+    public string? Education { get; set; }
+    public string? Experience { get; set; }
+    public string? Website { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Subscription & Pro Membership

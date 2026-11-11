@@ -198,7 +198,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await dbContext.Database.EnsureCreatedAsync();
+
+        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Headline TEXT;"); } catch { }
+        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Education TEXT;"); } catch { }
+        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Experience TEXT;"); } catch { }
+        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Website TEXT;"); } catch { }
+
         await SeedData.InitializeAsync(dbContext);
+        await SeedData.EnrichInstructorProfilesAsync(dbContext);
         Console.WriteLine("[TOTC LMS] Database initialized and seeded successfully.");
     }
     catch (Exception ex)

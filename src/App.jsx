@@ -13,6 +13,8 @@ import CoursePlayerPage from './pages/CoursePlayerPage';
 import InstructorDashboardPage from './pages/InstructorDashboardPage';
 import CreateCoursePage from './pages/CreateCoursePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import AuthPage from './pages/AuthPage';
+import InstructorProfilePage from './pages/InstructorProfilePage';
 import { AuthModal, VideoModal, AssessmentModal } from './components/Modals';
 import { api } from './services/api';
 
@@ -37,10 +39,18 @@ const slugify = (text, id) => {
 /**
  * Maps page state to the browser's address bar URL path
  */
-const getPathForPage = (page, course, playCourse) => {
+const getPathForPage = (page, course, playCourse, instructor) => {
   switch (page) {
     case 'home':
       return '/';
+    case 'login':
+      return '/login';
+    case 'register':
+      return '/register';
+    case 'instructor-profile': {
+      const name = instructor?.fullName || instructor?.instructorName || instructor?.name || (typeof instructor === 'string' ? instructor : 'profile');
+      return `/instructor/${slugify(name, instructor?.id)}`;
+    }
     case 'courses':
       return '/courses';
     case 'course-detail': {
@@ -81,6 +91,7 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [activeCourseToPlay, setActiveCourseToPlay] = useState(null);
+  const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [securityNotice, setSecurityNotice] = useState('');
@@ -147,7 +158,15 @@ export default function App() {
       }
 
       // Standard route mappings
-      if (path === '/courses') {
+      if (path === '/login') {
+        setActivePage('login');
+      } else if (path === '/register') {
+        setActivePage('register');
+      } else if (path.startsWith('/instructor/') && !path.startsWith('/instructor/courses') && !path.startsWith('/instructor/studio')) {
+        const rawInstructor = decodeURIComponent(path.replace('/instructor/', '').replace(/\/$/, ''));
+        setSelectedInstructor(rawInstructor);
+        setActivePage('instructor-profile');
+      } else if (path === '/courses') {
         setActivePage('courses');
       } else if (path === '/my-courses' || path === '/dashboard') {
         setActivePage('dashboard');
@@ -208,6 +227,8 @@ export default function App() {
         setSelectedCourse(extraData);
       } else if (targetPage === 'course-player') {
         setActiveCourseToPlay(extraData);
+      } else if (targetPage === 'instructor-profile') {
+        setSelectedInstructor(extraData);
       }
     }
 
@@ -257,7 +278,7 @@ export default function App() {
 
     // Update Browser Address Bar URL with clean, SEO-friendly path
     const activeC = extraData || (targetPage === 'course-player' ? activeCourseToPlay : selectedCourse);
-    const newPath = getPathForPage(targetPage, activeC, activeC);
+    const newPath = getPathForPage(targetPage, activeC, activeC, extraData || selectedInstructor);
     if (window.location.pathname !== newPath) {
       window.history.pushState({ page: targetPage, path: newPath }, '', newPath);
     }
@@ -383,6 +404,36 @@ export default function App() {
           />
         )}
 
+        {/* Dedicated Login & Registration Pages */}
+        {activePage === 'login' && (
+          <AuthPage
+            initialMode="login"
+            setActivePage={handleSafePageTransition}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        )}
+
+        {activePage === 'register' && (
+          <AuthPage
+            initialMode="register"
+            setActivePage={handleSafePageTransition}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        )}
+
+        {/* Public Instructor Bio & Authored Courses */}
+        {activePage === 'instructor-profile' && (
+          <InstructorProfilePage
+            instructor={selectedInstructor}
+            currentUser={currentUser}
+            setActivePage={handleSafePageTransition}
+            setSelectedCourse={(course) => {
+              setSelectedCourse(course);
+              handleSafePageTransition('course-detail', course);
+            }}
+          />
+        )}
+
         {activePage === 'courses' && (
           <CoursesPage
             setActivePage={handleSafePageTransition}
@@ -428,8 +479,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Global Footer (hidden on course-player for full distraction-free learning immersion) */}
-      {activePage !== 'course-player' && (
+      {/* Global Footer (hidden on course-player, login & register for distraction-free view) */}
+      {activePage !== 'course-player' && activePage !== 'login' && activePage !== 'register' && (
         <Footer setActivePage={handleSafePageTransition} />
       )}
 

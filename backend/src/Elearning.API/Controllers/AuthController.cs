@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Elearning.API.Controllers;
 
 /// <summary>
-/// Endpoints for student and instructor registration and JWT login.
+/// Endpoints for student and instructor registration, JWT login, and Google sign-in.
 /// </summary>
 public class AuthController : BaseApiController
 {
@@ -51,6 +51,25 @@ public class AuthController : BaseApiController
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Authenticate or register with Google OAuth profile.
+    /// </summary>
+    [HttpPost("google")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthDto dto)
+    {
+        try
+        {
+            var response = await _authService.GoogleAuthAsync(dto);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

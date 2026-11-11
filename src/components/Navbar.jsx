@@ -290,7 +290,10 @@ export default function Navbar({
           ) : (
             <>
               <button
-                onClick={() => openAuthModal('login')}
+                onClick={() => {
+                  if (setActivePage) setActivePage('login');
+                  else if (openAuthModal) openAuthModal('login');
+                }}
                 className={`px-7 py-2.5 rounded-full font-medium text-base transition-all duration-200 shadow-sm hover:shadow ${
                   isLightNav
                     ? 'bg-totc-gray-light text-totc-navy hover:bg-gray-100'
@@ -300,7 +303,10 @@ export default function Navbar({
                 Login
               </button>
               <button
-                onClick={() => openAuthModal('register')}
+                onClick={() => {
+                  if (setActivePage) setActivePage('register');
+                  else if (openAuthModal) openAuthModal('register');
+                }}
                 className={`px-7 py-2.5 rounded-full font-medium text-base transition-all duration-200 shadow-sm hover:shadow ${
                   isLightNav
                     ? 'bg-totc-teal text-white hover:bg-totc-teal-dark'
@@ -388,7 +394,8 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    openAuthModal('login');
+                    if (setActivePage) setActivePage('login');
+                    else if (openAuthModal) openAuthModal('login');
                   }}
                   className="w-full py-3 rounded-full font-medium text-base bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors"
                 >
@@ -397,7 +404,8 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    openAuthModal('register');
+                    if (setActivePage) setActivePage('register');
+                    else if (openAuthModal) openAuthModal('register');
                   }}
                   className="w-full py-3 rounded-full font-medium text-base bg-totc-teal text-white hover:bg-totc-teal-dark transition-colors shadow-sm"
                 >
