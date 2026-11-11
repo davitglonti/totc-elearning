@@ -71,14 +71,12 @@ export const api = {
       return result;
     },
 
-    async googleLogin({ email, fullName, avatarUrl, role = 'Student', headline, education, experience }) {
+    async googleLogin({ idToken, role = 'Student', headline, education, experience }) {
       const roleEnum = role === 'Instructor' || role === 1 ? 1 : 0;
       const result = await request('/auth/google', {
         method: 'POST',
         body: JSON.stringify({
-          email,
-          fullName,
-          avatarUrl,
+          idToken,
           role: roleEnum,
           headline,
           education,
@@ -90,6 +88,32 @@ export const api = {
         localStorage.setItem('totc_user', JSON.stringify(result.user));
       }
       return result;
+    },
+
+    async getAuthConfig() {
+      try {
+        const config = await request('/auth/config');
+        const localOverride = localStorage.getItem('totc_google_client_id');
+        if (localOverride) {
+          config.googleClientId = localOverride;
+          config.isGoogleAuthEnabled = true;
+        }
+        return config;
+      } catch (e) {
+        const localOverride = localStorage.getItem('totc_google_client_id');
+        return {
+          googleClientId: localOverride || '',
+          isGoogleAuthEnabled: Boolean(localOverride)
+        };
+      }
+    },
+
+    setLocalGoogleClientId(clientId) {
+      if (clientId) {
+        localStorage.setItem('totc_google_client_id', clientId.trim());
+      } else {
+        localStorage.removeItem('totc_google_client_id');
+      }
     },
 
     logout() {

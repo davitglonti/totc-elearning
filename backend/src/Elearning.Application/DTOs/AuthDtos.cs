@@ -36,14 +36,8 @@ public class LoginDto
 
 public class GoogleAuthDto
 {
-    [Required, EmailAddress]
-    public string Email { get; set; } = string.Empty;
-
-    [Required]
-    public string FullName { get; set; } = string.Empty;
-
-    public string? AvatarUrl { get; set; }
-    public string? Credential { get; set; }
+    [Required(ErrorMessage = "Google ID token is required.")]
+    public string IdToken { get; set; } = string.Empty;
 
     [Range(0, 1, ErrorMessage = "Role can only be Student (0) or Instructor (1). Direct Administrator registration is strictly prohibited.")]
     public UserRole Role { get; set; } = UserRole.Student;

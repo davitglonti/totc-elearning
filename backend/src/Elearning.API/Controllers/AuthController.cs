@@ -10,10 +10,27 @@ namespace Elearning.API.Controllers;
 public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IConfiguration configuration)
     {
         _authService = authService;
+        _configuration = configuration;
+    }
+
+    /// <summary>
+    /// Retrieve public authentication configuration (Google OAuth Client ID, feature flags).
+    /// </summary>
+    [HttpGet("config")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetAuthConfig()
+    {
+        var googleClientId = _configuration["Google:ClientId"] ?? string.Empty;
+        return Ok(new
+        {
+            googleClientId = googleClientId.Trim(),
+            isGoogleAuthEnabled = !string.IsNullOrWhiteSpace(googleClientId)
+        });
     }
 
     /// <summary>
@@ -60,16 +77,39 @@ public class AuthController : BaseApiController
     }
 
     /// <summary>
-    /// Authenticate or register with Google OAuth profile.
-    /// Temporarily disabled for security hardening pending GoogleJsonWebSignature client ID verification.
+    /// Authenticate or register with verified Google OAuth ID Token (GoogleJsonWebSignature).
     /// </summary>
     [HttpPost("google")]
-    [ProducesResponseType(StatusCodes.Status501NotImplemented)]
-    public IActionResult GoogleAuth([FromBody] GoogleAuthDto dto)
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthDto dto)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, new
+        if (dto.Role == Elearning.Domain.Enums.UserRole.Admin || (int)dto.Role > 1 || (int)dto.Role < 0)
         {
-            message = "Google authentication endpoint is temporarily disabled for security hardening. Server-side Google ID token signature verification (GoogleJsonWebSignature) is required before Google OAuth can be enabled."
-        });
+            return BadRequest(new { message = "Direct registration as Administrator is strictly prohibited." });
+        }
+
+        try
+        {
+            var response = await _authService.GoogleAuthAsync(dto);
+            return Ok(response);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = $"Google authentication error: {ex.Message}" });
+        }
     }
 }

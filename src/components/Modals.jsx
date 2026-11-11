@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Play, Star, CheckCircle, Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Play, Star, CheckCircle, Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Sparkles, Settings, Key, ShieldCheck, ExternalLink } from 'lucide-react';
 import { api } from '../services/api';
 
 function GoogleIcon({ className = "w-4 h-4" }) {
@@ -30,11 +30,128 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     bio: ''
   });
 
+  // Real Google OAuth 2.0 Integration State
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
+  const [showGoogleSetup, setShowGoogleSetup] = useState(false);
+  const [customClientIdInput, setCustomClientIdInput] = useState('');
+  const googleBtnContainerRef = useRef(null);
+
   useEffect(() => {
     setMode(initialMode || 'login');
     setError('');
     setSubmitted(false);
   }, [initialMode, isOpen]);
+
+  // Load Google Auth Config when modal opens
+  useEffect(() => {
+    let mounted = true;
+    async function fetchConfig() {
+      try {
+        const config = await api.auth.getAuthConfig();
+        if (!mounted) return;
+        const envId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+        const localId = localStorage.getItem('totc_google_client_id');
+        const activeId = (localId || config.googleClientId || envId || '').trim();
+        if (activeId) {
+          setGoogleClientId(activeId);
+          setIsGoogleConfigured(true);
+          setCustomClientIdInput(activeId);
+        }
+      } catch (err) {
+        console.warn('Failed to load auth config in modal:', err);
+      }
+    }
+    if (isOpen) {
+      fetchConfig();
+    }
+    return () => { mounted = false; };
+  }, [isOpen]);
+
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response?.credential) return;
+    setError('');
+    setGoogleLoading(true);
+
+    try {
+      const extra = role === 'Instructor' ? {
+        headline: form.headline?.trim() || undefined,
+        education: form.education?.trim() || undefined,
+        experience: form.experience?.trim() || undefined
+      } : {};
+
+      const res = await api.auth.googleLogin({
+        idToken: response.credential,
+        role: role,
+        ...extra
+      });
+
+      setSubmitted(true);
+      if (onAuthSuccess) {
+        setTimeout(() => {
+          onAuthSuccess(res.user);
+          onClose();
+        }, 600);
+      }
+    } catch (err) {
+      setError(err.message || 'Google-ით ავტორიზაცია ვერ განხორციელდა. დარწმუნდით რომ ტოკენი ვალიდურია.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // Render Google GIS Button inside modal
+  useEffect(() => {
+    if (!googleClientId || !isOpen) return;
+
+    const setupGis = () => {
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+
+          if (googleBtnContainerRef.current) {
+            googleBtnContainerRef.current.innerHTML = '';
+            window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
+              theme: 'outline',
+              size: 'medium',
+              width: 280,
+              text: mode === 'login' ? 'signin_with' : 'signup_with',
+              shape: 'pill'
+            });
+          }
+        } catch (e) {
+          console.warn('Google Identity modal notice:', e);
+        }
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      setupGis();
+    } else {
+      const timer = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(timer);
+          setupGis();
+        }
+      }, 250);
+      return () => clearInterval(timer);
+    }
+  }, [googleClientId, isOpen, mode, role]);
+
+  const handleSaveGoogleClientId = (e) => {
+    e.preventDefault();
+    if (!customClientIdInput.trim()) return;
+    const cleanId = customClientIdInput.trim();
+    api.auth.setLocalGoogleClientId(cleanId);
+    setGoogleClientId(cleanId);
+    setIsGoogleConfigured(true);
+    setShowGoogleSetup(false);
+  };
 
   if (!isOpen) return null;
 
@@ -67,10 +184,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleAuth = () => {
-    setError('🔒 Google ავტორიზაცია დროებით გამორთულია უსაფრთხოების მიზნით. გთხოვთ გაიაროთ ავტორიზაცია ელ-ფოსტით.');
   };
 
   return (
@@ -140,23 +253,55 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
             </button>
           </div>
 
-          {/* Google One-Click Button */}
+          {/* REAL CRYPTOGRAPHIC GOOGLE OAUTH 2.0 SECTION */}
           <div className="mb-4">
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/30 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm opacity-85"
-              title="Google OAuth ავტორიზაცია დროებით გამორთულია უსაფრთხოების გაძლიერების მიზნით"
-            >
-              <GoogleIcon className="w-4 h-4" />
-              <span>{mode === 'login' ? 'Continue with Google' : `Sign Up with Google (${role})`}</span>
-              <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-300">
-                გამორთულია
-              </span>
-            </button>
+            {isGoogleConfigured ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-center w-full py-1">
+                  <div ref={googleBtnContainerRef} className="min-h-[40px] flex justify-center w-full" />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-totc-gray px-1">
+                  <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Google ID Token Verified
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleSetup(true)}
+                    className="text-totc-teal hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <Settings className="w-3 h-3" /> Client ID
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleSetup(true)}
+                  className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm group"
+                >
+                  <GoogleIcon className="w-4 h-4" />
+                  <span>{mode === 'login' ? 'Continue with Google' : `Sign Up with Google (${role})`}</span>
+                  <span className="text-[10px] bg-totc-teal/10 text-totc-teal font-bold px-2 py-0.5 rounded-full border border-totc-teal/30 group-hover:bg-totc-teal group-hover:text-white transition-colors flex items-center gap-1">
+                    <Settings className="w-3 h-3" /> ჩართვა
+                  </span>
+                </button>
+                <p className="text-[10px] text-totc-gray text-center mt-1">
+                  Google-ით ავტორიზაციისთვის მიუთითეთ Google Client ID
+                </p>
+              </div>
+            )}
+
+            {googleLoading && (
+              <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs flex items-center justify-center gap-2 animate-pulse mt-2">
+                <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <span>მიმდინარეობს Google ვერიფიკაცია...</span>
+              </div>
+            )}
+
             <div className="relative my-3 text-center">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
-              <span className="relative px-3 bg-white text-[10px] font-semibold text-gray-400 uppercase">Or with email</span>
+              <span className="relative px-3 bg-white text-[10px] font-semibold text-gray-400 uppercase">ან გაიარეთ ავტორიზაცია ელ-ფოსტით</span>
             </div>
           </div>
 
@@ -328,6 +473,77 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
         </div>
 
       </div>
+
+      {/* GOOGLE SETUP POPUP IN MODAL */}
+      {showGoogleSetup && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setShowGoogleSetup(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-totc-teal/20 flex items-center justify-center text-totc-teal">
+                <GoogleIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-base text-totc-navy">Google OAuth 2.0 Client ID</h4>
+                <p className="text-xs text-totc-gray">ნამდვილი კრიპტოგრაფიული ID Token ვერიფიკაცია</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 mb-4 space-y-1">
+              <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Google Cloud Console-ის პარამეტრები
+              </div>
+              <p className="leading-relaxed">
+                Google Cloud-ში OAuth Client ID-ის შექმნისას დაამატეთ Authorized JavaScript origins-ში:{' '}
+                <code className="bg-amber-100 font-bold px-1 rounded font-mono">http://localhost:5173</code>
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveGoogleClientId} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-totc-navy mb-1">
+                  ჩასვით თქვენი Google Client ID:
+                </label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={customClientIdInput}
+                    onChange={(e) => setCustomClientIdInput(e.target.value)}
+                    placeholder="მაგ: 1234567890-abc123xyz.apps.googleusercontent.com"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-xs font-mono focus:border-totc-teal focus:ring-1 focus:ring-totc-teal"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleSetup(false)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                >
+                  გაუქმება
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-lg bg-totc-teal hover:bg-teal-600 text-white text-xs font-bold transition-all flex items-center gap-1"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  შენახვა
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
