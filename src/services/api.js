@@ -110,6 +110,32 @@ export const api = {
     },
   },
 
+  // Instructor Authoring & Studio
+  instructor: {
+    async getMyCourses() {
+      return request('/instructor/my-courses');
+    },
+
+    async createFullCourse(data) {
+      return request('/instructor/courses/full', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async toggleCoursePublish(courseId) {
+      return request(`/instructor/courses/${courseId}/toggle-publish`, {
+        method: 'PUT',
+      });
+    },
+
+    async deleteCourse(courseId) {
+      return request(`/instructor/courses/${courseId}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
   // Student Enrollments & Learning Progression
   enrollments: {
     async getMyCourses() {

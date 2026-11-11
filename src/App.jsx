@@ -11,6 +11,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import InstructorDashboardPage from './pages/InstructorDashboardPage';
+import CreateCoursePage from './pages/CreateCoursePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import { AuthModal, VideoModal, AssessmentModal } from './components/Modals';
 import { api } from './services/api';
@@ -52,6 +53,8 @@ const getPathForPage = (page, course, playCourse) => {
       return '/my-courses';
     case 'instructor-dashboard':
       return '/instructor/studio';
+    case 'create-course':
+      return '/instructor/courses/new';
     case 'admin-dashboard':
       return '/admin';
     case 'membership':
@@ -131,6 +134,8 @@ export default function App() {
         setActivePage('courses');
       } else if (path === '/my-courses' || path === '/dashboard') {
         setActivePage('dashboard');
+      } else if (path === '/instructor/courses/new' || path === '/create-course') {
+        setActivePage('create-course');
       } else if (path.startsWith('/instructor')) {
         setActivePage('instructor-dashboard');
       } else if (path === '/admin') {
@@ -196,8 +201,8 @@ export default function App() {
       return;
     }
 
-    // Guard: Instructor Studio requires Instructor or Admin role
-    if (targetPage === 'instructor-dashboard') {
+    // Guard: Instructor Studio & Course Creation require Instructor or Admin role
+    if (targetPage === 'instructor-dashboard' || targetPage === 'create-course') {
       if (!currentUser) {
         setSecurityNotice('Instructor credentials required to access the Instructor Studio.');
         openAuthModal('login');
@@ -316,6 +321,18 @@ export default function App() {
         {/* Instructor Studio (Protected) */}
         {activePage === 'instructor-dashboard' && (
           <InstructorDashboardPage
+            currentUser={currentUser}
+            setActivePage={handleSafePageTransition}
+            setSelectedCourse={(course) => {
+              setSelectedCourse(course);
+              handleSafePageTransition('course-detail', course);
+            }}
+          />
+        )}
+
+        {/* Course Creation Studio (Protected) */}
+        {activePage === 'create-course' && (
+          <CreateCoursePage
             currentUser={currentUser}
             setActivePage={handleSafePageTransition}
             setSelectedCourse={(course) => {

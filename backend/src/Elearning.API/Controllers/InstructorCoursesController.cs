@@ -1,12 +1,16 @@
 using Elearning.Application.DTOs;
 using Elearning.Application.Interfaces;
+using Elearning.Domain.Entities;
+using Elearning.Domain.Enums;
+using Elearning.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Elearning.API.Controllers;
 
 /// <summary>
-/// Authoring endpoints for certified instructors and platform administrators.
+/// Authoring and analytics endpoints for certified instructors and platform administrators.
 /// </summary>
 [Authorize(Roles = "Instructor,Admin")]
 [Route("api/instructor")]
@@ -14,11 +18,257 @@ public class InstructorCoursesController : BaseApiController
 {
     private readonly ICourseService _courseService;
     private readonly IMediaService _mediaService;
+    private readonly ElearningDbContext _context;
 
-    public InstructorCoursesController(ICourseService courseService, IMediaService mediaService)
+    public InstructorCoursesController(
+        ICourseService courseService, 
+        IMediaService mediaService,
+        ElearningDbContext context)
     {
         _courseService = courseService;
         _mediaService = mediaService;
+        _context = context;
+    }
+
+    /// <summary>
+    /// Retrieve real course metrics, lectures count, enrollments, and curriculum for the authenticated instructor.
+    /// </summary>
+    [HttpGet("my-courses")]
+    [ProducesResponseType(typeof(InstructorSummaryDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyInstructorCourses()
+    {
+        if (!CurrentUserId.HasValue) return Unauthorized();
+
+        var query = _context.Courses
+            .AsNoTracking()
+            .Include(c => c.Category)
+            .Include(c => c.Enrollments)
+            .Include(c => c.Reviews)
+            .Include(c => c.Sections)
+                .ThenInclude(s => s.Lessons)
+            .AsQueryable();
+
+        // If not Admin, show ONLY courses authored by this specific instructor
+        if (!IsAdmin)
+        {
+            query = query.Where(c => c.InstructorId == CurrentUserId.Value);
+        }
+
+        var courses = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
+
+        var courseItems = courses.Select(c =>
+        {
+            var totalLessons = c.Sections.Sum(s => s.Lessons.Count);
+            var studentsCount = c.Enrollments.Count;
+            var revenue = studentsCount * c.Price;
+            var avgRating = c.Reviews.Count > 0 ? c.Reviews.Average(r => r.Rating) : 5.0;
+
+            return new InstructorCourseItemDto
+            {
+                Id = c.Id,
+                Title = c.Title,
+                Description = c.Description,
+                ThumbnailUrl = c.ThumbnailUrl,
+                Price = c.Price,
+                Level = c.Level.ToString(),
+                CategoryName = c.Category != null ? c.Category.Name : "General",
+                CategoryId = c.CategoryId,
+                IsPublished = c.IsPublished,
+                SectionsCount = c.Sections.Count,
+                LessonsCount = totalLessons,
+                StudentsCount = studentsCount,
+                Revenue = revenue,
+                Rating = Math.Round(avgRating, 1),
+                CreatedAt = c.CreatedAt
+            };
+        }).ToList();
+
+        var totalCoursesCount = courseItems.Count;
+        var totalLessonsCount = courseItems.Sum(c => c.LessonsCount);
+        var totalStudentsCount = courseItems.Sum(c => c.StudentsCount);
+        var totalRevenueAmount = courseItems.Sum(c => c.Revenue);
+        var overallRating = courseItems.Count > 0 ? courseItems.Average(c => c.Rating) : 5.0;
+
+        var summary = new InstructorSummaryDto
+        {
+            TotalCourses = totalCoursesCount,
+            TotalLessons = totalLessonsCount,
+            TotalStudents = totalStudentsCount,
+            TotalRevenue = totalRevenueAmount,
+            AverageRating = Math.Round(overallRating, 1),
+            Courses = courseItems
+        };
+
+        return Ok(summary);
+    }
+
+    /// <summary>
+    /// Create a complete course with modules and lecture video lessons in a single atomic action.
+    /// </summary>
+    [HttpPost("courses/full")]
+    [ProducesResponseType(typeof(InstructorCourseItemDto), StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateFullCourse([FromBody] CreateFullCourseDto dto)
+    {
+        if (!CurrentUserId.HasValue) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            return BadRequest(new { message = "Course title is required." });
+
+        // Verify or fallback category
+        var category = await _context.Categories.FindAsync(dto.CategoryId);
+        if (category == null)
+        {
+            category = await _context.Categories.FirstOrDefaultAsync();
+            if (category == null)
+            {
+                category = new Category { Name = "General Development", Slug = "development" };
+                _context.Categories.Add(category);
+                await _context.SaveChangesAsync();
+            }
+            dto.CategoryId = category.Id;
+        }
+
+        var course = new Course
+        {
+            Title = dto.Title.Trim(),
+            Description = dto.Description?.Trim() ?? string.Empty,
+            ThumbnailUrl = string.IsNullOrWhiteSpace(dto.ThumbnailUrl) ? "/assets/explore_row_1.png" : dto.ThumbnailUrl.Trim(),
+            Price = dto.Price >= 0 ? dto.Price : 49m,
+            Level = dto.Level,
+            CategoryId = dto.CategoryId,
+            InstructorId = CurrentUserId.Value,
+            IsPublished = dto.IsPublished,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Add sections and lessons if provided
+        int sectionOrder = 1;
+        if (dto.Sections != null && dto.Sections.Count > 0)
+        {
+            foreach (var sDto in dto.Sections)
+            {
+                var section = new Section
+                {
+                    Title = string.IsNullOrWhiteSpace(sDto.Title) ? $"Module {sectionOrder}" : sDto.Title.Trim(),
+                    OrderIndex = sDto.OrderIndex > 0 ? sDto.OrderIndex : sectionOrder++
+                };
+
+                int lessonOrder = 1;
+                if (sDto.Lessons != null && sDto.Lessons.Count > 0)
+                {
+                    foreach (var lDto in sDto.Lessons)
+                    {
+                        var lesson = new Lesson
+                        {
+                            Title = string.IsNullOrWhiteSpace(lDto.Title) ? $"Lesson {lessonOrder}" : lDto.Title.Trim(),
+                            VideoUrl = string.IsNullOrWhiteSpace(lDto.VideoUrl) 
+                                ? "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" 
+                                : lDto.VideoUrl.Trim(),
+                            DurationMinutes = lDto.DurationMinutes > 0 ? lDto.DurationMinutes : 15,
+                            ContentText = lDto.ContentText ?? string.Empty,
+                            IsFreePreview = lDto.IsFreePreview,
+                            LessonType = string.IsNullOrWhiteSpace(lDto.LessonType) ? "Video" : lDto.LessonType,
+                            OrderIndex = lDto.OrderIndex > 0 ? lDto.OrderIndex : lessonOrder++
+                        };
+
+                        section.Lessons.Add(lesson);
+                    }
+                }
+
+                course.Sections.Add(section);
+            }
+        }
+        else
+        {
+            // Default initial introductory section and lesson
+            var defaultSection = new Section
+            {
+                Title = "Module 1: Introduction & Foundations",
+                OrderIndex = 1
+            };
+            defaultSection.Lessons.Add(new Lesson
+            {
+                Title = "Course Welcome & Overview",
+                VideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                DurationMinutes = 10,
+                ContentText = "Welcome to the course. Here are the tools and prerequisites.",
+                IsFreePreview = true,
+                LessonType = "Video",
+                OrderIndex = 1
+            });
+            course.Sections.Add(defaultSection);
+        }
+
+        _context.Courses.Add(course);
+        await _context.SaveChangesAsync();
+
+        var resultDto = new InstructorCourseItemDto
+        {
+            Id = course.Id,
+            Title = course.Title,
+            Description = course.Description,
+            ThumbnailUrl = course.ThumbnailUrl,
+            Price = course.Price,
+            Level = course.Level.ToString(),
+            CategoryName = category.Name,
+            CategoryId = category.Id,
+            IsPublished = course.IsPublished,
+            SectionsCount = course.Sections.Count,
+            LessonsCount = course.Sections.Sum(s => s.Lessons.Count),
+            StudentsCount = 0,
+            Revenue = 0,
+            Rating = 5.0,
+            CreatedAt = course.CreatedAt
+        };
+
+        return CreatedAtAction(nameof(CoursesController.GetCourseById), "Courses", new { id = course.Id }, resultDto);
+    }
+
+    /// <summary>
+    /// Toggle publish status of instructor's course.
+    /// </summary>
+    [HttpPut("courses/{id:guid}/toggle-publish")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> TogglePublish(Guid id)
+    {
+        if (!CurrentUserId.HasValue) return Unauthorized();
+
+        var course = await _context.Courses.FindAsync(id);
+        if (course == null) return NotFound(new { message = "Course not found." });
+
+        if (!IsAdmin && course.InstructorId != CurrentUserId.Value)
+            return Forbid();
+
+        course.IsPublished = !course.IsPublished;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Course is now {(course.IsPublished ? "Published" : "Draft")}.", isPublished = course.IsPublished });
+    }
+
+    /// <summary>
+    /// Delete course authored by the instructor.
+    /// </summary>
+    [HttpDelete("courses/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> DeleteCourse(Guid id)
+    {
+        if (!CurrentUserId.HasValue) return Unauthorized();
+
+        var course = await _context.Courses
+            .Include(c => c.Sections)
+                .ThenInclude(s => s.Lessons)
+            .Include(c => c.Enrollments)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (course == null) return NotFound(new { message = "Course not found." });
+
+        if (!IsAdmin && course.InstructorId != CurrentUserId.Value)
+            return Forbid();
+
+        _context.Courses.Remove(course);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Course deleted successfully." });
     }
 
     /// <summary>

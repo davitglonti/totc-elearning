@@ -1,311 +1,333 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, DollarSign, Star, Plus, Video, 
-  Upload, CheckCircle, Edit, Trash2, Sparkles, ExternalLink 
+  CheckCircle, Trash2, Sparkles, Eye, EyeOff, Layers, 
+  Clock, AlertCircle, RefreshCw, ArrowUpRight
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function InstructorDashboardPage({ currentUser, setActivePage, setSelectedCourse }) {
-  const [courses, setCourses] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
 
-  // Course creation form
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    price: '99',
-    level: 'Beginner',
-    categoryId: 'a060b466-5aba-4c96-8d0f-953d409f5cfe', // Design category default
-  });
-
-  useEffect(() => {
-    async function loadInstructorCourses() {
-      setLoading(true);
-      try {
-        const res = await api.courses.getAll({ pageSize: 50 });
-        setCourses(res.items || []);
-      } catch (e) {
-        console.warn('Failed to load instructor courses:', e.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadInstructorCourses();
-  }, []);
-
-  const handleCreateCourse = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setErrorMsg('');
-
+  // Load instructor's own courses and real metrics
+  const loadInstructorData = async () => {
+    setRefreshing(true);
     try {
-      // Post to backend instructor endpoint
-      const token = api.auth.getToken();
-      const res = await fetch('http://localhost:5000/api/instructor/courses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          price: parseFloat(formData.price) || 99,
-          level: formData.level,
-          categoryId: formData.categoryId
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Course creation failed');
-      }
-
-      const newCourse = await res.json();
-      setSuccessMsg('Course successfully created and published!');
-      setShowCreateModal(false);
-      setCourses(prev => [newCourse, ...prev]);
-      setFormData({ title: '', description: '', price: '99', level: 'Beginner', categoryId: formData.categoryId });
-      setTimeout(() => setSuccessMsg(''), 4000);
+      const data = await api.instructor.getMyCourses();
+      setSummary(data);
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to create course. Please try again.');
+      console.warn('Failed to load instructor courses:', err);
+      setActionMessage({ type: 'error', text: 'Failed to load your courses: ' + err.message });
     } finally {
-      setSubmitting(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    loadInstructorData();
+  }, []);
+
+  // Handle toggling publish state
+  const handleTogglePublish = async (courseId, currentPublished) => {
+    try {
+      const res = await api.instructor.toggleCoursePublish(courseId);
+      setActionMessage({ 
+        type: 'success', 
+        text: `Course status changed to ${res.isPublished ? 'Live (Published)' : 'Draft (Hidden)'}.` 
+      });
+      setSummary(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          courses: prev.courses.map(c => c.id === courseId ? { ...c, isPublished: res.isPublished } : c)
+        };
+      });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Could not toggle course status: ' + err.message });
+    }
+  };
+
+  // Handle deleting course
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    if (!window.confirm(`Are you sure you want to delete course "${courseTitle}"? All associated lessons and enrollments will be deleted.`)) {
+      return;
+    }
+
+    try {
+      await api.instructor.deleteCourse(courseId);
+      setActionMessage({ type: 'success', text: `Course "${courseTitle}" deleted successfully.` });
+      loadInstructorData();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'Could not delete course: ' + err.message });
+    }
+  };
+
+  const courses = summary?.courses || [];
 
   return (
     <div className="pt-28 pb-24 bg-[#F8FAFC] min-h-screen">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
         
         {/* Header */}
-        <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-[28px] border border-gray-100 shadow-sm">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               Instructor Studio
             </div>
-            <h1 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-navy">
+            <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight">
               Instructor Dashboard
             </h1>
-            <p className="font-poppins text-totc-gray text-base">
-              Welcome, {currentUser?.fullName || 'Instructor'}! Manage your courses, track enrollments, and launch new lectures.
+            <p className="font-poppins text-totc-gray text-sm sm:text-base">
+              Welcome back, <span className="text-totc-navy font-bold">{currentUser?.fullName || 'Instructor'}</span>! Track your lectures, enrolled students, and manage curriculum.
             </p>
           </div>
 
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-6 py-3.5 rounded-full font-bold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create New Course</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={loadInstructorData}
+              disabled={refreshing}
+              className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
+              title="Refresh statistics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+
+            {/* Direct navigation to Course Creation Studio page */}
+            <button
+              onClick={() => setActivePage('create-course')}
+              className="px-6 py-3.5 rounded-full font-bold text-xs sm:text-sm bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create New Course</span>
+            </button>
+          </div>
         </div>
 
-        {successMsg && (
-          <div className="mb-8 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 shrink-0" />
-            <span>{successMsg}</span>
+        {/* Action Alert Banner */}
+        {actionMessage && (
+          <div className={`mb-8 p-4 rounded-2xl flex items-center justify-between border ${
+            actionMessage.type === 'success' 
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            <div className="flex items-center gap-3 text-sm font-semibold">
+              {actionMessage.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+              <span>{actionMessage.text}</span>
+            </div>
+            <button onClick={() => setActionMessage(null)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">
+              Dismiss
+            </button>
           </div>
         )}
 
-        {/* 4 Instructor Metrics - Dynamically calculated from real courses */}
-        {(() => {
-          const totalStudents = courses.reduce((acc, c) => acc + (c.studentsCount || 0), 0);
-          const totalRevenue = courses.reduce((acc, c) => acc + ((c.studentsCount || 0) * (c.price || 0)), 0);
-          const avgRating = courses.length > 0 
-            ? (courses.reduce((acc, c) => acc + (c.averageRating || 5), 0) / courses.length).toFixed(1)
-            : '5.0';
-
-          return (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
-              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">My Courses</p>
-                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{courses.length}</h3>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
-                  <Users className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Students</p>
-                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{totalStudents}</h3>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                  <DollarSign className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Revenue</p>
-                  <h3 className="font-poppins font-bold text-2xl text-emerald-600">
-                    ${Number(totalRevenue).toLocaleString()}
-                  </h3>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                  <Star className="w-6 h-6 fill-amber-500" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Avg. Rating</p>
-                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">{avgRating} / 5.0</h3>
-                </div>
-              </div>
+        {/* 4 Instructor Metrics - REAL data belonging strictly to this instructor */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
+          {/* My Courses */}
+          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+              <BookOpen className="w-6 h-6" />
             </div>
-          );
-        })()}
+            <div>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">My Courses</p>
+              <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                {summary ? summary.totalCourses : <span className="animate-pulse">...</span>}
+              </h3>
+              <p className="text-[11px] text-purple-600 font-medium">Published & Drafts</p>
+            </div>
+          </div>
 
-        {/* Courses Table */}
-        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden mb-12">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-poppins font-bold text-xl text-totc-navy">Curriculum Management</h3>
-            <span className="text-xs text-totc-gray font-medium">{courses.length} courses listed</span>
+          {/* Total Lectures Count */}
+          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Video className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Lectures</p>
+              <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                {summary ? summary.totalLessons : <span className="animate-pulse">...</span>}
+              </h3>
+              <p className="text-[11px] text-indigo-600 font-medium">Video & Quiz Units</p>
+            </div>
+          </div>
+
+          {/* Enrolled Students */}
+          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Enrolled Students</p>
+              <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                {summary ? summary.totalStudents : <span className="animate-pulse">...</span>}
+              </h3>
+              <p className="text-[11px] text-totc-teal font-medium">Joined Your Courses</p>
+            </div>
+          </div>
+
+          {/* Revenue */}
+          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+              <DollarSign className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Course Revenue</p>
+              <h3 className="font-poppins font-black text-2xl text-emerald-600">
+                {summary ? `$${Number(summary.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
+              </h3>
+              <p className="text-[11px] text-totc-gray font-medium">Rating: ⭐ {summary?.averageRating || '5.0'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Curriculum Management Table */}
+        <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden mb-12">
+          <div className="p-6 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-poppins font-bold text-xl text-totc-navy">My Course Curriculum</h3>
+              <p className="text-xs text-totc-gray">Manage your modules, video lectures, student counts, and publishing.</p>
+            </div>
+            <span className="text-xs font-bold text-totc-teal bg-teal-50 px-3 py-1.5 rounded-full">
+              {courses.length} Courses Authored by You
+            </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-totc-gray">
-              <thead className="bg-gray-50/80 text-xs font-semibold uppercase text-totc-navy">
+            <table className="w-full text-left text-xs text-totc-gray">
+              <thead className="bg-gray-50/80 text-[10px] font-bold uppercase tracking-wider text-totc-navy border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4">Course Title</th>
-                  <th className="px-6 py-4">Category</th>
-                  <th className="px-6 py-4">Level</th>
+                  <th className="px-6 py-4">Course</th>
+                  <th className="px-6 py-4">Category & Level</th>
+                  <th className="px-6 py-4">Lectures</th>
+                  <th className="px-6 py-4">Students</th>
                   <th className="px-6 py-4">Price</th>
-                  <th className="px-6 py-4">Rating</th>
+                  <th className="px-6 py-4">Revenue</th>
+                  <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {courses.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-totc-navy max-w-xs truncate">
-                      {c.title}
-                    </td>
+                  <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
+                    {/* Course Title & Thumbnail */}
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full bg-totc-teal-light text-totc-teal text-xs font-medium">
-                        {c.categoryName || 'General'}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={c.thumbnailUrl || '/assets/explore_row_1.png'}
+                          alt={c.title}
+                          className="w-12 h-9 rounded-lg object-cover shrink-0 border border-gray-200"
+                        />
+                        <div className="min-w-0 max-w-xs">
+                          <p className="font-bold text-totc-navy truncate">{c.title}</p>
+                          <p className="text-[10px] text-totc-gray truncate">{c.description}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Category & Level */}
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 rounded-full bg-totc-teal-light text-totc-teal text-[10px] font-bold uppercase">
+                        {c.categoryName}
+                      </span>
+                      <p className="text-[10px] text-totc-gray mt-1">{c.level}</p>
+                    </td>
+
+                    {/* Lectures Count */}
+                    <td className="px-6 py-4">
+                      <span className="font-bold text-totc-navy flex items-center gap-1.5">
+                        <Video className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{c.lessonsCount} Lectures</span>
+                      </span>
+                      <p className="text-[10px] text-totc-gray">{c.sectionsCount} Modules</p>
+                    </td>
+
+                    {/* Students Count */}
+                    <td className="px-6 py-4">
+                      <span className="font-bold text-totc-teal bg-teal-50 px-2.5 py-1 rounded-full text-[11px]">
+                        {c.studentsCount} Students
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-medium">{c.level}</td>
-                    <td className="px-6 py-4 font-bold text-totc-navy">${c.price}</td>
-                    <td className="px-6 py-4 text-xs">⭐ {c.averageRating || 5.0}</td>
-                    <td className="px-6 py-4 text-right space-x-2">
+
+                    {/* Price */}
+                    <td className="px-6 py-4 font-bold text-totc-navy text-sm">
+                      ${Number(c.price).toFixed(2)}
+                    </td>
+
+                    {/* Revenue */}
+                    <td className="px-6 py-4 font-poppins font-black text-emerald-600 text-sm">
+                      ${Number(c.revenue).toFixed(2)}
+                    </td>
+
+                    {/* Live / Draft Toggle */}
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => {
-                          if (setSelectedCourse) setSelectedCourse(c);
-                          setActivePage('course-detail');
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-totc-teal hover:text-white text-xs font-semibold text-totc-navy transition-colors"
+                        onClick={() => handleTogglePublish(c.id, c.isPublished)}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-colors ${
+                          c.isPublished
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                        }`}
+                        title="Click to toggle publish status"
                       >
-                        Preview
+                        {c.isPublished ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                        <span>{c.isPublished ? 'Live' : 'Draft'}</span>
                       </button>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            if (setSelectedCourse) setSelectedCourse(c);
+                            setActivePage('course-detail', c);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-totc-teal hover:text-white text-xs font-bold text-totc-navy transition-colors"
+                        >
+                          Preview
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteCourse(c.id, c.title)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Delete course"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {courses.length === 0 && (
+              <div className="py-16 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <h4 className="font-poppins font-bold text-totc-navy text-base">You haven't authored any courses yet</h4>
+                <p className="text-xs text-totc-gray max-w-sm mx-auto">
+                  Get started by defining your curriculum, uploading lecture videos, and teaching students globally.
+                </p>
+                <button
+                  onClick={() => setActivePage('create-course')}
+                  className="px-6 py-2.5 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark transition-all inline-flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Your First Course</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
       </div>
-
-      {/* Create Course Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-[28px] p-8 shadow-2xl border border-gray-100">
-            <h3 className="font-poppins font-bold text-2xl text-totc-navy mb-2">Create New Course</h3>
-            <p className="text-xs text-totc-gray mb-6">Launch a new course onto the TOTC marketplace.</p>
-
-            {errorMsg && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
-                {errorMsg}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateCourse} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-totc-navy uppercase mb-1">Course Title</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Master React 19 and Next.js"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-totc-navy uppercase mb-1">Description</label>
-                <textarea
-                  rows="3"
-                  required
-                  placeholder="Brief summary of skills taught..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-totc-navy uppercase mb-1">Price ($ USD)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-totc-navy uppercase mb-1">Skill Level</label>
-                  <select
-                    value={formData.level}
-                    onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal bg-white"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-totc-gray hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 rounded-full text-xs font-bold bg-totc-teal text-white hover:bg-totc-teal-dark shadow-md"
-                >
-                  {submitting ? 'Creating...' : 'Publish Course'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
