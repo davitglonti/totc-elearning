@@ -84,6 +84,16 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
   ]);
   const [newNoteText, setNewNoteText] = useState('');
 
+  // Helper to ensure local uploaded videos resolve to the backend server
+  const resolveVideoUrl = (url) => {
+    if (!url) return '';
+    const trimmed = String(url).trim();
+    if (trimmed.startsWith('/uploads/')) {
+      return `http://localhost:5000${trimmed}`;
+    }
+    return trimmed;
+  };
+
   // Fallback static course content if API fails
   const defaultCourse = {
     title: activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations',
@@ -197,7 +207,14 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
       const targetCourseId = activeCourse?.courseId || activeCourse?.id;
       if (targetCourseId) {
         try {
-          const data = await api.learning.getContent(targetCourseId);
+          let data = null;
+          try {
+            data = await api.learning.getContent(targetCourseId);
+          } catch (e) {
+            console.warn('api.learning.getContent failed, attempting api.courses.getById:', e.message);
+            data = await api.courses.getById(targetCourseId);
+          }
+
           if (data && data.sections && data.sections.length > 0) {
             setCourseContent(data);
             const initialCompleted = new Set();
@@ -471,7 +488,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
         {/* Left Column: Player & Interactive Tabs (8 Cols) */}
         <div className="lg:col-span-8 p-6 lg:p-8 flex flex-col space-y-6">
           
-          {/* Video Container with Bunny Stream / HTML5 / Poster Support */}
+          {/* Video Container with Bunny Stream / HTML5 Player */}
           <div className="relative rounded-[24px] overflow-hidden bg-black shadow-2xl aspect-video flex items-center justify-center group border border-slate-800">
             {activeLesson?.videoUrl && (activeLesson.videoUrl.includes('iframe.mediadelivery.net') || activeLesson.videoUrl.includes('embed')) ? (
               <iframe
@@ -483,57 +500,24 @@ export default function CoursePlayerPage({ activeCourse, setActivePage }) {
                 allowFullScreen={true}
                 title={activeLesson.title || 'Lecture Video Stream'}
               />
-            ) : activeLesson?.videoUrl && (
-                activeLesson.videoUrl.endsWith('.mp4') || 
-                activeLesson.videoUrl.includes('/uploads/videos/') || 
-                activeLesson.videoUrl.includes('.webm') || 
-                activeLesson.videoUrl.includes('sample/') ||
-                activeLesson.videoUrl.includes('.m3u8')
-              ) ? (
+            ) : activeLesson?.videoUrl ? (
               <video
                 key={activeLesson.id || activeLesson.videoUrl}
-                src={activeLesson.videoUrl}
+                src={resolveVideoUrl(activeLesson.videoUrl)}
                 controls
                 className="w-full h-full object-contain absolute inset-0 bg-black"
-                poster="/assets/classroom_feature.png"
                 playsInline
               />
             ) : (
-              <>
-                <img
-                  src="/assets/classroom_feature.png"
-                  alt="Lecture Stream"
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${isPlaying ? 'opacity-90' : 'opacity-65'}`}
-                />
-
-                {/* Play/Pause Button */}
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="absolute w-20 h-20 rounded-full bg-totc-teal/90 text-white flex items-center justify-center shadow-2xl hover:scale-110 hover:bg-totc-teal transition-all duration-200"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-8 h-8 fill-white" />
-                  ) : (
-                    <Play className="w-8 h-8 fill-white ml-1" />
-                  )}
-                </button>
-
-                {/* Custom Video Controls */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-xs text-white">
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-totc-teal">
-                      {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </button>
-                    <span className="font-mono text-totc-cyan">{formatSeconds(currentVideoTime)}</span>
-                    <span className="text-slate-400">/ {activeLesson?.durationMinutes || 15}:00</span>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <Volume2 className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
-                    <Maximize className="w-4 h-4 hover:text-totc-teal cursor-pointer" />
-                  </div>
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-slate-900 absolute inset-0">
+                <div className="w-16 h-16 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center">
+                  <Video className="w-8 h-8 text-totc-teal" />
                 </div>
-              </>
+                <h4 className="font-bold text-base text-white">No Video Uploaded Yet</h4>
+                <p className="text-xs text-slate-400 max-w-sm">
+                  The instructor has not attached a video file to this lecture ({activeLesson?.title || 'Lecture'}).
+                </p>
+              </div>
             )}
           </div>
 
