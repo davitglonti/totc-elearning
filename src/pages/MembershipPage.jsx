@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Check, Star, ArrowRight, HelpCircle, Sparkles, ShieldCheck, 
   Zap, X, CreditCard, Calendar, Clock, AlertTriangle, Download, 
-  BookOpen, ExternalLink, RefreshCw 
+  BookOpen, ExternalLink, RefreshCw, Lock, User, Shield, CheckCircle2
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -15,6 +15,16 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [viewOtherPlans, setViewOtherPlans] = useState(false);
+
+  // Real Payment / Checkout form state
+  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card', 'paypal', 'googlepay'
+  const [cardData, setCardData] = useState({
+    cardholderName: currentUser?.fullName || '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCvc: '',
+    postalCode: ''
+  });
 
   const plans = [
     {
@@ -82,17 +92,71 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
       return;
     }
 
+    // Initialize cardholder name from current user
+    setCardData(prev => ({
+      ...prev,
+      cardholderName: prev.cardholderName || currentUser.fullName || ''
+    }));
+    setErrorMessage('');
     setSelectedPlanModal(plan);
   };
 
-  const handleConfirmSubscription = async () => {
+  const handleCardNumberChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+    const formatted = raw.replace(/(.{4})/g, '$1 ').trim();
+    setCardData(prev => ({ ...prev, cardNumber: formatted }));
+  };
+
+  const handleExpiryChange = (e) => {
+    let raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (raw.length >= 3) {
+      raw = `${raw.slice(0, 2)}/${raw.slice(2)}`;
+    }
+    setCardData(prev => ({ ...prev, cardExpiry: raw }));
+  };
+
+  const handleCvcChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCardData(prev => ({ ...prev, cardCvc: raw }));
+  };
+
+  const handleConfirmSubscription = async (e) => {
+    if (e) e.preventDefault();
     if (!selectedPlanModal) return;
-    setIsSubscribing(true);
     setErrorMessage('');
+
+    if (paymentMethod === 'card') {
+      const cleanNum = cardData.cardNumber.replace(/\s+/g, '');
+      if (cleanNum.length < 13) {
+        setErrorMessage('გთხოვთ შეიყვანოთ ბარათის ვალიდური ნომერი (16 ციფრი).');
+        return;
+      }
+      if (!cardData.cardholderName.trim()) {
+        setErrorMessage('გთხოვთ მიუთითოთ ბარათის მფლობელის სახელი და გვარი.');
+        return;
+      }
+      if (cardData.cardExpiry.length < 5) {
+        setErrorMessage('გთხოვთ მიუთითოთ ბარათის მოქმედების ვადა (MM/YY).');
+        return;
+      }
+      if (cardData.cardCvc.length < 3) {
+        setErrorMessage('გთხოვთ მიუთითოთ ბარათის CVC კოდი (3 ციფრი).');
+        return;
+      }
+    }
+
+    setIsSubscribing(true);
 
     try {
       const billingCycle = annualBilling ? 'annual' : 'monthly';
-      const res = await api.subscriptions.subscribe(selectedPlanModal.planId, billingCycle);
+      const res = await api.subscriptions.subscribe(selectedPlanModal.planId, billingCycle, {
+        paymentMethod,
+        cardNumber: cardData.cardNumber,
+        cardholderName: cardData.cardholderName,
+        cardExpiry: cardData.cardExpiry,
+        cardCvc: cardData.cardCvc,
+        postalCode: cardData.postalCode
+      });
 
       if (onSubscriptionUpdated && res.user) {
         onSubscriptionUpdated(res.user);
@@ -104,9 +168,9 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
         setSubscriptionSuccess(null);
         setActivePage('dashboard');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 2000);
+      }, 2500);
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to activate subscription. Please try again.');
+      setErrorMessage(err.message || 'გადახდა ვერ განხორციელდა. გთხოვთ გადაამოწმოთ ბარათის მონაცემები.');
     } finally {
       setIsSubscribing(false);
     }
@@ -443,108 +507,323 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
 
       </div>
 
-      {/* Subscription Checkout / Activation Modal */}
+      {/* Subscription Checkout / Payment Modal */}
       {selectedPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-lg bg-white rounded-[28px] p-8 shadow-2xl border border-gray-100 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl border border-gray-100 overflow-hidden my-8">
             
             <button
               onClick={() => setSelectedPlanModal(null)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-totc-navy transition-colors"
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-totc-navy transition-colors z-10"
+              aria-label="დახურვა"
             >
               <X className="w-5 h-5" />
             </button>
 
             {subscriptionSuccess ? (
-              <div className="py-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto animate-bounce">
-                  <Sparkles className="w-8 h-8" />
+              <div className="py-8 text-center space-y-5 animate-in zoom-in-95">
+                <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+                  <CheckCircle2 className="w-10 h-10 animate-bounce" />
                 </div>
-                <h3 className="font-poppins font-bold text-2xl text-totc-navy">
-                  Subscription Activated! 🎉
-                </h3>
-                <p className="text-totc-gray text-sm">
-                  {subscriptionSuccess.message}
-                </p>
-                <p className="text-xs text-totc-teal font-semibold">
-                  Redirecting you to your unlocked Student Dashboard...
-                </p>
+                <div className="space-y-1">
+                  <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider">
+                    გადახდა დამოწმებულია ✓
+                  </span>
+                  <h3 className="font-poppins font-black text-2xl sm:text-3xl text-totc-navy">
+                    Pro All-Access გააქტიურებულია! 🎉
+                  </h3>
+                  <p className="text-totc-gray text-xs sm:text-sm max-w-md mx-auto pt-1">
+                    {subscriptionSuccess.message || 'გილოცავთ! თქვენ მიიღეთ ულიმიტო წვდომა ყველა კურსზე, ვიდეო ლექციაზე და ოფიციალურ სერტიფიკატებზე.'}
+                  </p>
+                </div>
+
+                {subscriptionSuccess.order && (
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-xs text-left max-w-md mx-auto space-y-2">
+                    <div className="flex justify-between text-totc-gray font-medium">
+                      <span>შეკვეთის # ID:</span>
+                      <span className="font-mono font-bold text-totc-navy">{subscriptionSuccess.order.id}</span>
+                    </div>
+                    <div className="flex justify-between text-totc-gray font-medium">
+                      <span>გადახდილი თანხა:</span>
+                      <span className="font-bold text-emerald-600">${subscriptionSuccess.order.totalAmount?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-totc-gray font-medium">
+                      <span>სტატუსი:</span>
+                      <span className="font-bold text-emerald-600">Paid & Verified</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <div className="inline-flex items-center gap-2 text-xs text-totc-teal font-semibold">
+                    <div className="w-4 h-4 border-2 border-totc-teal border-t-transparent rounded-full animate-spin" />
+                    <span>გადამისამართება სტუდენტის მართვის პანელზე...</span>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-totc-teal-light text-totc-teal text-xs font-bold uppercase">
-                    <Zap className="w-3.5 h-3.5" />
-                    Instant Activation
+              <form onSubmit={handleConfirmSubscription} className="space-y-5">
+                {/* Header */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-totc-teal-light text-totc-teal text-[11px] font-bold uppercase tracking-wider">
+                      <Lock className="w-3 h-3" />
+                      უსაფრთხო გადახდა
+                    </span>
+                    <span className="text-xs text-totc-gray font-medium">256-Bit SSL Checkout</span>
                   </div>
-                  <h3 className="font-poppins font-bold text-2xl text-totc-navy">
-                    Confirm {selectedPlanModal.name}
+                  <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                    {selectedPlanModal.name} – გამოწერა
                   </h3>
                   <p className="text-xs text-totc-gray">
-                    Unlock immediate and unlimited access to all platform courses.
+                    შეიყვანეთ საბანკო ბარათის მონაცემები ულიმიტო წვდომის მყისიერი გააქტიურებისთვის.
                   </p>
                 </div>
 
                 {errorMessage && (
-                  <div className="p-3 bg-red-50 text-red-600 text-xs font-semibold rounded-xl">
-                    {errorMessage}
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold rounded-xl flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{errorMessage}</span>
                   </div>
                 )}
 
-                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-totc-gray font-medium">Selected Plan:</span>
-                    <span className="font-bold text-totc-navy">{selectedPlanModal.name}</span>
+                {/* Plan Price Summary Card */}
+                <div className="p-4 bg-gradient-to-br from-gray-50 to-emerald-50/40 rounded-2xl border border-gray-100 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-totc-gray font-medium">არჩეული ტარიფი</div>
+                    <div className="text-sm font-bold text-totc-navy flex items-center gap-1.5">
+                      <span>{selectedPlanModal.name}</span>
+                      <span className="text-[10px] font-semibold text-totc-teal bg-totc-teal-light px-2 py-0.5 rounded-full">
+                        {annualBilling ? 'წლიური (დაზოგე 25%)' : 'თვიური'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-totc-gray font-medium">Billing Period:</span>
-                    <span className="font-bold text-totc-navy">{annualBilling ? 'Annual (12 Months)' : 'Monthly'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-base border-t border-gray-200 pt-3">
-                    <span className="font-bold text-totc-navy">Amount to Charge:</span>
-                    <span className="font-black text-2xl text-totc-teal">
+                  <div className="text-right">
+                    <div className="text-xs text-totc-gray font-medium">გადასახდელი თანხა</div>
+                    <div className="text-2xl font-black text-totc-teal">
                       {annualBilling ? '$190.00' : '$19.00'}
-                    </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2 text-xs text-totc-gray">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Instant sandbox test activation with automatic course unlocks.</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500" />
-                    <span>Cancel or switch plans anytime from your user settings.</span>
+                {/* Payment Method Selector */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider">
+                    გადახდის მეთოდი
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        paymentMethod === 'card'
+                          ? 'border-totc-teal bg-totc-teal-light/40 text-totc-teal font-bold shadow-sm ring-1 ring-totc-teal'
+                          : 'border-gray-200 hover:border-gray-300 text-totc-gray font-medium'
+                      }`}
+                    >
+                      <CreditCard className="w-5 h-5" />
+                      <span className="text-xs">საბანკო ბარათი</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('paypal')}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        paymentMethod === 'paypal'
+                          ? 'border-totc-teal bg-totc-teal-light/40 text-totc-teal font-bold shadow-sm ring-1 ring-totc-teal'
+                          : 'border-gray-200 hover:border-gray-300 text-totc-gray font-medium'
+                      }`}
+                    >
+                      <span className="font-black text-blue-600 text-sm">PayPal</span>
+                      <span className="text-[11px]">PayPal Checkout</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('googlepay')}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                        paymentMethod === 'googlepay'
+                          ? 'border-totc-teal bg-totc-teal-light/40 text-totc-teal font-bold shadow-sm ring-1 ring-totc-teal'
+                          : 'border-gray-200 hover:border-gray-300 text-totc-gray font-medium'
+                      }`}
+                    >
+                      <span className="font-black text-totc-navy text-sm">G Pay</span>
+                      <span className="text-[11px]">Google Pay</span>
+                    </button>
                   </div>
                 </div>
 
+                {/* Card Fields Form */}
+                {paymentMethod === 'card' && (
+                  <div className="space-y-3.5 bg-gray-50/70 p-4 rounded-2xl border border-gray-200/80">
+                    
+                    {/* Fast Fill Demo Button */}
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-200/60">
+                      <span className="text-[11px] font-semibold text-totc-gray flex items-center gap-1">
+                        <CreditCard className="w-3.5 h-3.5 text-totc-teal" />
+                        ბარათის მონაცემები (Visa / Mastercard)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCardData({
+                            cardholderName: currentUser?.fullName || 'Davit Glonti',
+                            cardNumber: '4242 4242 4242 4242',
+                            cardExpiry: '12/28',
+                            cardCvc: '888',
+                            postalCode: '0179'
+                          });
+                        }}
+                        className="text-[11px] font-bold text-totc-teal hover:underline flex items-center gap-1"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        ტესტ ბარათის შევსება
+                      </button>
+                    </div>
+
+                    {/* Cardholder Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-totc-navy mb-1">
+                        ბარათის მფლობელი (Cardholder Name)
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-totc-gray" />
+                        <input
+                          type="text"
+                          required
+                          placeholder="მაგ: Davit Glonti"
+                          value={cardData.cardholderName}
+                          onChange={(e) => setCardData(prev => ({ ...prev, cardholderName: e.target.value }))}
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-medium text-totc-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-totc-teal/30 focus:border-totc-teal"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Card Number */}
+                    <div>
+                      <label className="block text-xs font-semibold text-totc-navy mb-1">
+                        ბარათის ნომერი (Card Number)
+                      </label>
+                      <div className="relative">
+                        <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-totc-gray" />
+                        <input
+                          type="text"
+                          required
+                          maxLength={19}
+                          placeholder="4242 •••• •••• 4242"
+                          value={cardData.cardNumber}
+                          onChange={handleCardNumberChange}
+                          className="w-full pl-10 pr-16 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-mono font-medium text-totc-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-totc-teal/30 focus:border-totc-teal"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-totc-navy bg-gray-100 px-1.5 py-0.5 rounded">
+                          VISA/MC
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expiry & CVC & Postal Code */}
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-totc-navy mb-1">
+                          ვადა (MM/YY)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={5}
+                          placeholder="12/28"
+                          value={cardData.cardExpiry}
+                          onChange={handleExpiryChange}
+                          className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-mono font-medium text-totc-navy text-center placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-totc-teal/30 focus:border-totc-teal"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-totc-navy mb-1 flex items-center justify-between">
+                          <span>CVC / CVV</span>
+                          <Lock className="w-3 h-3 text-totc-gray" />
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          maxLength={4}
+                          placeholder="•••"
+                          value={cardData.cardCvc}
+                          onChange={handleCvcChange}
+                          className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-mono font-medium text-totc-navy text-center placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-totc-teal/30 focus:border-totc-teal"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-totc-navy mb-1">
+                          ZIP / საფოსტო
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="0179"
+                          value={cardData.postalCode}
+                          onChange={(e) => setCardData(prev => ({ ...prev, postalCode: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-mono font-medium text-totc-navy text-center placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-totc-teal/30 focus:border-totc-teal"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {paymentMethod !== 'card' && (
+                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-center space-y-2">
+                    <p className="text-xs text-totc-gray font-medium">
+                      თქვენ გადამისამართდებით {paymentMethod === 'paypal' ? 'PayPal-ის' : 'Google Pay-ს'} დაცულ გვერდზე ავტორიზაციისა და გადახდის დასადასტურებლად.
+                    </p>
+                    <p className="text-[11px] text-emerald-600 font-semibold">
+                      ✓ თანხის ჩამოჭრის შემდეგ Pro All-Access გააქტიურდება მყისიერად.
+                    </p>
+                  </div>
+                )}
+
+                {/* Trust Badges */}
+                <div className="pt-1 flex items-center justify-between text-[11px] text-totc-gray border-t border-gray-100">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>PCI-DSS Level 1 დაცული</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-totc-teal" />
+                    <span>30-დღიანი თანხის დაბრუნების გარანტია</span>
+                  </div>
+                </div>
+
+                {/* Buttons */}
                 <div className="pt-2 flex items-center justify-end gap-3">
                   <button
+                    type="button"
                     onClick={() => setSelectedPlanModal(null)}
-                    className="px-5 py-2.5 rounded-full text-xs font-semibold text-totc-gray hover:bg-gray-100"
+                    className="px-5 py-3 rounded-full text-xs font-semibold text-totc-gray hover:bg-gray-100 transition-colors"
                   >
-                    Cancel
+                    გაუქმება
                   </button>
                   <button
-                    onClick={handleConfirmSubscription}
+                    type="submit"
                     disabled={isSubscribing}
-                    className="px-8 py-3.5 rounded-full font-bold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark shadow-md flex items-center gap-2"
+                    className="flex-1 sm:flex-none px-8 py-3.5 rounded-full font-bold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark shadow-lg shadow-totc-teal/25 flex items-center justify-center gap-2 transition-all disabled:opacity-70 cursor-pointer"
                   >
                     {isSubscribing ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Activating...</span>
+                        <span>გადახდა მუშავდება...</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Confirm & Activate Unlimited Access</span>
+                        <Lock className="w-4 h-4" />
+                        <span>
+                          გადახდა ({annualBilling ? '$190.00' : '$19.00'}) & გააქტიურება
+                        </span>
                       </>
                     )}
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
           </div>

@@ -339,10 +339,14 @@ export const api = {
 
   // Pro & Enterprise Subscriptions (All-Access Pass)
   subscriptions: {
-    async subscribe(plan = 'Pro', billingCycle = 'monthly', paymentMethod = 'card') {
+    async subscribe(plan = 'Pro', billingCycle = 'monthly', paymentData = {}) {
+      const payload = typeof paymentData === 'string'
+        ? { plan, billingCycle, paymentMethod: paymentData }
+        : { plan, billingCycle, ...paymentData };
+
       const result = await request('/subscriptions/subscribe', {
         method: 'POST',
-        body: JSON.stringify({ plan, billingCycle, paymentMethod }),
+        body: JSON.stringify(payload),
       });
 
       if (result.user) {

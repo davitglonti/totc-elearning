@@ -30,6 +30,11 @@ public class SubscribeRequestDto
     public string BillingCycle { get; set; } = "monthly"; // "monthly" or "annual"
     public string? PaymentMethod { get; set; } = "card";
     public string? PaymentSessionId { get; set; } // Verified paid checkout transaction ID
+    public string? CardNumber { get; set; }
+    public string? CardholderName { get; set; }
+    public string? CardExpiry { get; set; }
+    public string? CardCvc { get; set; }
+    public string? PostalCode { get; set; }
 }
 
 public class SubscribeResponseDto
