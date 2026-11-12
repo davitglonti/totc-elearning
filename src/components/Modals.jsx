@@ -166,7 +166,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
         if (onAuthSuccess) onAuthSuccess(res.user);
       } else {
         const extra = role === 'Instructor' ? {
-          headline: form.headline || 'Instructor & Subject Specialist',
+          headline: form.headline || 'ინსტრუქტორი და საგნის სპეციალისტი',
           education: form.education,
           experience: form.experience,
           bio: form.bio,
@@ -180,7 +180,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
         onClose();
       }, 1000);
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setError(err.message || 'ავტორიზაცია ვერ მოხერხდა. გთხოვთ შეამოწმოთ მონაცემები.');
     } finally {
       setLoading(false);
     }
@@ -208,17 +208,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
               <span className="font-bold text-xl tracking-wider">TOTC</span>
             </div>
             <h3 className="font-poppins font-bold text-2xl leading-snug">
-              {mode === 'login' ? 'Welcome Back!' : 'Start Your Learning Journey'}
+              {mode === 'login' ? 'მოგესალმებით უკან!' : 'დაიწყეთ სწავლა დღესვე'}
             </h3>
             <p className="text-white/80 text-sm leading-relaxed">
-              Join thousands of students and teachers learning in an interactive virtual classroom.
+              შემოუერთდით ათასობით სტუდენტსა და ინსტრუქტორს ინტერაქტიულ ვირტუალურ საკლასო ოთახში.
             </p>
           </div>
 
           <div className="z-10 mt-6 rounded-2xl overflow-hidden shadow-lg border border-white/20">
             <img
               src="/assets/news_thumb_1.png"
-              alt="Student"
+              alt="სტუდენტი"
               className="w-full h-32 object-cover"
             />
           </div>
@@ -239,7 +239,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                   : 'text-totc-gray hover:text-totc-navy'
               }`}
             >
-              Login (ავტორიზაცია)
+              შესვლა
             </button>
             <button
               onClick={() => { setMode('register'); setSubmitted(false); }}
@@ -249,7 +249,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                   : 'text-totc-gray hover:text-totc-navy'
               }`}
             >
-              Register (რეგისტრაცია)
+              რეგისტრაცია
             </button>
           </div>
 
@@ -262,7 +262,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-totc-gray px-1">
                   <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Google ID Token Verified
+                    <ShieldCheck className="w-3.5 h-3.5" /> Google ტოკენი ვერიფიცირებულია
                   </span>
                   <button
                     type="button"
@@ -281,7 +281,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                   className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm group"
                 >
                   <GoogleIcon className="w-4 h-4" />
-                  <span>{mode === 'login' ? 'Continue with Google' : `Sign Up with Google (${role})`}</span>
+                  <span>{mode === 'login' ? 'Google-ით შესვლა' : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}</span>
                   <span className="text-[10px] bg-totc-teal/10 text-totc-teal font-bold px-2 py-0.5 rounded-full border border-totc-teal/30 group-hover:bg-totc-teal group-hover:text-white transition-colors flex items-center gap-1">
                     <Settings className="w-3 h-3" /> ჩართვა
                   </span>
@@ -316,10 +316,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
             <div className="text-center py-8 space-y-4">
               <CheckCircle className="w-16 h-16 text-totc-mint mx-auto animate-bounce" />
               <h4 className="font-poppins font-bold text-2xl text-totc-navy">
-                {mode === 'login' ? 'Successfully Logged In!' : 'Account Created!'}
+                {mode === 'login' ? 'ავტორიზაცია წარმატებულია!' : 'ანგარიში შეიქმნა!'}
               </h4>
               <p className="text-totc-gray text-sm">
-                Redirecting you to your interactive classroom dashboard...
+                გადამისამართება სასწავლო სივრცეში...
               </p>
             </div>
           ) : (
@@ -338,7 +338,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                       }`}
                     >
                       <GraduationCap className="w-4 h-4" />
-                      <span>🎓 Student</span>
+                      <span>🎓 სტუდენტი</span>
                     </button>
                     <button
                       type="button"
@@ -350,13 +350,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                       }`}
                     >
                       <Briefcase className="w-4 h-4" />
-                      <span>👨‍🏫 Instructor</span>
+                      <span>👨‍🏫 ინსტრუქტორი</span>
                     </button>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-totc-navy uppercase tracking-wider mb-1">
-                      Full Name
+                      სახელი და გვარი
                     </label>
                     <div className="relative">
                       <User className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
@@ -365,7 +365,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                         required
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        placeholder="Jane Doe"
+                        placeholder="გიორგი ბერიძე"
                         className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm focus:outline-none focus:border-totc-teal"
                       />
                     </div>
@@ -375,7 +375,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
 
               <div>
                 <label className="block text-xs font-semibold text-totc-navy uppercase tracking-wider mb-1">
-                  Email Address
+                  ელ-ფოსტა
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
@@ -392,7 +392,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
 
               <div>
                 <label className="block text-xs font-semibold text-totc-navy uppercase tracking-wider mb-1">
-                  Password
+                  პაროლი
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
@@ -412,33 +412,33 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
               {mode === 'register' && role === 'Instructor' && (
                 <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200 space-y-2.5 text-xs">
                   <div>
-                    <label className="block font-semibold text-purple-900 mb-0.5">Specialty / Title (წოდება) *</label>
+                    <label className="block font-semibold text-purple-900 mb-0.5">სპეციალობა / წოდება *</label>
                     <input
                       type="text"
                       required
                       value={form.headline}
                       onChange={(e) => setForm({ ...form, headline: e.target.value })}
-                      placeholder="e.g. Senior Software Architect"
+                      placeholder="მაგ. უფროსი პროგრამული არქიტექტორი"
                       className="w-full px-3 py-2 rounded-lg border border-purple-200 text-xs focus:outline-none focus:border-purple-600 bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-purple-900 mb-0.5">Education & Degrees (განათლება)</label>
+                    <label className="block font-semibold text-purple-900 mb-0.5">განათლება და ხარისხი</label>
                     <input
                       type="text"
                       value={form.education}
                       onChange={(e) => setForm({ ...form, education: e.target.value })}
-                      placeholder="e.g. M.S. in CS, MIT"
+                      placeholder="მაგ. კომპიუტერული მეცნიერების მაგისტრი"
                       className="w-full px-3 py-2 rounded-lg border border-purple-200 text-xs focus:outline-none focus:border-purple-600 bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-purple-900 mb-0.5">Experience (გამოცდილება)</label>
+                    <label className="block font-semibold text-purple-900 mb-0.5">გამოცდილება</label>
                     <input
                       type="text"
                       value={form.experience}
                       onChange={(e) => setForm({ ...form, experience: e.target.value })}
-                      placeholder="e.g. 10+ years at Big Tech"
+                      placeholder="მაგ. 10+ წლიანი გამოცდილება IT სფეროში"
                       className="w-full px-3 py-2 rounded-lg border border-purple-200 text-xs focus:outline-none focus:border-purple-600 bg-white"
                     />
                   </div>
@@ -449,10 +449,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                 <div className="flex items-center justify-between text-xs text-totc-gray pt-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" className="rounded text-totc-teal focus:ring-totc-teal" />
-                    <span>Remember me</span>
+                    <span>დამახსოვრება</span>
                   </label>
                   <a href="#" className="hover:text-totc-teal transition-colors">
-                    Forgot password?
+                    დაგავიწყდათ პაროლი?
                   </a>
                 </div>
               )}
@@ -466,7 +466,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                     : 'bg-totc-teal hover:bg-totc-teal-dark'
                 }`}
               >
-                {loading ? 'Connecting to Server...' : mode === 'login' ? 'Login to Classroom' : role === 'Instructor' ? 'Register as Instructor' : 'Create Free Account'}
+                {loading ? 'მიმდინარეობს დაკავშირება...' : mode === 'login' ? 'შესვლა' : role === 'Instructor' ? 'ინსტრუქტორად რეგისტრაცია' : 'უფასო ანგარიშის შექმნა'}
               </button>
             </form>
           )}
@@ -568,9 +568,9 @@ export function VideoModal({ isOpen, onClose }) {
           <div className="z-10 flex items-center justify-between text-white">
             <div className="flex items-center gap-3">
               <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="font-semibold text-lg">TOTC Virtual Classroom Demo</span>
+              <span className="font-semibold text-lg">TOTC ვირტუალური საკლასო ოთახის დემო</span>
             </div>
-            <span className="text-xs bg-white/20 px-3 py-1 rounded-full">Interactive Tour</span>
+            <span className="text-xs bg-white/20 px-3 py-1 rounded-full">ინტერაქტიული ტური</span>
           </div>
 
           <div className="flex flex-col items-center justify-center space-y-4 my-auto">
@@ -578,13 +578,13 @@ export function VideoModal({ isOpen, onClose }) {
               <Play className="w-8 h-8 fill-white ml-1" />
             </div>
             <p className="text-white font-medium text-lg max-w-md text-center">
-              Experience the revolutionary Zoom-native interactive class management tools.
+              გაეცანით რევოლუციურ Zoom-ინტეგრირებულ ინტერაქტიულ სასწავლო ინსტრუმენტებს.
             </p>
           </div>
 
           <div className="z-10 flex items-center justify-between text-xs text-white/60 border-t border-white/10 pt-4">
             <span>HD 1080p • 60 FPS</span>
-            <span>Duration: 2:45</span>
+            <span>ხანგრძლივობა: 2:45</span>
           </div>
         </div>
 
@@ -623,26 +623,26 @@ export function AssessmentModal({ isOpen, onClose }) {
           <div className="text-center py-8 space-y-4">
             <CheckCircle className="w-16 h-16 text-totc-mint mx-auto" />
             <h4 className="font-poppins font-bold text-2xl text-totc-navy">
-              Thank You for Your Assessment!
+              გმადლობთ შეფასებისთვის!
             </h4>
             <p className="text-totc-gray text-sm">
-              Your review helps students and educators worldwide discover the power of TOTC.
+              თქვენი შეფასება ეხმარება სტუდენტებსა და მასწავლებლებს აღმოაჩინონ TOTC-ის შესაძლებლობები.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <span className="text-xs font-semibold text-totc-teal uppercase tracking-wider">
-                Community Feedback
+                საზოგადოების უკუკავშირი
               </span>
               <h3 className="font-poppins font-bold text-2xl text-totc-navy mt-1">
-                Write Your Assessment
+                დაწერეთ თქვენი შეფასება
               </h3>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-totc-navy uppercase mb-2">
-                Your Rating
+                თქვენი რეიტინგი
               </label>
               <div className="flex items-center gap-2 text-totc-orange">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -664,24 +664,24 @@ export function AssessmentModal({ isOpen, onClose }) {
 
             <div>
               <label className="block text-xs font-semibold text-totc-navy uppercase mb-2">
-                Your Full Name & Role
+                თქვენი სახელი, გვარი და სტატუსი
               </label>
               <input
                 type="text"
                 required
-                placeholder="e.g. Maria Johnson (High School Teacher)"
+                placeholder="მაგ. მარიამ ჯავახიშვილი (სკოლის მასწავლებელი)"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-totc-navy uppercase mb-2">
-                Your Experience with TOTC
+                თქვენი გამოცდილება TOTC-თან
               </label>
               <textarea
                 required
                 rows="4"
-                placeholder="How has TOTC helped your classrooms or studies?..."
+                placeholder="როგორ დაგეხმარათ TOTC სწავლისა თუ სწავლების პროცესში?..."
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
               />
             </div>
@@ -690,7 +690,7 @@ export function AssessmentModal({ isOpen, onClose }) {
               type="submit"
               className="w-full py-3.5 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-base transition-colors shadow-md"
             >
-              Submit Assessment
+              შეფასების გაგზავნა
             </button>
           </form>
         )}

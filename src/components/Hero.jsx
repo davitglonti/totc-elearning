@@ -14,12 +14,12 @@ export default function Hero({ openAuthModal, openVideoModal }) {
           {/* Left Content Column */}
           <div className="lg:col-span-6 z-10 text-center lg:text-left space-y-6 md:space-y-8">
             <h1 className="font-poppins font-extrabold text-4xl sm:text-5xl md:text-6xl leading-[1.15] tracking-tight">
-              <span className="text-totc-orange">Studying</span>{' '}
-              <span className="text-totc-purple">Online is now much easier</span>
+              <span className="text-totc-orange">ონლაინ სწავლა</span>{' '}
+              <span className="text-totc-purple">ახლა ბევრად მარტივია</span>
             </h1>
 
             <p className="font-poppins font-normal text-white text-lg sm:text-xl md:text-2xl leading-relaxed max-w-xl mx-auto lg:mx-0">
-              TOTC is an interesting platform that will teach you in more an interactive way
+              TOTC არის თანამედროვე საგანმანათლებლო პლატფორმა, რომელიც გასწავლით ინტერაქტიული და პრაქტიკული მეთოდებით
             </p>
 
             {/* Buttons Row */}
@@ -28,7 +28,7 @@ export default function Hero({ openAuthModal, openVideoModal }) {
                 onClick={() => openAuthModal('register')}
                 className="px-8 py-4 rounded-full font-semibold text-lg text-white bg-white/30 hover:bg-white/40 active:scale-95 backdrop-blur-md transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                Join for free
+                შეუერთდი უფასოდ
               </button>
 
               <button
@@ -39,7 +39,7 @@ export default function Hero({ openAuthModal, openVideoModal }) {
                   <Play className="w-5 h-5 md:w-6 md:h-6 text-totc-cyan fill-totc-cyan ml-0.5" />
                 </div>
                 <span className="font-poppins font-normal text-totc-navy text-base md:text-xl group-hover:text-totc-purple transition-colors">
-                  Watch how it works
+                  ნახე როგორ მუშაობს
                 </span>
               </button>
             </div>

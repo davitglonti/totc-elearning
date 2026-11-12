@@ -906,7 +906,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             className="flex items-center gap-2 text-sm text-slate-300 hover:text-totc-teal font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>უკან</span>
           </button>
           <span className="text-slate-600 hidden sm:inline">|</span>
           <h1 className="font-semibold text-base sm:text-lg text-white truncate max-w-md sm:max-w-xl">
@@ -918,7 +918,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span>{completedCount} / {allLessons.length} Completed</span>
+            <span>{completedCount} / {allLessons.length} დასრულებულია</span>
           </div>
           <div className="w-32 h-2.5 bg-slate-700 rounded-full overflow-hidden">
             <div
@@ -984,7 +984,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       <Lock className="w-8 h-8" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-bold text-xl text-white">Lecture Locked</h3>
+                      <h3 className="font-bold text-xl text-white">ლექცია დაბლოკილია</h3>
                       <p className="text-xs text-slate-400 leading-relaxed">
                         თქვენ ჯერ არ გაგივლიათ წინა ლექცია. წინა მასალების (ვიდეო, ქვიზი) გავლის შემდეგ ეს გაკვეთილი გაიხსნება.
                       </p>
@@ -998,7 +998,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                         className="px-5 py-2.5 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
                       >
                         <ArrowLeft className="w-3.5 h-3.5" />
-                        <span>Go to Previous Incomplete Lecture</span>
+                        <span>გადასვლა წინა ლექციაზე</span>
                       </button>
                     )}
                   </div>
@@ -1028,14 +1028,14 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[11px] font-bold text-totc-teal uppercase tracking-wider">
-                  Active Lesson
+                  აქტიური ლექცია
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 text-[10px] font-medium">
-                  {activeLesson?.lessonType || 'Video'}
+                  {activeLesson?.lessonType === 'Quiz' ? 'გამოცდა' : activeLesson?.lessonType === 'Assignment' ? 'დავალება' : 'ვიდეო'}
                 </span>
               </div>
               <h2 className="font-bold text-xl text-white">
-                {activeLesson?.title || '1. Welcome to AWS Cloud Fundamentals'}
+                {activeLesson?.title || 'ლექცია'}
               </h2>
             </div>
 
@@ -1043,7 +1043,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
               {completedLessonIds.has(activeLesson?.id) ? (
                 <div className="px-4 py-2.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold flex items-center gap-2">
                   <Check className="w-4 h-4" />
-                  <span>Completed</span>
+                  <span>დასრულებულია</span>
                 </div>
               ) : (
                 <button
@@ -1051,7 +1051,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                   className="px-5 py-2.5 rounded-full bg-totc-teal text-white hover:bg-totc-teal-dark text-xs font-bold transition-all shadow-md flex items-center gap-2"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  <span>Mark as Completed</span>
+                  <span>დასრულებულად მონიშვნა</span>
                 </button>
               )}
             </div>
@@ -1102,23 +1102,23 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             
             <div className="flex border-b border-slate-700 gap-4 sm:gap-8 overflow-x-auto pb-1 text-sm font-semibold">
               {[
-                { id: 'overview', label: 'Overview', icon: BookOpen, badge: null },
+                { id: 'overview', label: 'მიმოხილვა', icon: BookOpen, badge: null },
                 { 
                   id: 'quiz', 
-                  label: 'Knowledge Check Quiz', 
+                  label: 'გამოცდა / ქვიზი', 
                   icon: HelpCircle, 
                   badge: (quizData?.questions?.length || activeLesson?.quiz?.questions?.length || (activeLesson?.hasQuiz ? 1 : 0)) || null 
                 },
                 { 
                   id: 'resources', 
-                  label: 'Resources & Code', 
+                  label: 'რესურსები', 
                   icon: Download, 
                   badge: activeLesson?.resources?.length > 0 
-                    ? `${activeLesson.resources.length} files` 
-                    : (activeLesson?.id === 'les-1' ? '2 files' : null) 
+                    ? `${activeLesson.resources.length} ფაილი` 
+                    : (activeLesson?.id === 'les-1' ? '2 ფაილი' : null) 
                 },
-                { id: 'qa', label: 'Q&A Discussion', icon: MessageSquare, badge: questionsList.length },
-                { id: 'notes', label: 'Personal Notes', icon: FileText, badge: notesList.length },
+                { id: 'qa', label: 'კითხვა-პასუხი', icon: MessageSquare, badge: questionsList.length },
+                { id: 'notes', label: 'ჩანაწერები', icon: FileText, badge: notesList.length },
               ].map(tab => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1152,7 +1152,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
                   <Lock className="w-6 h-6" />
                 </div>
-                <h4 className="font-bold text-base text-white">Lesson Materials & Quiz Locked</h4>
+                <h4 className="font-bold text-base text-white">მასალები და ქვიზი დაბლოკილია</h4>
                 <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
                   ამ ლექციის ქვიზზე, გადმოსაწერ რესურსებსა და მასალებზე წვდომა შეზღუდულია, სანამ წინა ლექციას არ გაივლით და არ მონიშნავთ დასრულებულად.
                 </p>
@@ -1163,9 +1163,9 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 {activeTab === 'overview' && (
                   <div className="space-y-6 text-sm text-slate-300 leading-relaxed animate-in fade-in duration-200">
                     <div className="space-y-2">
-                      <h4 className="font-bold text-base text-white">About this Lecture</h4>
+                      <h4 className="font-bold text-base text-white">ლექციის შესახებ</h4>
                       <p className="text-slate-300 text-sm">
-                        {activeLesson?.contentText || 'Master state-of-the-art cloud architecture, distributed systems, resilient virtual classroom pipelines, and certification preparation.'}
+                        {activeLesson?.contentText || 'შეისწავლეთ თანამედროვე არქიტექტურა, პრაქტიკული ინსტრუმენტები და სასერთიფიკატო საკითხები.'}
                       </p>
                     </div>
 
@@ -1173,34 +1173,34 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
                         <Clock className="w-5 h-5 text-amber-400 shrink-0" />
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Duration</p>
-                          <p className="font-bold text-white">{activeLesson?.durationMinutes || 15} minutes</p>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">ხანგრძლივობა</p>
+                          <p className="font-bold text-white">{activeLesson?.durationMinutes || 15} წუთი</p>
                         </div>
                       </div>
 
                       <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
                         <Award className="w-5 h-5 text-totc-teal shrink-0" />
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Skill Level</p>
-                          <p className="font-bold text-white">Intermediate to Advanced</p>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">სირთულის დონე</p>
+                          <p className="font-bold text-white">საშუალო / მაღალი</p>
                         </div>
                       </div>
 
                       <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
                         <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                         <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">Prerequisite</p>
-                          <p className="font-bold text-white">Basic Networking</p>
+                          <p className="text-[11px] text-slate-400 uppercase font-semibold">წინაპირობა</p>
+                          <p className="font-bold text-white">საბაზისო ცოდნა</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-2">
-                      <h5 className="font-bold text-xs uppercase tracking-wider text-totc-cyan">Key Takeaways:</h5>
+                      <h5 className="font-bold text-xs uppercase tracking-wider text-totc-cyan">მთავარი საკითხები:</h5>
                       <ul className="list-disc pl-5 text-xs text-slate-300 space-y-1.5">
-                        <li>Establishing high-availability VPC topologies across minimum 2 Availability Zones.</li>
-                        <li>Configuring private subnet routing through Network Address Translation (NAT) gateways.</li>
-                        <li>Enforcing zero-trust network boundary rules via stateless Network ACLs and stateful Security Groups.</li>
+                        <li>მაღალი ხელმისაწვდომობის არქიტექტურის დაპროექტება და დაგეგმვა.</li>
+                        <li>პრაქტიკული კონფიგურაციები და ქსელური უსაფრთხოების მართვა.</li>
+                        <li>საუკეთესო პრაქტიკების გამოყენება რეალურ სისტემებში.</li>
                       </ul>
                     </div>
                   </div>
@@ -1212,7 +1212,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                     {(!quizData || !quizData.questions || quizData.questions.length === 0) ? (
                       <div className="p-8 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-2">
                         <HelpCircle className="w-8 h-8 text-slate-500 mx-auto" />
-                        <h4 className="font-bold text-sm text-white">No Quiz for this Lecture</h4>
+                        <h4 className="font-bold text-sm text-white">ამ ლექციაზე ქვიზი არ არის</h4>
                         <p className="text-xs text-slate-400">
                           ლექტორს ამ ლექციისთვის ქვიზი ჯერ არ დაუმატებია.
                         </p>
@@ -1623,9 +1623,9 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 {activeTab === 'resources' && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div className="pb-2 border-b border-slate-700">
-                      <h4 className="font-bold text-base text-white">Downloadable Assets & Source Code</h4>
+                      <h4 className="font-bold text-base text-white">ჩამოსატვირთი მასალები და კოდი</h4>
                       <p className="text-xs text-slate-400">
-                        All configuration code, attachments, guides, and slides uploaded for this lecture.
+                        ლექციაზე ატვირთული ყველა სასწავლო ფაილი, გზამკვლევი და პრეზენტაცია.
                       </p>
                     </div>
 
@@ -1669,9 +1669,9 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                               </div>
                               <div className="min-w-0">
                                 <p className="font-bold text-sm text-white truncate">{res.name}</p>
-                                <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{res.desc || res.description || 'Downloadable lecture attachment'}</p>
+                                <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{res.desc || res.description || 'ლექციის დამატებითი მასალა'}</p>
                                 <span className="inline-block mt-1 text-[10px] font-semibold text-totc-cyan">
-                                  {res.type || 'File'} • {res.size || res.fileSize || 'Attachment'}
+                                  {res.type || 'ფაილი'} • {res.size || res.fileSize || 'დანართი'}
                                 </span>
                               </div>
                             </div>
@@ -1685,15 +1685,15 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                                 className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
                               >
                                 <Download className="w-4 h-4" />
-                                <span>Download File</span>
+                                <span>ფაილის ჩამოტვირთვა</span>
                               </a>
                             ) : (
                               <button
-                                onClick={() => alert(`Downloading: ${res.name}`)}
+                                onClick={() => alert(`მიმდინარეობს ჩამოტვირთვა: ${res.name}`)}
                                 className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
                               >
                                 <Download className="w-4 h-4" />
-                                <span>Download</span>
+                                <span>ჩამოტვირთვა</span>
                               </button>
                             )}
                           </div>
@@ -1703,7 +1703,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       {(!activeLesson?.resources || activeLesson.resources.length === 0) && activeLesson?.id !== 'les-1' && (
                         <div className="p-8 text-center bg-slate-800/40 rounded-2xl border border-slate-700/60 space-y-2">
                           <Download className="w-8 h-8 text-slate-500 mx-auto" />
-                          <h4 className="font-bold text-sm text-white">No Attached Files</h4>
+                          <h4 className="font-bold text-sm text-white">მიმაგრებული ფაილები არ არის</h4>
                           <p className="text-xs text-slate-400">
                             ამ ლექციისთვის გადმოსაწერი ფაილები ან კოდი ჯერ არ არის ატვირთული.
                           </p>
@@ -1737,7 +1737,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 {/* Ask a Question Box */}
                 <form onSubmit={handleAddQuestion} className="bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-slate-700 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-white uppercase tracking-wider">Ask a Question</span>
+                    <span className="font-bold text-xs text-white uppercase tracking-wider">დასვით კითხვა</span>
                     <label className="flex items-center gap-2 text-xs text-totc-cyan cursor-pointer">
                       <input
                         type="checkbox"
@@ -1745,14 +1745,14 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                         onChange={(e) => setIncludeTimestampInQuestion(e.target.checked)}
                         className="rounded border-slate-700 text-totc-teal focus:ring-0"
                       />
-                      <span>Tag current video time ({formatSeconds(currentVideoTime)})</span>
+                      <span>მიმდინარე დროის მონიშვნა ({formatSeconds(currentVideoTime)})</span>
                     </label>
                   </div>
 
                   <textarea
                     rows="2"
                     required
-                    placeholder="Ask instructors and peers about this lecture..."
+                    placeholder="დაუსვით კითხვა ინსტრუქტორს ამ ლექციასთან დაკავშირებით..."
                     value={newQuestionText}
                     onChange={(e) => setNewQuestionText(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-totc-teal"
@@ -1764,7 +1764,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       className="px-5 py-2 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark shadow-sm flex items-center gap-1.5"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Post Question</span>
+                      <span>კითხვის გაგზავნა</span>
                     </button>
                   </div>
                 </form>
@@ -1835,16 +1835,16 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             {activeTab === 'notes' && (
               <div className="space-y-6 animate-in fade-in duration-200">
                 <div className="pb-2 border-b border-slate-700">
-                  <h4 className="font-bold text-base text-white">My Timestamped Notes</h4>
+                  <h4 className="font-bold text-base text-white">ჩემი ჩანაწერები დროის ნიშნულებით</h4>
                   <p className="text-xs text-slate-400">
-                    Capture key concepts during lecture playback. Clicking a timestamp jumps the video straight to that moment.
+                    ჩაინიშნეთ მნიშვნელოვანი მომენტები ყურებისას. დროზე დაჭერით ვიდეო ზუსტად იმ მომენტზე გადავა.
                   </p>
                 </div>
 
                 {/* Add Note Input */}
                 <form onSubmit={handleAddNote} className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 space-y-3">
                   <div className="flex items-center justify-between text-xs font-semibold text-white">
-                    <span>Create note at:</span>
+                    <span>ჩანაწერის შექმნა დროზე:</span>
                     <span className="font-mono text-totc-cyan bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
                       ⏱️ {formatSeconds(currentVideoTime)}
                     </span>
@@ -1853,7 +1853,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                   <textarea
                     rows="2"
                     required
-                    placeholder="Write a personal takeaway or formula..."
+                    placeholder="თქვენი პირადი ჩანაწერები..."
                     value={newNoteText}
                     onChange={(e) => setNewNoteText(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-totc-teal"
@@ -1865,7 +1865,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       className="px-5 py-2 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark shadow-sm flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Save Note</span>
+                      <span>ჩანაწერის შენახვა</span>
                     </button>
                   </div>
                 </form>
@@ -1911,9 +1911,9 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         {/* Right Column: Course Content / Syllabus (4 Cols) */}
         <div className="lg:col-span-4 bg-[#1E293B] border-t lg:border-t-0 lg:border-l border-slate-700/80 p-6 flex flex-col">
           <div className="mb-4">
-            <h3 className="font-bold text-lg text-white">Course Content</h3>
+            <h3 className="font-bold text-lg text-white">კურსის შინაარსი</h3>
             <p className="text-xs text-slate-400">
-              {courseContent?.sections?.length || 2} modules • {allLessons.length} syllabus items
+              {courseContent?.sections?.length || 2} მოდული • {allLessons.length} ლექცია
             </p>
           </div>
 
@@ -1957,7 +1957,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       </div>
                     </div>
                     <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                      {section.lessons?.length || 0} items
+                      {section.lessons?.length || 0} ლექცია
                     </span>
                   </div>
 
@@ -2005,7 +2005,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                               {!isUnlocked && (
                                 <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[9px] font-bold shrink-0 flex items-center gap-1">
                                   <Lock className="w-2.5 h-2.5" />
-                                  <span>Locked</span>
+                                  <span>დაბლოკილია</span>
                                 </span>
                               )}
                             </div>
@@ -2021,7 +2021,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                               </span>
                               <span className="text-[10px] text-slate-400 flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {lesson.durationMinutes || 15} mins
+                                {lesson.durationMinutes || 15} წთ
                               </span>
                               {lesson.resources && lesson.resources.length > 0 && (
                                 <span className="text-[10px] text-totc-cyan font-semibold flex items-center gap-0.5">

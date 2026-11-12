@@ -32,14 +32,14 @@ export default function Footer({ setActivePage }) {
           <div className="hidden sm:block w-px h-10 bg-white/20" />
 
           <p className="font-poppins font-semibold text-lg text-white/90 tracking-wide">
-            Virtual Class for Zoom
+            ვირტუალური საკლასო ოთახი
           </p>
         </div>
 
         {/* Newsletter Subscription */}
         <div className="py-16 text-center max-w-xl mx-auto space-y-6">
           <h3 className="font-poppins font-medium text-2xl sm:text-3xl text-white/90">
-            Subscribe to get our Newsletter
+            გამოიწერეთ ჩვენი სიახლეები
           </h3>
 
           <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -47,7 +47,7 @@ export default function Footer({ setActivePage }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your Email"
+              placeholder="თქვენი ელ-ფოსტა"
               required
               className="w-full sm:w-80 px-6 py-3.5 rounded-full bg-transparent border border-white/30 text-white placeholder-white/50 focus:outline-none focus:border-totc-teal transition-colors text-base"
             />
@@ -55,13 +55,13 @@ export default function Footer({ setActivePage }) {
               type="submit"
               className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-medium text-base transition-colors shadow-lg active:scale-95"
             >
-              Subscribe
+              გამოწერა
             </button>
           </form>
 
           {subscribed && (
             <p className="text-sm font-medium text-totc-mint animate-pulse">
-              Thank you! You have been successfully subscribed to our newsletter.
+              გმადლობთ! თქვენ წარმატებით გამოიწერეთ ჩვენი სიახლეები.
             </p>
           )}
         </div>
@@ -76,20 +76,20 @@ export default function Footer({ setActivePage }) {
               }}
               className="hover:text-white transition-colors"
             >
-              Careers
+              კარიერა
             </button>
             <span className="w-1 h-1 rounded-full bg-white/40" />
             <a href="#" className="hover:text-white transition-colors">
-              Privacy Policy
+              კონფიდენციალურობის პოლიტიკა
             </a>
             <span className="w-1 h-1 rounded-full bg-white/40" />
             <a href="#" className="hover:text-white transition-colors">
-              Terms & Conditions
+              წესები და პირობები
             </a>
           </div>
 
           <p className="text-sm sm:text-base text-white/60 font-normal">
-            © 2021 Class Technologies Inc.
+            © 2026 TOTC • ყველა უფლება დაცულია.
           </p>
         </div>
 

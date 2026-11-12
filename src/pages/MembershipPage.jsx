@@ -28,53 +28,53 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
 
   const plans = [
     {
-      name: 'Free Starter',
+      name: 'უფასო სტარტერი',
       planId: 'Free',
-      price: '$0',
-      period: 'Forever free',
-      desc: 'Ideal for casual learners exploring introductory online classes.',
+      price: '₾0',
+      period: 'უფასო სამუდამოდ',
+      desc: 'იდეალურია დამწყები მსმენელებისთვის შესავალი ონლაინ გაკვეთილების გასაცნობად.',
       features: [
-        'Access to free introductory preview lectures',
-        'Standard community discussion boards',
-        'Mobile and desktop web access',
-        'Limited quiz assessments (3 per month)'
+        'წვდომა უფასო შესავალ საჩვენებელ ლექციებზე',
+        'სტანდარტული სასწავლო ფორუმები და დისკუსიები',
+        'წვდომა მობილურიდან და კომპიუტერიდან',
+        'შეზღუდული ტესტირებები (თვეში 3 ტესტი)'
       ],
-      buttonText: 'Current Free Tier',
+      buttonText: 'მიმდინარე უფასო პაკეტი',
       buttonStyle: 'bg-gray-100 text-totc-navy hover:bg-gray-200',
       isPopular: false
     },
     {
-      name: 'Student Pro All-Access',
+      name: 'სტუდენტური Pro სრული წვდომა',
       planId: 'Pro',
-      price: annualBilling ? '$19' : '$24',
-      period: annualBilling ? '/ month (billed $190/yr)' : '/ month',
-      desc: 'Unlock unlimited access to every single course, workshop, and certification.',
+      price: annualBilling ? '₾49' : '₾65',
+      period: annualBilling ? '/ თვეში (წლიური ₾588)' : '/ თვეში',
+      desc: 'გახსენით შეუზღუდავი წვდომა ყველა კურსზე, ვორქშოპზე და სერტიფიკატზე.',
       features: [
-        '✨ Unlimited instant access to ALL courses in the catalog',
-        'Direct live video podium access with teachers',
-        'Real-time automated gradebook tracking',
-        'One-on-one private discussion sessions',
-        'Official verified certificates of completion',
-        'Offline course materials and code asset downloads'
+        '✨ შეუზღუდავი მყისიერი წვდომა კატალოგის ყველა კურსზე',
+        'პირდაპირი ვიდეო ჩართვები ინსტრუქტორებთან',
+        'ავტომატური შეფასების და პროგრესის კონტროლი',
+        'ინდივიდუალური პრივატული კონსულტაციები',
+        'ოფიციალური ვერიფიცირებული სერტიფიკატები',
+        'ოფლაინ მასალებისა და კოდის ფაილების ჩამოტვირთვა'
       ],
-      buttonText: 'Activate Pro All-Access Pass',
+      buttonText: 'Pro სრული წვდომის გააქტიურება',
       buttonStyle: 'bg-totc-teal text-white hover:bg-totc-teal-dark shadow-lg shadow-totc-teal/30',
       isPopular: true
     },
     {
-      name: 'Enterprise / Campus',
+      name: 'ორგანიზაცია / კამპუსი',
       planId: 'Enterprise',
-      price: annualBilling ? '$89' : '$109',
-      period: annualBilling ? '/ seat / month' : '/ seat / month',
-      desc: 'Tailored for K-12 school districts, universities, and corporate academies.',
+      price: annualBilling ? '₾229' : '₾279',
+      period: annualBilling ? '/ მომხმარებელი / თვეში' : '/ მომხმარებელი / თვეში',
+      desc: 'შექმნილია სკოლებისთვის, უნივერსიტეტებისა და კორპორატიული აკადემიებისთვის.',
       features: [
-        'Full Zoom API & LMS integration (Canvas, Blackboard)',
-        'Unlimited student rosters and automated attendance',
-        'Dedicated administrative analytics dashboard',
-        'Custom institution branding and subdomains',
-        '24/7 Priority SLA support & dedicated onboarding'
+        'სრული Zoom API და LMS ინტეგრაცია (Canvas, Blackboard)',
+        'შეუზღუდავი სტუდენტური სიები და დასწრების აღრიცხვა',
+        'ადმინისტრაციული ანალიტიკის პანელი',
+        'ორგანიზაციის ბრენდირება და ქვედომენი',
+        '24/7 პრიორიტეტული მხარდაჭერა და დანერგვის მენეჯერი'
       ],
-      buttonText: 'Activate Enterprise Plan',
+      buttonText: 'კორპორატიული პაკეტის გააქტიურება',
       buttonStyle: 'bg-totc-navy text-white hover:bg-slate-800 shadow-lg',
       isPopular: false
     }
@@ -191,19 +191,19 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
       }
       setShowCancelModal(false);
     } catch (err) {
-      alert(err.message || 'Failed to cancel subscription.');
+      alert(err.message || 'გამოწერის გაუქმება ვერ მოხერხდა.');
     } finally {
       setIsCancelling(false);
     }
   };
 
   const formattedExpiryDate = currentUser?.subscriptionExpiresAt
-    ? new Date(currentUser.subscriptionExpiresAt).toLocaleDateString('en-US', {
+    ? new Date(currentUser.subscriptionExpiresAt).toLocaleDateString('ka-GE', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       })
-    : 'Next billing cycle (30 days)';
+    : 'შემდეგი გადახდის ციკლი (30 დღე)';
 
   return (
     <div className="pt-32 pb-24 bg-[#F8FAFC]">
@@ -220,13 +220,13 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
               <div className="space-y-1.5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Subscription & Billing Hub
+                  გამოწერა და გადახდების ცენტრი
                 </div>
                 <h1 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-navy">
-                  Membership & Billing
+                  წევრობა და გადახდები
                 </h1>
                 <p className="font-poppins text-totc-gray text-base">
-                  Manage your active Pro All-Access pass, billing payment methods, and invoices.
+                  მართეთ თქვენი აქტიური Pro სრული წვდომის პაკეტი, გადახდის მეთოდები და ინვოისები.
                 </p>
               </div>
 
@@ -239,7 +239,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                   className="px-6 py-3.5 rounded-full font-bold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark shadow-md flex items-center gap-2"
                 >
                   <BookOpen className="w-4 h-4" />
-                  <span>Go to My Learning</span>
+                  <span>ჩემი სწავლება</span>
                 </button>
               </div>
             </div>
@@ -253,29 +253,29 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                   <div className="flex items-center gap-3">
                     <span className="px-3.5 py-1 rounded-full bg-amber-400 text-totc-navy font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow">
                       <Sparkles className="w-3.5 h-3.5 fill-totc-navy" />
-                      Active Plan
+                      აქტიური პაკეტი
                     </span>
                     <span className="text-white/80 text-xs font-medium">
-                      Renews on {formattedExpiryDate}
+                      განახლდება: {formattedExpiryDate}
                     </span>
                   </div>
 
                   <h2 className="font-poppins font-bold text-3xl sm:text-4xl text-white">
-                    Student Pro All-Access Pass
+                    სტუდენტური Pro სრული წვდომის პაკეტი
                   </h2>
 
                   <p className="text-white/85 text-sm sm:text-base max-w-2xl leading-relaxed">
-                    You have complete, unrestricted access to all 42+ courses, lecture videos, downloadable project source files, and verified certificates of completion.
+                    თქვენ გაქვთ სრული, შეუზღუდავი წვდომა 42+ კურსზე, ვიდეო ლექციებზე, პროექტების საწყის ფაილებზე და ვერიფიცირებულ სერტიფიკატებზე.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3">
                     <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15">
-                      <p className="text-xs text-white/70">Current Price</p>
-                      <p className="font-poppins font-bold text-xl text-white">$19.00 / month</p>
+                      <p className="text-xs text-white/70">მიმდინარე ფასი</p>
+                      <p className="font-poppins font-bold text-xl text-white">₾49.00 / თვეში</p>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15">
-                      <p className="text-xs text-white/70">Payment Method</p>
+                      <p className="text-xs text-white/70">გადახდის მეთოდი</p>
                       <p className="font-poppins font-bold text-base text-white flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-totc-cyan" />
                         <span>•••• 4242</span>
@@ -283,10 +283,10 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15">
-                      <p className="text-xs text-white/70">All Courses Status</p>
+                      <p className="text-xs text-white/70">კურსების სტატუსი</p>
                       <p className="font-poppins font-bold text-base text-emerald-300 flex items-center gap-1.5">
                         <Check className="w-4 h-4" />
-                        <span>100% Unlocked</span>
+                        <span>100% გახსნილია</span>
                       </p>
                     </div>
                   </div>
@@ -301,7 +301,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     }}
                     className="w-full sm:w-auto px-8 py-4 rounded-full font-bold text-sm bg-white text-totc-navy hover:bg-gray-100 transition-all shadow-lg flex items-center justify-center gap-2 group"
                   >
-                    <span>Browse Unlocked Courses</span>
+                    <span>გახსნილი კურსების ნახვა</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
 
@@ -309,7 +309,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     onClick={() => setShowCancelModal(true)}
                     className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-semibold text-white/70 hover:text-red-300 hover:bg-white/10 transition-colors"
                   >
-                    Cancel Subscription
+                    გამოწერის გაუქმება
                   </button>
                 </div>
 
@@ -323,11 +323,11 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
             <div className="bg-white rounded-[28px] border border-gray-100 p-8 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-poppins font-bold text-xl text-totc-navy">Billing History & Invoices</h3>
-                  <p className="text-xs text-totc-gray">Download past receipts and view transaction status.</p>
+                  <h3 className="font-poppins font-bold text-xl text-totc-navy">გადახდების ისტორია და ინვოისები</h3>
+                  <p className="text-xs text-totc-gray">ჩამოტვირთეთ ქვითრები და ნახეთ ტრანზაქციების სტატუსი.</p>
                 </div>
                 <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
-                  Account in Good Standing
+                  ანგარიში აქტიურია
                 </span>
               </div>
 
@@ -335,23 +335,23 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 <table className="w-full text-left text-sm text-totc-gray">
                   <thead className="bg-gray-50 text-xs font-semibold uppercase text-totc-navy">
                     <tr>
-                      <th className="px-6 py-3.5">Invoice</th>
-                      <th className="px-6 py-3.5">Billing Date</th>
-                      <th className="px-6 py-3.5">Plan Description</th>
-                      <th className="px-6 py-3.5">Amount</th>
-                      <th className="px-6 py-3.5">Status</th>
-                      <th className="px-6 py-3.5 text-right">Receipt</th>
+                      <th className="px-6 py-3.5">ინვოისი</th>
+                      <th className="px-6 py-3.5">გადახდის თარიღი</th>
+                      <th className="px-6 py-3.5">პაკეტის აღწერა</th>
+                      <th className="px-6 py-3.5">თანხა</th>
+                      <th className="px-6 py-3.5">სტატუსი</th>
+                      <th className="px-6 py-3.5 text-right">ქვითარი</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     <tr className="hover:bg-gray-50/50">
                       <td className="px-6 py-4 font-semibold text-totc-navy">#INV-2026-0941</td>
-                      <td className="px-6 py-4 text-xs">Today</td>
-                      <td className="px-6 py-4 text-xs font-medium text-totc-navy">Student Pro All-Access Membership</td>
-                      <td className="px-6 py-4 font-bold text-totc-navy">$19.00</td>
+                      <td className="px-6 py-4 text-xs">დღეს</td>
+                      <td className="px-6 py-4 text-xs font-medium text-totc-navy">სტუდენტური Pro სრული წვდომის წევრობა</td>
+                      <td className="px-6 py-4 font-bold text-totc-navy">₾49.00</td>
                       <td className="px-6 py-4">
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
-                          Paid
+                          გადახდილია
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -369,9 +369,9 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
             {/* Switch to Enterprise or Compare Plans Banner */}
             <div className="p-6 rounded-[24px] bg-slate-100/80 border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="space-y-1 text-center sm:text-left">
-                <h4 className="font-poppins font-bold text-base text-totc-navy">Need Team or Campus Deployment?</h4>
+                <h4 className="font-poppins font-bold text-base text-totc-navy">გჭირდებათ გუნდური ან კამპუსის პაკეტი?</h4>
                 <p className="text-xs text-totc-gray">
-                  Upgrade to Enterprise for unlimited student seats, custom LMS integrations, and admin SLA support.
+                  გადადით ორგანიზაციულ პაკეტზე შეუზღუდავი სტუდენტური ადგილების, LMS ინტეგრაციისა და SLA მხარდაჭერისთვის.
                 </p>
               </div>
 
@@ -379,7 +379,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 onClick={() => setViewOtherPlans(true)}
                 className="px-5 py-2.5 rounded-full text-xs font-bold bg-white text-totc-navy border border-gray-300 hover:bg-gray-50 shadow-sm shrink-0"
               >
-                Compare Other Tiers
+                სხვა პაკეტების შედარება
               </button>
             </div>
 
@@ -398,24 +398,24 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                   onClick={() => setViewOtherPlans(false)}
                   className="mb-2 text-xs font-bold text-totc-teal hover:underline flex items-center gap-1 mx-auto"
                 >
-                  ← Back to My Subscription Management
+                  ← ჩემი გამოწერის მართვაზე დაბრუნება
                 </button>
               )}
 
               <span className="px-4 py-1.5 rounded-full bg-totc-teal-light text-totc-teal font-semibold text-xs tracking-wider uppercase">
-                Unlimited Learning Pass
+                შეუზღუდავი სწავლების პაკეტი
               </span>
               <h1 className="font-poppins font-bold text-3xl sm:text-5xl text-totc-navy leading-tight">
-                Simple, All-Access Membership
+                მარტივი, სრული წვდომის წევრობა
               </h1>
               <p className="text-totc-gray text-base sm:text-lg">
-                Subscribe once and unlock every course, video lesson, and certificate across the entire TOTC platform.
+                გამოიწერეთ ერთხელ და გახსენით ყველა კურსი, ვიდეო გაკვეთილი და სერტიფიკატი მთელ TOTC პლატფორმაზე.
               </p>
 
               {/* Billing Switch */}
               <div className="flex items-center justify-center gap-4 pt-6">
                 <span className={`text-sm font-semibold ${!annualBilling ? 'text-totc-navy' : 'text-totc-gray'}`}>
-                  Monthly Billing
+                  ყოველთვიური გადახდა
                 </span>
                 <button
                   onClick={() => setAnnualBilling(!annualBilling)}
@@ -431,10 +431,10 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 </button>
                 <div className="flex items-center gap-1.5">
                   <span className={`text-sm font-semibold ${annualBilling ? 'text-totc-navy' : 'text-totc-gray'}`}>
-                    Annual Billing
+                    წლიური გადახდა
                   </span>
                   <span className="bg-totc-orange-light text-totc-orange text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    Save 25%
+                    დაზოგე 25%
                   </span>
                 </div>
               </div>
@@ -454,7 +454,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                   {plan.isPopular && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-totc-orange text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5">
                       <Star className="w-3.5 h-3.5 fill-white" />
-                      Most Popular
+                      ყველაზე პოპულარული
                     </div>
                   )}
 
@@ -476,7 +476,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     {/* Features list */}
                     <div className="space-y-3">
                       <p className="font-poppins font-semibold text-xs text-totc-navy uppercase tracking-wider">
-                        What's included:
+                        პაკეტში შედის:
                       </p>
                       <ul className="space-y-3">
                         {plan.features.map((feature, fIdx) => (
@@ -545,11 +545,11 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     </div>
                     <div className="flex justify-between text-totc-gray font-medium">
                       <span>გადახდილი თანხა:</span>
-                      <span className="font-bold text-emerald-600">${subscriptionSuccess.order.totalAmount?.toFixed(2)}</span>
+                      <span className="font-bold text-emerald-600">₾{subscriptionSuccess.order.totalAmount?.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-totc-gray font-medium">
                       <span>სტატუსი:</span>
-                      <span className="font-bold text-emerald-600">Paid & Verified</span>
+                      <span className="font-bold text-emerald-600">გადახდილი და დადასტურებული</span>
                     </div>
                   </div>
                 )}
@@ -601,7 +601,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                   <div className="text-right">
                     <div className="text-xs text-totc-gray font-medium">გადასახდელი თანხა</div>
                     <div className="text-2xl font-black text-totc-teal">
-                      {annualBilling ? '$190.00' : '$19.00'}
+                      {annualBilling ? '₾588.00' : '₾65.00'}
                     </div>
                   </div>
                 </div>
@@ -817,7 +817,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                       <>
                         <Lock className="w-4 h-4" />
                         <span>
-                          გადახდა ({annualBilling ? '$190.00' : '$19.00'}) & გააქტიურება
+                          გადახდა ({annualBilling ? '₾588.00' : '₾65.00'}) და გააქტიურება
                         </span>
                       </>
                     )}
@@ -840,10 +840,10 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
 
             <div className="text-center space-y-2">
               <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                Cancel Pro Subscription?
+                გააუქმოთ Pro გამოწერა?
               </h3>
               <p className="text-xs text-totc-gray leading-relaxed">
-                If you cancel, you will lose unlimited access to all 42+ courses, live classroom podiums, and completion certificates.
+                გაუქმების შემთხვევაში დაკარგავთ შეუზღუდავ წვდომას 42+ კურსზე, პირდაპირ ონლაინ ჩართვებზე და სერტიფიკატებზე.
               </p>
             </div>
 
@@ -852,14 +852,14 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 onClick={() => setShowCancelModal(false)}
                 className="flex-1 py-3 rounded-full text-xs font-bold bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors"
               >
-                Keep My Plan
+                პაკეტის შენარჩუნება
               </button>
               <button
                 onClick={handleCancelSubscription}
                 disabled={isCancelling}
                 className="flex-1 py-3 rounded-full text-xs font-bold bg-red-600 text-white hover:bg-red-700 shadow-sm transition-colors"
               >
-                {isCancelling ? 'Cancelling...' : 'Yes, Cancel Plan'}
+                {isCancelling ? 'უქმდება...' : 'დიახ, გაუქმება'}
               </button>
             </div>
           </div>

@@ -4,20 +4,20 @@ export default function CloudSoftware() {
   const cards = [
     {
       icon: '/assets/all_in_one_billing.png',
-      title: 'Online Billing, Invoicing, & Contracts',
-      desc: 'Simple and secure control of your organization’s financial and legal transactions. Send customized invoices and contracts',
+      title: 'ონლაინ გადახდები, ინვოისები და კონტრაქტები',
+      desc: 'თქვენი ორგანიზაციის ფინანსური და იურიდიული ოპერაციების მარტივი და უსაფრთხო კონტროლი. გააგზავნეთ ინვოისები მომენტალურად',
       accent: '#5B72EE',
     },
     {
       icon: '/assets/all_in_one_schedule.png',
-      title: 'Easy Scheduling & Attendance Tracking',
-      desc: 'Schedule and reserve classrooms at one campus or multiple campuses. Keep detailed records of student attendance',
+      title: 'მარტივი განრიგი და დასწრების აღრიცხვა',
+      desc: 'დაგეგმეთ გაკვეთილები და დაჯავშნეთ ვირტუალური აუდიტორიები. აწარმოეთ სტუდენტების დასწრების დეტალური სტატისტიკა',
       accent: '#00CBB8',
     },
     {
       icon: '/assets/all_in_one_tracking.png',
-      title: 'Customer Tracking',
-      desc: 'Automate and track emails to individuals or groups. Skilline’s built-in system helps organize your organization',
+      title: 'სტუდენტებთან კომუნიკაცია',
+      desc: 'ავტომატიზებული შეტყობინებები და ელ-ფოსტის მართვა ჯგუფებისა და ინდივიდუალური მსმენელებისთვის ერთ სივრცეში',
       accent: '#29B9E7',
     },
   ];
@@ -29,10 +29,10 @@ export default function CloudSoftware() {
         {/* Section Heading */}
         <div className="max-w-3xl mx-auto space-y-4 mb-20 md:mb-28">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            All-In-One <span className="text-totc-mint">Cloud Software.</span>
+            ყველაფერი ერთ <span className="text-totc-mint">ღრუბლოვან სისტემაში</span>
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed max-w-2xl mx-auto">
-            TOTC is one powerful online software suite that combines all the tools needed to run a successful school or office.
+            TOTC არის მძლავრი ონლაინ პლატფორმა, რომელიც აერთიანებს ყველა ინსტრუმენტს წარმატებული სწავლებისა და ადმინისტრირებისთვის.
           </p>
         </div>
 

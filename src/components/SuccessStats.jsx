@@ -2,11 +2,11 @@ import React from 'react';
 
 export default function SuccessStats() {
   const stats = [
-    { number: '15K+', label: 'Students' },
-    { number: '75%', label: 'Total success' },
-    { number: '35', label: 'Main questions' },
-    { number: '26', label: 'Chief experts' },
-    { number: '16', label: 'Years of experience' },
+    { number: '15K+', label: 'აქტიური სტუდენტი' },
+    { number: '75%', label: 'წარმატების მაჩვენებელი' },
+    { number: '35+', label: 'პრაქტიკული კურსი' },
+    { number: '26', label: 'წამყვანი ექსპერტი' },
+    { number: '16', label: 'წლიანი გამოცდილება' },
   ];
 
   return (
@@ -16,10 +16,10 @@ export default function SuccessStats() {
         {/* Section Header */}
         <div className="max-w-3xl mx-auto space-y-4 mb-16 md:mb-20">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-dark tracking-tight">
-            Our Success
+            ჩვენი წარმატება
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-            Ornare feugiat pellentesque justo imperdiet feugiat pretium donec id aliquam. Mauris ornare feugiat pellentesque justo imperdiet feugiat pretium.
+            ათასობით სტუდენტმა უკვე გაიუმჯობესა კარიერა TOTC-ის პრაქტიკული კურსებითა და ოფიციალური სერტიფიკატებით.
           </p>
         </div>
 

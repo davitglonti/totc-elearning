@@ -163,9 +163,9 @@ export default function CourseDetailPage({
         
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm text-totc-gray mb-6">
-          <button onClick={() => setActivePage('home')} className="hover:text-totc-teal">Home</button>
+          <button onClick={() => setActivePage('home')} className="hover:text-totc-teal">მთავარი</button>
           <span>/</span>
-          <button onClick={() => setActivePage('courses')} className="hover:text-totc-teal">Courses</button>
+          <button onClick={() => setActivePage('courses')} className="hover:text-totc-teal">კურსები</button>
           <span>/</span>
           <span className="text-totc-navy font-medium truncate max-w-xs sm:max-w-md">{courseData.title}</span>
         </div>
@@ -181,21 +181,21 @@ export default function CourseDetailPage({
             {isAuthor && (
               <span className="px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-700 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                <span>Instructor & Author Mode</span>
+                <span>ინსტრუქტორი და ავტორი</span>
               </span>
             )}
 
             {isAdmin && !isAuthor && (
               <span className="px-3.5 py-1.5 rounded-full bg-blue-100 text-blue-700 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                <span>Admin Oversight Mode</span>
+                <span>ადმინისტრატორის რეჟიმი</span>
               </span>
             )}
 
             {isSubscribed && !isAuthor && !isAdmin && (
               <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm">
                 <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Pro All-Access Active</span>
+                <span>Pro წვდომა აქტიურია</span>
               </span>
             )}
           </div>
@@ -205,7 +205,7 @@ export default function CourseDetailPage({
               {courseData.title}
             </h1>
             <p className="font-poppins text-totc-gray text-base sm:text-lg">
-              {courseData.description || 'Master state-of-the-art interactive teaching, infrastructure scaling, and interactive virtual podium management with hands-on labs.'}
+              {courseData.description || 'დაეუფლეთ თანამედროვე სწავლებისა და ინტერაქტიული ონლაინ პლატფორმების მართვის პრაქტიკულ უნარებს.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-6 pt-2 text-sm text-totc-gray">
@@ -225,7 +225,7 @@ export default function CourseDetailPage({
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="flex items-center gap-2 group text-left transition-colors focus:outline-none"
-                title="Click to view Instructor Bio, Education, Experience & Authored Courses"
+                title="დააჭირეთ ინსტრუქტორის პროფილის სანახავად"
               >
                 <img
                   src={courseData.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
@@ -233,19 +233,19 @@ export default function CourseDetailPage({
                   className="w-8 h-8 rounded-full object-cover border border-totc-teal group-hover:scale-105 transition-transform shadow-sm"
                 />
                 <span className="font-medium text-totc-navy group-hover:text-totc-teal group-hover:underline">
-                  Created by <span className="font-bold">{courseData.instructor}</span> {isAuthor && <span className="text-purple-600 font-bold">(You)</span>}
+                  ინსტრუქტორი: <span className="font-bold">{courseData.instructor}</span> {isAuthor && <span className="text-purple-600 font-bold">(თქვენ)</span>}
                 </span>
               </button>
 
               <div className="flex items-center gap-1.5 text-totc-orange">
                 <Star className="w-4 h-4 fill-totc-orange" />
                 <span className="font-bold text-totc-navy">{courseData.rating}</span>
-                <span>({courseData.reviews} ratings)</span>
+                <span>({courseData.reviews} შეფასება)</span>
               </div>
 
               <div className="flex items-center gap-1.5">
                 <User className="w-4 h-4 text-gray-400" />
-                <span>{courseData.students} enrolled students</span>
+                <span>{courseData.students} ჩარიცხული სტუდენტი</span>
               </div>
             </div>
           </div>
@@ -272,28 +272,33 @@ export default function CourseDetailPage({
                 </div>
               </div>
               <div className="absolute bottom-4 left-6 text-white text-sm font-medium drop-shadow flex items-center gap-2">
-                <span>{isEnrolled ? 'Click to enter interactive classroom player' : 'Click to preview course curriculum & lecture introduction'}</span>
+                <span>{isEnrolled ? 'დააჭირეთ სასწავლო ფლეიერში გადასასვლელად' : 'დააჭირეთ კურსის გაცნობითი ვიდეოს სანახავად'}</span>
                 {isAuthor && (
                   <span className="px-2 py-0.5 rounded bg-purple-600 text-[11px] font-bold text-white uppercase tracking-wider">
-                    Author Access
+                    ავტორის წვდომა
                   </span>
                 )}
               </div>
             </div>
 
             {/* Content Tabs */}
-            <div className="flex border-b border-gray-200 gap-8">
-              {['overview', 'curriculum', 'instructor', 'reviews'].map((tab) => (
+            <div className="flex border-b border-gray-200 gap-8 overflow-x-auto">
+              {[
+                { id: 'overview', label: 'მიმოხილვა' },
+                { id: 'curriculum', label: 'სასწავლო გეგმა' },
+                { id: 'instructor', label: 'ინსტრუქტორი' },
+                { id: 'reviews', label: 'შეფასებები' }
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-4 font-poppins text-lg capitalize transition-colors border-b-2 font-medium ${
-                    activeTab === tab
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`pb-4 font-poppins text-lg transition-colors border-b-2 font-medium whitespace-nowrap ${
+                    activeTab === tab.id
                       ? 'border-totc-teal text-totc-teal font-semibold'
                       : 'border-transparent text-totc-gray hover:text-totc-navy'
                   }`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -301,15 +306,15 @@ export default function CourseDetailPage({
             {/* Tab: Overview */}
             {activeTab === 'overview' && (
               <div className="space-y-6 bg-white p-8 rounded-[24px] border border-gray-100">
-                <h3 className="font-poppins font-bold text-2xl text-totc-navy">What you'll learn</h3>
+                <h3 className="font-poppins font-bold text-2xl text-totc-navy">რას ისწავლით ამ კურსში</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    'Design resilient online lecture architectures',
-                    'Implement live video classrooms and podium spaces',
-                    'Integrate automatic student attendance logging',
-                    'Create interactive online tests and real-time grading',
-                    'Manage private one-on-one video discussion breakout rooms',
-                    'Export certified transcripts and performance rubrics'
+                    'მდგრადი და მასშტაბირებადი არქიტექტურის დაპროექტება',
+                    'ინტერაქტიული ვიდეო გაკვეთილებისა და სისტემების მართვა',
+                    'სტუდენტების პროგრესისა და დასწრების ავტომატიზებული აღრიცხვა',
+                    'ინტერაქტიული ონლაინ ტესტებისა და შეფასების სისტემების შექმნა',
+                    'პირადი კონსულტაციები და პრაქტიკული დავალებების განხილვა',
+                    'ოფიციალური სერტიფიკატის მომზადება და კარიერული ზრდა'
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-totc-mint shrink-0 mt-0.5" />
@@ -325,11 +330,11 @@ export default function CourseDetailPage({
               <div className="space-y-4 bg-white p-8 rounded-[24px] border border-gray-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-poppins font-bold text-2xl text-totc-navy">Course Curriculum</h3>
+                    <h3 className="font-poppins font-bold text-2xl text-totc-navy">სასწავლო გეგმა</h3>
                     <p className="text-xs text-totc-gray mt-1">
                       {isEnrolled 
-                        ? 'All lessons and quizzes are fully unlocked. Click any lecture to start playing.' 
-                        : 'Explore course modules and preview lectures.'}
+                        ? 'ყველა ლექცია და ტესტი გახსნილია. დააჭირეთ სასურველ ლექციას ყურების დასაწყებად.' 
+                        : 'გაეცანით კურსის მოდულებსა და უფასო გაცნობით ლექციებს.'}
                     </p>
                   </div>
 
@@ -339,7 +344,7 @@ export default function CourseDetailPage({
                       className="px-4 py-2 rounded-full bg-totc-teal text-white font-bold text-xs hover:bg-totc-teal-dark transition-colors inline-flex items-center gap-1.5 shadow-sm"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Start from Lecture 1</span>
+                      <span>დაწყება 1-ლი ლექციიდან</span>
                     </button>
                   )}
                 </div>
@@ -352,7 +357,7 @@ export default function CourseDetailPage({
                           {section.title}
                         </h4>
                         <span className="text-xs text-totc-gray font-medium">
-                          {section.lessons?.length || 0} lectures
+                          {section.lessons?.length || 0} ლექცია
                         </span>
                       </div>
 
@@ -381,10 +386,10 @@ export default function CourseDetailPage({
                                   </span>
                                   <div className="flex items-center gap-2 text-[11px] text-totc-gray">
                                     <Clock className="w-3 h-3 text-gray-400" />
-                                    <span>{lesson.durationMinutes || 15} mins</span>
+                                    <span>{lesson.durationMinutes || 15} წთ</span>
                                     {lesson.isFreePreview && !isEnrolled && (
                                       <span className="text-totc-teal font-bold bg-teal-50 px-1.5 py-0.5 rounded text-[10px]">
-                                        Free Preview
+                                        უფასო ნახვა
                                       </span>
                                     )}
                                   </div>
@@ -395,12 +400,12 @@ export default function CourseDetailPage({
                                 {canPlay ? (
                                   <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold inline-flex items-center gap-1">
                                     <Unlock className="w-3 h-3 text-emerald-600" />
-                                    <span>Play</span>
+                                    <span>ჩართვა</span>
                                   </span>
                                 ) : (
                                   <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium inline-flex items-center gap-1">
                                     <Lock className="w-3 h-3 text-gray-400" />
-                                    <span>Locked</span>
+                                    <span>დაბლოკილია</span>
                                   </span>
                                 )}
                               </div>
@@ -445,7 +450,7 @@ export default function CourseDetailPage({
                     />
                     <div>
                       <h3 className="font-poppins font-bold text-xl text-totc-navy">{courseData.instructor}</h3>
-                      <p className="text-totc-gray text-sm">{courseData.instructorEmail || 'Verified TOTC Lecturer'}</p>
+                      <p className="text-totc-gray text-sm">{courseData.instructorEmail || 'ვერიფიცირებული TOTC ინსტრუქტორი'}</p>
                     </div>
                   </div>
 
@@ -465,13 +470,13 @@ export default function CourseDetailPage({
                     }}
                     className="px-5 py-2.5 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs transition-colors self-start sm:self-center flex items-center gap-2 shadow-sm"
                   >
-                    <span>View Full Bio & Courses</span>
+                    <span>სრული ბიოგრაფია და კურსები</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 <p className="text-totc-gray text-sm leading-relaxed">
-                  {courseData.instructor} is an experienced industry educator specializing in hands-on, high-impact coursework. Visit the instructor profile to inspect academic degrees, career experience, and browse all video lectures authored by this instructor.
+                  {courseData.instructor} არის გამოცდილი პრაქტიკოსი და მენტორი. ეწვიეთ ინსტრუქტორის პროფილს მისი განათლების, გამოცდილებისა და სხვა კურსების სანახავად.
                 </p>
               </div>
             )}
@@ -479,11 +484,11 @@ export default function CourseDetailPage({
             {/* Tab: Reviews */}
             {activeTab === 'reviews' && (
               <div className="bg-white p-8 rounded-[24px] border border-gray-100 space-y-6">
-                <h3 className="font-poppins font-bold text-2xl text-totc-navy">Student Feedback</h3>
+                <h3 className="font-poppins font-bold text-2xl text-totc-navy">სტუდენტების შეფასებები</h3>
                 <div className="space-y-4">
                   {[
-                    { name: 'Gloria Rose', rating: 5, date: '2 weeks ago', text: 'This course made virtual teaching effortless. The tools and real-time workflows are revolutionary.' },
-                    { name: 'Arthur Pendelton', rating: 5, date: '1 month ago', text: 'Highly recommended! Clear explanations, amazing production quality, and truly interactive curriculum.' }
+                    { name: 'ნინო ბერიძე', rating: 5, date: '2 კვირის წინ', text: 'ძალიან პრაქტიკული და საინტერესო კურსია. ყველა თემა მარტივად და გასაგებად არის ახსნილი.' },
+                    { name: 'გიორგი მაისურაძე', rating: 5, date: '1 თვის წინ', text: 'საუკეთესო ხარისხი, პრაქტიკული დავალებები და ძალიან გამოსადეგი ტესტები.' }
                   ].map((r, i) => (
                     <div key={i} className="border-b border-gray-100 pb-4 space-y-1">
                       <div className="flex items-center justify-between">
@@ -513,10 +518,10 @@ export default function CourseDetailPage({
                   <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200 space-y-1.5">
                     <div className="flex items-center gap-2 text-purple-900 text-xs font-bold uppercase tracking-wider">
                       <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
-                      <span>Instructor & Author Access</span>
+                      <span>ინსტრუქტორის და ავტორის წვდომა</span>
                     </div>
                     <p className="text-xs text-purple-800 leading-relaxed font-medium">
-                      You are the creator of this course. Full access to all lectures, videos, and teaching resources is permanently unlocked without enrollment or payment.
+                      თქვენ ხართ ამ კურსის ავტორი. სრული წვდომა ყველა ლექციასა და რესურსზე მუდმივად გახსნილია.
                     </p>
                   </div>
 
@@ -525,7 +530,7 @@ export default function CourseDetailPage({
                     className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
                   >
                     <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                    <span>Open Classroom & Watch Lectures</span>
+                    <span>სასწავლო ოთახის გახსნა</span>
                   </button>
 
                   <button
@@ -533,7 +538,7 @@ export default function CourseDetailPage({
                     className="w-full py-3 rounded-full bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2 shadow-2xs"
                   >
                     <Edit3 className="w-4 h-4 text-purple-700" />
-                    <span>Edit Course & Lectures</span>
+                    <span>კურსის რედაქტირება</span>
                   </button>
 
                   <button
@@ -541,7 +546,7 @@ export default function CourseDetailPage({
                     className="w-full py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-totc-navy font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Back to Instructor Studio</span>
+                    <span>ინსტრუქტორის სტუდიაში დაბრუნება</span>
                   </button>
                 </div>
               ) 
@@ -551,10 +556,10 @@ export default function CourseDetailPage({
                   <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200 space-y-1.5">
                     <div className="flex items-center gap-2 text-blue-900 text-xs font-bold uppercase tracking-wider">
                       <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span>Platform Administrator Access</span>
+                      <span>ადმინისტრატორის წვდომა</span>
                     </div>
                     <p className="text-xs text-blue-800 leading-relaxed font-medium">
-                      Full system oversight granted. You can review all syllabus modules, play video streams, and test quizzes without restrictions.
+                      სრული წვდომა მოდერაციისთვის: შეგიძლიათ შეამოწმოთ ყველა მოდული, ვიდეო და ტესტი.
                     </p>
                   </div>
 
@@ -563,7 +568,7 @@ export default function CourseDetailPage({
                     className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
                   >
                     <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                    <span>Open Classroom Player</span>
+                    <span>სასწავლო ფლეიერის გახსნა</span>
                   </button>
 
                   <button
@@ -571,7 +576,7 @@ export default function CourseDetailPage({
                     className="w-full py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-totc-navy font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Return to Admin Console</span>
+                    <span>ადმინ პანელში დაბრუნება</span>
                   </button>
                 </div>
               )
@@ -581,12 +586,12 @@ export default function CourseDetailPage({
                   <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1.5">
                     <div className="flex items-center gap-2 text-emerald-900 text-xs font-bold uppercase tracking-wider">
                       <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{isSubscribed ? 'Pro Membership Active' : 'Enrolled Course'}</span>
+                      <span>{isSubscribed ? 'Pro გამოწერა აქტიურია' : 'კურსი შეძენილია'}</span>
                     </div>
                     <p className="text-xs text-emerald-800 leading-relaxed font-medium">
                       {isSubscribed 
-                        ? `Included with your ${currentUser?.subscriptionPlan || 'Pro'} All-Access Membership. Enjoy unlimited lessons and verified certificates.` 
-                        : 'You are enrolled in this course. Continue where you left off!'}
+                        ? `ხელმისაწვდომია თქვენი ${currentUser?.subscriptionPlan || 'Pro'} გამოწერით.` 
+                        : 'თქვენ ჩარიცხული ხართ ამ კურსზე. გააგრძელეთ სწავლა!'}
                     </p>
                   </div>
 
@@ -595,7 +600,7 @@ export default function CourseDetailPage({
                     className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base sm:text-lg transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2 group active:scale-98"
                   >
                     <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
-                    <span>Continue Learning</span>
+                    <span>სწავლის გაგრძელება</span>
                   </button>
                 </div>
               )
@@ -608,20 +613,20 @@ export default function CourseDetailPage({
                         {courseData.price}
                       </span>
                       <span className="text-lg text-gray-400 line-through">
-                        {courseData.oldPrice || '$600'}
+                        {courseData.oldPrice || '₾600'}
                       </span>
                       <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
-                        25% Off
+                        -25% ფასდაკლება
                       </span>
                     </div>
-                    <p className="text-xs text-red-500 font-medium">Limited time discount ends in 2 days</p>
+                    <p className="text-xs text-red-500 font-medium">შეზღუდული შეთავაზება მთავრდება 2 დღეში</p>
                   </div>
 
                   <button
                     onClick={handleBuyNow}
                     className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-lg transition-colors shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2"
                   >
-                    <span>Enroll Now</span>
+                    <span>კურსის შეძენა</span>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                 </>
@@ -629,23 +634,23 @@ export default function CourseDetailPage({
 
               {/* Course Value Props Checklist */}
               <div className="space-y-4 pt-4 border-t border-gray-100 text-sm text-totc-gray">
-                <div className="font-semibold text-totc-navy">This course includes:</div>
+                <div className="font-semibold text-totc-navy">კურსი მოიცავს:</div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Clock className="w-4 h-4 text-totc-teal" />
-                    <span>32 hours on-demand video</span>
+                    <span>ვიდეო ლექციები სრული წვდომით</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-4 h-4 text-totc-teal" />
-                    <span>14 downloadable lesson guides</span>
+                    <span>ჩამოსატვირთი სასწავლო მასალები</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Award className="w-4 h-4 text-totc-teal" />
-                    <span>Certificate of completion</span>
+                    <span>დასრულების ოფიციალური სერტიფიკატი</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="w-4 h-4 text-totc-teal" />
-                    <span>30-day money-back guarantee</span>
+                    <span>თანხის დაბრუნების 30-დღიანი გარანტია</span>
                   </div>
                 </div>
               </div>

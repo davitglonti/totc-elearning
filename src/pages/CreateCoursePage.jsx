@@ -9,11 +9,11 @@ import {
 import { api } from '../services/api';
 
 const PRESET_THUMBNAILS = [
-  { label: 'Cloud & DevOps', url: '/assets/explore_row_1.png' },
-  { label: 'UI/UX Design', url: '/assets/explore_row_2.png' },
-  { label: 'Photography & Media', url: '/assets/explore_row_3.png' },
-  { label: 'Programming', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80' },
-  { label: 'Business & Tech', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80' },
+  { label: 'ქლაუდი და DevOps', url: '/assets/explore_row_1.png' },
+  { label: 'UI/UX დიზაინი', url: '/assets/explore_row_2.png' },
+  { label: 'ფოტოგრაფია და მედია', url: '/assets/explore_row_3.png' },
+  { label: 'პროგრამირება', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80' },
+  { label: 'ბიზნესი და ტექნოლოგიები', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80' },
 ];
 
 export default function CreateCoursePage({ currentUser, courseToEdit, setActivePage, setSelectedCourse }) {
@@ -41,15 +41,15 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   const [sections, setSections] = useState([
     {
       id: 'sec-1',
-      title: 'Module 1: Getting Started & Core Fundamentals',
+      title: 'მოდული 1: დაწყება და ძირითადი საფუძვლები',
       orderIndex: 1,
       lessons: [
         {
           id: 'les-1',
-          title: 'Course Introduction & Environment Setup',
+          title: 'კურსის შესავალი და გარემოს მომზადება',
           videoUrl: '',
           durationMinutes: 12,
-          contentText: 'Welcome to the curriculum. In this lecture, we configure our development toolchain and review core concepts.',
+          contentText: 'კეთილი იყოს თქვენი მობრძანება. ამ ლექციაში მოვამზადებთ სამუშაო გარემოს და განვიხილავთ ძირითად კონცეფციებს.',
           isFreePreview: true,
           lessonType: 'Video',
           orderIndex: 1,
@@ -58,10 +58,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         },
         {
           id: 'les-2',
-          title: 'Architectural Blueprint & Data Flow',
+          title: 'არქიტექტურული გეგმა და მონაცემთა ნაკადი',
           videoUrl: '',
           durationMinutes: 20,
-          contentText: 'Deep dive into systemic architecture, resilient state patterns, and best practices.',
+          contentText: 'სიღრმისეული მიმოხილვა სისტემური არქიტექტურის, მდგრადი პატერნებისა და საუკეთესო პრაქტიკების შესახებ.',
           isFreePreview: false,
           lessonType: 'Video',
           orderIndex: 2,
@@ -124,8 +124,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               orderIndex: l.orderIndex,
               resources: l.resources || [],
               quiz: l.quiz ? {
-                title: l.quiz.title || `Knowledge Check: ${l.title}`,
-                description: l.quiz.description || 'Test your understanding of this lecture.',
+                title: l.quiz.title || `ცოდნის შემოწმება: ${l.title}`,
+                description: l.quiz.description || 'შეამოწმეთ ამ ლექციის მასალის ათვისების დონე.',
                 passingScorePercentage: l.quiz.passingScorePercentage || 70,
                 questions: (l.quiz.questions || []).map(q => ({
                   id: q.id || `q-${Math.random()}`,
@@ -144,7 +144,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       })
       .catch(err => {
         console.warn('Could not load full course for editing:', err.message);
-        setErrorMessage('Failed to load full course details: ' + err.message);
+        setErrorMessage('კურსის დეტალების ჩატვირთვა ვერ მოხერხდა: ' + err.message);
       })
       .finally(() => {
         if (isMounted) setLoadingCourse(false);
@@ -160,15 +160,15 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       ...sections,
       {
         id: `sec-${Date.now()}`,
-        title: `Module ${newSecNum}: Advanced Applications`,
+        title: `მოდული ${newSecNum}: პრაქტიკული გამოყენება`,
         orderIndex: newSecNum,
         lessons: [
           {
             id: `les-${Date.now()}`,
-            title: `Lesson 1: Core Implementation`,
+            title: `ლექცია 1: ძირითადი იმპლემენტაცია`,
             videoUrl: '',
             durationMinutes: 15,
-            contentText: 'Practical walkthrough, demonstration, and hands-on code exercises.',
+            contentText: 'პრაქტიკული განხილვა, დემონსტრაცია და დავალებები.',
             isFreePreview: false,
             lessonType: 'Video',
             orderIndex: 1,
@@ -182,7 +182,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
 
   const handleRemoveSection = (secIndex) => {
     if (sections.length <= 1) {
-      alert('A course must contain at least one module/section.');
+      alert('კურსი უნდა შეიცავდეს მინიმუმ ერთ მოდულს.');
       return;
     }
     setSections(sections.filter((_, idx) => idx !== secIndex));
@@ -200,10 +200,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const newLesNum = updated[secIndex].lessons.length + 1;
     updated[secIndex].lessons.push({
       id: `les-${Date.now()}`,
-      title: `Lesson ${newLesNum}: Hands-on Workshop`,
+      title: `ლექცია ${newLesNum}: პრაქტიკული ვორქშოპი`,
       videoUrl: '',
       durationMinutes: 15,
-      contentText: 'Key concepts, lecture video guidance, and step-by-step exercises.',
+      contentText: 'ძირითადი კონცეფციები, ვიდეო გაკვეთილი და ნაბიჯ-ნაბიჯ სავარჯიშოები.',
       isFreePreview: false,
       lessonType: 'Video',
       orderIndex: newLesNum,
@@ -218,7 +218,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const newLesNum = updated[secIndex].lessons.length + 1;
     updated[secIndex].lessons.push({
       id: `les-${Date.now()}`,
-      title: `Module ${secIndex + 1} Final Examination (ფინალური გამოცდა)`,
+      title: `მოდული ${secIndex + 1} – ფინალური გამოცდა`,
       videoUrl: '',
       durationMinutes: 20,
       contentText: 'მოდულის შემაჯამებელი საგამოცდო ტესტი. სტუდენტმა წარმატებით უნდა ჩააბაროს ეს გამოცდა (მინიმუმ 70%), რათა განბლოკოს შემდეგი მოდული.',
@@ -227,7 +227,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       orderIndex: newLesNum,
       resources: [],
       quiz: {
-        title: `Module ${secIndex + 1} Final Examination`,
+        title: `მოდული ${secIndex + 1} – ფინალური გამოცდა`,
         description: 'შემაჯამებელი გამოცდა. საგამოცდო მონიტორინგი და ჩანართის კონტროლი ჩართულია.',
         passingScorePercentage: 70,
         questions: [
@@ -251,7 +251,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   const handleRemoveLesson = (secIndex, lesIndex) => {
     const updated = [...sections];
     if (updated[secIndex].lessons.length <= 1) {
-      alert('A module must have at least one lesson.');
+      alert('მოდული უნდა შეიცავდეს მინიმუმ ერთ ლექციას.');
       return;
     }
     updated[secIndex].lessons = updated[secIndex].lessons.filter((_, idx) => idx !== lesIndex);
@@ -273,11 +273,11 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       const res = await api.instructor.uploadMedia(file);
       const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
       setThumbnailUrl(fullUrl);
-      setSuccessMessage('✓ Course cover artwork uploaded successfully!');
+      setSuccessMessage('✓ კურსის გარეკანის სურათი წარმატებით აიტვირთა!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Artwork upload error:', err);
-      alert('Failed to upload course image: ' + (err.message || 'Network error'));
+      alert('სურათის ატვირთვა ვერ მოხერხდა: ' + (err.message || 'ქსელის შეცდომა'));
     } finally {
       setUploadingArtwork(false);
     }
@@ -301,12 +301,12 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
 
       // Determine readable file category
-      let fType = 'Document';
+      let fType = 'დოკუმენტი';
       const ext = file.name.split('.').pop()?.toLowerCase();
-      if (ext === 'pdf') fType = 'PDF Document';
-      else if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) fType = 'Archive (ZIP)';
-      else if (['js', 'jsx', 'ts', 'tsx', 'py', 'cs', 'java', 'html', 'css', 'json'].includes(ext)) fType = 'Source Code';
-      else if (['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(ext)) fType = 'Image Asset';
+      if (ext === 'pdf') fType = 'PDF დოკუმენტი';
+      else if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) fType = 'არქივი (ZIP)';
+      else if (['js', 'jsx', 'ts', 'tsx', 'py', 'cs', 'java', 'html', 'css', 'json'].includes(ext)) fType = 'საწყისი კოდი';
+      else if (['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(ext)) fType = 'სურათი';
 
       const newResource = {
         id: `res-${Date.now()}`,
@@ -314,7 +314,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         fileUrl: fullUrl,
         size: sizeStr,
         type: fType,
-        desc: `Lecture attachment (${sizeStr})`
+        desc: `ლექციის დანართი (${sizeStr})`
       };
 
       const updated = [...sections];
@@ -323,7 +323,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       setSections(updated);
     } catch (err) {
       console.error('Resource upload failed:', err);
-      alert('Failed to upload file attachment: ' + (err.message || 'Network error'));
+      alert('ფაილის ატვირთვა ვერ მოხერხდა: ' + (err.message || 'ქსელის შეცდომა'));
     } finally {
       setUploadingResourceKey(null);
     }
@@ -345,24 +345,24 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const itemKey = `${sIdx}-${lIdx}`;
 
     if (currentLesson.quiz) {
-      if (window.confirm('Are you sure you want to remove the quiz from this lecture?')) {
+      if (window.confirm('დარწმუნებული ხართ, რომ გსურთ ამ ლექციიდან ტესტის წაშლა?')) {
         currentLesson.quiz = null;
         if (expandedQuizKey === itemKey) setExpandedQuizKey(null);
         setSections(updated);
       }
     } else {
       currentLesson.quiz = {
-        title: `Knowledge Check: ${currentLesson.title || 'Lecture Assessment'}`,
-        description: 'Answer these questions to test your understanding of this lecture.',
+        title: `ცოდნის შემოწმება: ${currentLesson.title || 'ლექციის ტესტი'}`,
+        description: 'უპასუხეთ კითხვებს ლექციის მასალის შესამოწმებლად.',
         passingScorePercentage: 70,
         questions: [
           {
             id: `q-${Date.now()}`,
-            questionText: 'What is the primary architectural takeaway from this lecture?',
-            explanation: 'Review the lecture video to verify key principles.',
+            questionText: 'რა არის ამ ლექციის მთავარი არქიტექტურული დასკვნა?',
+            explanation: 'გადახედეთ ვიდეო ლექციას ძირითადი პრინციპების დასაზუსტებლად.',
             options: [
-              { id: `opt-${Date.now()}-1`, optionText: 'First key takeaway', isCorrect: true },
-              { id: `opt-${Date.now()}-2`, optionText: 'Alternative option', isCorrect: false }
+              { id: `opt-${Date.now()}-1`, optionText: 'პირველი ძირითადი პრინციპი', isCorrect: true },
+              { id: `opt-${Date.now()}-2`, optionText: 'ალტერნატიული ვარიანტი', isCorrect: false }
             ]
           }
         ]
@@ -382,11 +382,11 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       ...(quiz.questions || []),
       {
         id: `q-${Date.now()}`,
-        questionText: `Question ${qNum}`,
+        questionText: `კითხვა ${qNum}`,
         explanation: '',
         options: [
-          { id: `opt-${Date.now()}-1`, optionText: 'Option A (Correct)', isCorrect: true },
-          { id: `opt-${Date.now()}-2`, optionText: 'Option B', isCorrect: false }
+          { id: `opt-${Date.now()}-1`, optionText: 'ვარიანტი A (სწორი)', isCorrect: true },
+          { id: `opt-${Date.now()}-2`, optionText: 'ვარიანტი B', isCorrect: false }
         ]
       }
     ];
@@ -398,7 +398,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const quiz = updated[sIdx].lessons[lIdx].quiz;
     if (!quiz || !quiz.questions) return;
     if (quiz.questions.length <= 1) {
-      alert('A quiz must have at least one question.');
+      alert('ტესტი უნდა შეიცავდეს მინიმუმ ერთ კითხვას.');
       return;
     }
     quiz.questions = quiz.questions.filter((_, idx) => idx !== qIdx);
@@ -421,7 +421,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       ...(question.options || []),
       {
         id: `opt-${Date.now()}-${(question.options?.length || 0) + 1}`,
-        optionText: `Option ${(question.options?.length || 0) + 1}`,
+        optionText: `ვარიანტი ${(question.options?.length || 0) + 1}`,
         isCorrect: false
       }
     ];
@@ -433,7 +433,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     const question = updated[sIdx].lessons[lIdx].quiz?.questions?.[qIdx];
     if (!question || !question.options) return;
     if (question.options.length <= 2) {
-      alert('A question must have at least 2 options.');
+      alert('კითხვას უნდა ჰქონდეს მინიმუმ 2 სავარაუდო პასუხი.');
       return;
     }
     const wasCorrect = question.options[oIdx].isCorrect;
@@ -509,15 +509,15 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         key: itemKey,
         isSuccess: true,
         message: res.isBunnyStream 
-          ? `✓ Transcoded & hosted on Bunny Stream CDN (Library: ${res.libraryId || '805955'})`
-          : `✓ Video saved to server CDN storage: ${res.fileName}`
+          ? `✓ ვიდეო დამუშავდა და აიტვირთა Bunny Stream CDN-ზე (ბიბლიოთეკა: ${res.libraryId || '805955'})`
+          : `✓ ვიდეო შენახულია სერვერის CDN საცავში: ${res.fileName}`
       });
     } catch (err) {
       console.error('Video upload error:', err);
       setUploadNotice({
         key: itemKey,
         isSuccess: false,
-        message: 'Upload failed: ' + (err.message || 'Network error')
+        message: 'ატვირთვა ვერ მოხერხდა: ' + (err.message || 'ქსელის შეცდომა')
       });
     } finally {
       setUploadingKey(null);
@@ -527,7 +527,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   // Submit Course to Backend (Create or Update)
   const handleSubmitCourse = async (publishImmediately) => {
     if (!title.trim()) {
-      setErrorMessage('Please enter a course title.');
+      setErrorMessage('გთხოვთ შეიყვანოთ კურსის სათაური.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -588,17 +588,17 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         // UPDATE EXISTING COURSE
         await api.instructor.updateFullCourse(targetCourseId, payload);
         if (currentUser?.role === 'Admin') {
-          setSuccessMessage('🎉 Course curriculum and lectures updated successfully!');
+          setSuccessMessage('🎉 კურსის პროგრამა და ლექციები წარმატებით განახლდა!');
         } else {
-          setSuccessMessage('🎉 Course curriculum updated and resubmitted for admin review!');
+          setSuccessMessage('🎉 კურსის პროგრამა განახლდა და ხელახლა გაიგზავნა ადმინისტრატორის განხილვაზე!');
         }
       } else {
         // CREATE BRAND NEW COURSE
         await api.instructor.createFullCourse(payload);
         if (currentUser?.role === 'Admin') {
-          setSuccessMessage('🎉 Course successfully published to TOTC LMS catalog!');
+          setSuccessMessage('🎉 კურსი წარმატებით გამოქვეყნდა TOTC LMS კატალოგში!');
         } else {
-          setSuccessMessage('🎉 Course submitted for review! An Administrator will audit your curriculum and publish it upon verification.');
+          setSuccessMessage('🎉 კურსი გაიგზავნა განხილვაზე! ადმინისტრატორი შეამოწმებს პროგრამას და დამტკიცების შემდეგ გამოაქვეყნებს.');
         }
       }
 
@@ -609,7 +609,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
 
     } catch (err) {
       console.error('Failed to save course:', err);
-      setErrorMessage(err.message || 'Failed to save course. Please review the form fields.');
+      setErrorMessage(err.message || 'კურსის შენახვა ვერ მოხერხდა. გთხოვთ შეამოწმოთ ველები.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
@@ -634,7 +634,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
             className="inline-flex items-center gap-2 text-sm font-bold text-totc-gray hover:text-totc-navy transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Instructor Studio</span>
+            <span>ინსტრუქტორის სტუდიაში დაბრუნება</span>
           </button>
 
           <div className="flex items-center gap-3">
@@ -644,7 +644,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               className="px-5 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
-              <span>Save as Draft</span>
+              <span>მონახაზად შენახვა</span>
             </button>
 
             <button
@@ -655,10 +655,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               <Sparkles className="w-4 h-4" />
               <span>
                 {submitting 
-                  ? 'Saving Course...' 
+                  ? 'ინახება...' 
                   : isEditing 
-                    ? (currentUser?.role === 'Admin' ? 'Save & Update Course' : 'Save & Resubmit for Approval') 
-                    : (currentUser?.role === 'Admin' ? 'Save & Publish Course' : 'Submit for Review')}
+                    ? (currentUser?.role === 'Admin' ? 'შენახვა და განახლება' : 'შენახვა და განხილვაზე გაგზავნა') 
+                    : (currentUser?.role === 'Admin' ? 'შენახვა და გამოქვეყნება' : 'განხილვაზე გაგზავნა')}
               </span>
             </button>
           </div>
@@ -668,7 +668,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         {loadingCourse && (
           <div className="mb-8 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center gap-3 text-totc-teal font-bold text-sm">
             <RefreshCw className="w-5 h-5 animate-spin" />
-            <span>Loading full course curriculum and video lectures...</span>
+            <span>იტვირთება კურსის სრული პროგრამა და ვიდეო ლექციები...</span>
           </div>
         )}
 
@@ -677,13 +677,13 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           <div className="mb-8 p-6 rounded-[24px] bg-red-50 border-2 border-red-200 text-red-900 space-y-3 shadow-xs animate-in fade-in">
             <div className="flex items-center gap-2.5 font-bold text-sm text-red-800">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-              <span className="uppercase tracking-wider">Administrator Feedback — Changes Requested</span>
+              <span className="uppercase tracking-wider">ადმინისტრატორის კომენტარი — საჭიროა ცვლილებები</span>
             </div>
             <div className="bg-white p-4 rounded-xl border border-red-100 text-sm font-semibold text-red-900 leading-relaxed">
               "{rejectionReason}"
             </div>
             <p className="text-xs text-red-700 font-medium">
-              Please address the administrator's review feedback below (add or delete lectures, update video links, or refine descriptions), then click <strong>"Save & Resubmit for Approval"</strong>.
+              გთხოვთ გაითვალისწინოთ ადმინისტრატორის შენიშვნა (დაამატეთ ან შეცვალეთ ლექციები, განაახლეთ ვიდეოები ან აღწერა) და შემდეგ დააჭირეთ ღილაკს <strong>„შენახვა და განხილვაზე გაგზავნა“</strong>.
             </p>
           </div>
         )}
@@ -693,33 +693,33 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-bold uppercase tracking-wider">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>{isEditing ? 'Course Curriculum Editor' : 'Course Curriculum Studio'}</span>
+              <span>{isEditing ? 'კურსის პროგრამის რედაქტორი' : 'კურსის შექმნის სტუდია'}</span>
             </div>
             <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight">
-              {isEditing ? `Edit: ${title || 'Course'}` : 'Create New Course'}
+              {isEditing ? `რედაქტირება: ${title || 'კურსი'}` : 'ახალი კურსის შექმნა'}
             </h1>
             <p className="font-poppins text-totc-gray text-sm">
               {isEditing 
-                ? 'Update course metadata, manage modules, add or delete lecture videos, and resubmit for approval.' 
-                : 'Define course parameters, structure learning modules, and attach lecture videos.'}
+                ? 'განაახლეთ კურსის მონაცემები, მართეთ მოდულები, დაამატეთ ან წაშალეთ ვიდეო ლექციები და გაგზავნეთ დასამტკიცებლად.' 
+                : 'განსაზღვრეთ კურსის პარამეტრები, დააწყვეთ სასწავლო მოდულები და ატვირთეთ ვიდეო ლექციები.'}
             </p>
           </div>
 
           {/* Quick Metrics Badge */}
           <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs">
             <div>
-              <p className="text-totc-gray font-semibold">Modules</p>
+              <p className="text-totc-gray font-semibold">მოდულები</p>
               <p className="font-black text-lg text-totc-navy">{sections.length}</p>
             </div>
             <div className="h-8 w-px bg-gray-200" />
             <div>
-              <p className="text-totc-gray font-semibold">Total Lectures</p>
+              <p className="text-totc-gray font-semibold">სულ ლექცია</p>
               <p className="font-black text-lg text-totc-teal">{totalLecturesCount}</p>
             </div>
             <div className="h-8 w-px bg-gray-200" />
             <div>
-              <p className="text-totc-gray font-semibold">Total Runtime</p>
-              <p className="font-black text-lg text-indigo-700">{Math.round(totalDurationMinutes / 60 * 10) / 10} hrs</p>
+              <p className="text-totc-gray font-semibold">ხანგრძლივობა</p>
+              <p className="font-black text-lg text-indigo-700">{Math.round(totalDurationMinutes / 60 * 10) / 10} სთ</p>
             </div>
           </div>
         </div>
@@ -748,19 +748,19 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
             <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm space-y-4">
               <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
                 <FileText className="w-4 h-4 text-totc-teal" />
-                <span>Course Essentials</span>
+                <span>კურსის ძირითადი მონაცემები</span>
               </h3>
 
               {/* Title */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  Course Title <span className="text-red-500">*</span>
+                  კურსის სათაური <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. AWS Cloud Mastery & DevOps"
+                  placeholder="მაგ: AWS Cloud არქიტექტურა და DevOps"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20 outline-none text-sm font-medium transition-all"
                   required
                 />
@@ -769,12 +769,12 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               {/* Description */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  Overview / Description
+                  მიმოხილვა / აღწერა
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Provide a concise summary of what students will master..."
+                  placeholder="მოკლედ აღწერეთ რას ისწავლიან სტუდენტები ამ კურსში..."
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20 outline-none text-sm transition-all"
                 />
@@ -783,7 +783,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               {/* Category */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  Discipline / Category
+                  მიმართულება / კატეგორია
                 </label>
                 <select
                   value={categoryId}
@@ -796,7 +796,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                     </option>
                   ))}
                   {categories.length === 0 && (
-                    <option value="">General Development</option>
+                    <option value="">ზოგადი განვითარება</option>
                   )}
                 </select>
               </div>
@@ -805,26 +805,26 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                    Target Level
+                    სირთულის დონე
                   </label>
                   <select
                     value={level}
                     onChange={(e) => setLevel(e.target.value)}
                     className="w-full px-3 py-3 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-medium transition-all bg-white"
                   >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="AllLevels">All Levels</option>
+                    <option value="Beginner">დამწყები</option>
+                    <option value="Intermediate">საშუალო</option>
+                    <option value="Advanced">პროფესიონალი</option>
+                    <option value="AllLevels">ყველა დონე</option>
                   </select>
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                    Price ($ USD)
+                    ფასი (₾ GEL)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">$</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₾</span>
                     <input
                       type="number"
                       min="0"
@@ -842,14 +842,14 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
             <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm space-y-4">
               <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-totc-teal" />
-                <span>Course Artwork</span>
+                <span>კურსის გარეკანი</span>
               </h3>
 
               {/* Current Preview */}
               <div className="relative rounded-2xl overflow-hidden aspect-video bg-gray-100 border border-gray-200 shadow-inner">
                 <img
                   src={thumbnailUrl || '/assets/explore_row_1.png'}
-                  alt="Thumbnail Preview"
+                  alt="გარეკანის გადახედვა"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -870,10 +870,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                   </div>
                   <div>
                     <p className="text-xs font-bold text-totc-navy">
-                      {uploadingArtwork ? 'Uploading Cover Image...' : 'ატვირთე საჩვენებელი ფოტო (Upload Cover)'}
+                      {uploadingArtwork ? 'იტვირთება გარეკანის ფოტო...' : 'ატვირთე საჩვენებელი ფოტო'}
                     </p>
                     <p className="text-[10px] text-gray-500">
-                      Select PNG, JPG, or WebP from your device (Max 10MB)
+                      აირჩიეთ PNG, JPG ან WebP ფაილი (მაქს. 10MB)
                     </p>
                   </div>
                   <input
@@ -893,7 +893,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               {/* Presets */}
               <div className="space-y-2">
                 <label className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">
-                  Select Preset Image
+                  აირჩიეთ მზა სურათი
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {PRESET_THUMBNAILS.map((p, idx) => (
@@ -916,7 +916,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
               {/* Custom URL */}
               <div className="space-y-1 pt-1">
                 <label className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">
-                  Or Custom Image URL
+                  ან ჩასვით სურათის ბმული (URL)
                 </label>
                 <input
                   type="url"
@@ -939,10 +939,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                 <div>
                   <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
                     <Layers className="w-5 h-5 text-indigo-600" />
-                    <span>Curriculum & Video Lectures</span>
+                    <span>სასწავლო გეგმა და ვიდეო ლექციები</span>
                   </h3>
                   <p className="text-xs text-totc-gray mt-0.5">
-                    Build multi-module structure, attach video stream URLs, and set free preview previews.
+                    ააწყვეთ მრავალმოდულიანი სტრუქტურა, ატვირთეთ ვიდეოები და მონიშნეთ უფასო საჩვენებელი ლექციები.
                   </p>
                 </div>
 
@@ -952,7 +952,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                   className="px-4 py-2 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Module</span>
+                  <span>მოდულის დამატება</span>
                 </button>
               </div>
 
@@ -973,7 +973,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                           type="text"
                           value={section.title}
                           onChange={(e) => handleSectionTitleChange(sIdx, e.target.value)}
-                          placeholder={`Module ${sIdx + 1} Title`}
+                          placeholder={`მოდული ${sIdx + 1}-ის სათაური`}
                           className="flex-1 px-3 py-1.5 bg-white rounded-lg border border-gray-200 focus:border-indigo-600 outline-none text-sm font-bold text-totc-navy transition-all"
                         />
                       </div>
@@ -982,7 +982,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                         type="button"
                         onClick={() => handleRemoveSection(sIdx)}
                         className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                        title="Remove module"
+                        title="მოდულის წაშლა"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1004,7 +1004,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                 type="text"
                                 value={lesson.title}
                                 onChange={(e) => handleLessonChange(sIdx, lIdx, 'title', e.target.value)}
-                                placeholder="Lecture Title"
+                                placeholder="ლექციის სათაური"
                                 className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-xs font-semibold text-totc-navy"
                               />
                             </div>
@@ -1013,7 +1013,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               type="button"
                               onClick={() => handleRemoveLesson(sIdx, lIdx)}
                               className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
-                              title="Delete lesson"
+                              title="ლექციის წაშლა"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1038,16 +1038,16 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                   </div>
                                   <div>
                                     <p className="text-xs font-bold text-indigo-950">
-                                      {uploadingKey === `${sIdx}-${lIdx}` ? `Uploading Video (${uploadProgress}%)...` : 'Upload Lecture Video File'}
+                                      {uploadingKey === `${sIdx}-${lIdx}` ? `იტვირთება ვიდეო (${uploadProgress}%)...` : 'ატვირთეთ ლექციის ვიდეო ფაილი'}
                                     </p>
                                     <p className="text-[11px] text-indigo-600/80">
-                                      Select MP4, MOV or WebM from your device (Max 2GB). Streams directly to Bunny CDN.
+                                      აირჩიეთ MP4, MOV ან WebM ფაილი (მაქს. 2GB). იტვირთება პირდაპირ Bunny CDN-ზე.
                                     </p>
                                   </div>
                                 </div>
 
                                 <span className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-xs hover:bg-indigo-700 transition-colors shrink-0">
-                                  Browse Video
+                                  ვიდეოს არჩევა
                                 </span>
 
                                 <input
@@ -1074,8 +1074,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                       <span className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
                                         <Sparkles className="w-3.5 h-3.5 text-teal-600" />
                                         {lesson.videoUrl.includes('mediadelivery.net') || lesson.videoUrl.includes('b-cdn.net')
-                                          ? '⚡ Bunny Stream CDN Video Ready'
-                                          : '📁 Video File Attached'}
+                                          ? '⚡ Bunny Stream CDN ვიდეო მზადაა'
+                                          : '📁 ვიდეო ფაილი მიმაგრებულია'}
                                       </span>
                                       <a
                                         href={lesson.videoUrl}
@@ -1083,7 +1083,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                         rel="noopener noreferrer"
                                         className="text-[10px] text-teal-700 hover:text-teal-900 font-bold underline"
                                       >
-                                        Preview
+                                        გადახედვა
                                       </a>
                                     </div>
                                     <p className="text-[10px] text-gray-500 font-mono truncate max-w-xs sm:max-w-md">
@@ -1102,12 +1102,12 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                     {uploadingKey === `${sIdx}-${lIdx}` ? (
                                       <>
                                         <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                                        <span>Uploading ({uploadProgress}%)...</span>
+                                        <span>იტვირთება ({uploadProgress}%)...</span>
                                       </>
                                     ) : (
                                       <>
                                         <UploadCloud className="w-3.5 h-3.5 text-totc-teal" />
-                                        <span>Replace Video</span>
+                                        <span>ვიდეოს შეცვლა</span>
                                       </>
                                     )}
                                     <input
@@ -1127,7 +1127,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                     type="button"
                                     onClick={() => handleLessonChange(sIdx, lIdx, 'videoUrl', '')}
                                     className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="Remove attached video"
+                                    title="მიმაგრებული ვიდეოს წაშლა"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1141,7 +1141,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                 <div className="flex items-center justify-between text-[11px] font-bold text-amber-800">
                                   <span className="flex items-center gap-1.5">
                                     <UploadCloud className="w-4 h-4 animate-bounce text-amber-600" />
-                                    Uploading binary stream to Bunny CDN pipeline...
+                                    მიმდინარეობს ვიდეო ნაკადის ატვირთვა Bunny CDN-ზე...
                                   </span>
                                   <span className="font-mono">{uploadProgress}%</span>
                                 </div>
@@ -1177,7 +1177,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               <div className="flex items-center gap-2">
                                 <span className="text-[11px] font-bold text-totc-gray flex items-center gap-1">
                                   <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                  Duration:
+                                  ხანგრძლივობა:
                                 </span>
                                 <div className="relative w-24">
                                   <input
@@ -1185,10 +1185,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                     min="1"
                                     value={lesson.durationMinutes}
                                     onChange={(e) => handleLessonChange(sIdx, lIdx, 'durationMinutes', e.target.value)}
-                                    placeholder="Mins"
+                                    placeholder="წთ"
                                     className="w-full px-2.5 py-1 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-xs font-bold text-totc-navy"
                                   />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-semibold">min</span>
+                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-semibold">წთ</span>
                                 </div>
                               </div>
 
@@ -1199,7 +1199,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                   onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
                                   className="rounded text-totc-teal focus:ring-totc-teal"
                                 />
-                                <span>Free Preview</span>
+                                <span>უფასო ნახვა</span>
                               </label>
                             </div>
                           </div>
@@ -1210,7 +1210,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               type="text"
                               value={lesson.contentText || ''}
                               onChange={(e) => handleLessonChange(sIdx, lIdx, 'contentText', e.target.value)}
-                              placeholder="Key concepts or cheat sheet notes for this lecture..."
+                              placeholder="ლექციის მოკლე აღწერა ან ძირითადი თეზისები..."
                               className="w-full px-3 py-1.5 rounded-lg border border-gray-100 bg-gray-50/70 focus:bg-white focus:border-totc-teal outline-none text-[11px] text-totc-gray transition-colors"
                             />
                           </div>
@@ -1220,7 +1220,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                             <div className="flex items-center justify-between text-xs">
                               <span className="font-bold text-totc-navy flex items-center gap-1.5">
                                 <Paperclip className="w-3.5 h-3.5 text-totc-teal" />
-                                <span>Downloadable Materials ({lesson.resources?.length || 0})</span>
+                                <span>ჩამოსატვირთი მასალები ({lesson.resources?.length || 0})</span>
                               </span>
 
                               <label className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
@@ -1231,12 +1231,12 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                 {uploadingResourceKey === `${sIdx}-${lIdx}` ? (
                                   <>
                                     <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
-                                    <span>Uploading...</span>
+                                    <span>იტვირთება...</span>
                                   </>
                                 ) : (
                                   <>
                                     <UploadCloud className="w-3 h-3" />
-                                    <span>+ Attach File (PDF, ZIP, Code)</span>
+                                    <span>+ ფაილის მიმაგრება (PDF, ZIP, კოდი)</span>
                                   </>
                                 )}
                                 <input
@@ -1301,8 +1301,8 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                 <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
                                 <span>
                                   {lesson.quiz 
-                                    ? `Knowledge Check Quiz (${lesson.quiz.questions?.length || 0} Questions)`
-                                    : '+ Add Knowledge Check Quiz'}
+                                    ? `ცოდნის შემოწმების ტესტი (${lesson.quiz.questions?.length || 0} კითხვა)`
+                                    : '+ ცოდნის შემოწმების ტესტის დამატება'}
                                 </span>
                                 {lesson.quiz && (
                                   expandedQuizKey === `${sIdx}-${lIdx}` ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
@@ -1315,7 +1315,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                   onClick={() => handleToggleQuiz(sIdx, lIdx)}
                                   className="text-[10px] text-red-500 hover:underline font-semibold"
                                 >
-                                  Remove Quiz
+                                  ტესტის წაშლა
                                 </button>
                               )}
                             </div>
@@ -1325,7 +1325,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                               <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-200/80 space-y-4 animate-in fade-in">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                   <div className="sm:col-span-2 space-y-1">
-                                    <label className="text-[10px] font-bold text-purple-900 uppercase">Quiz Title</label>
+                                    <label className="text-[10px] font-bold text-purple-900 uppercase">ტესტის სათაური</label>
                                     <input
                                       type="text"
                                       value={lesson.quiz.title}
@@ -1334,12 +1334,12 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                         updated[sIdx].lessons[lIdx].quiz.title = e.target.value;
                                         setSections(updated);
                                       }}
-                                      placeholder="e.g. Knowledge Check: Cloud Architecture"
+                                      placeholder="მაგ: ცოდნის შემოწმება: ქლაუდ არქიტექტურა"
                                       className="w-full px-3 py-1.5 bg-white rounded-lg border border-purple-200 text-xs font-semibold text-totc-navy"
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-purple-900 uppercase">Passing Score %</label>
+                                    <label className="text-[10px] font-bold text-purple-900 uppercase">გამსვლელი ქულა %</label>
                                     <input
                                       type="number"
                                       min="1"
@@ -1368,7 +1368,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                             type="text"
                                             value={q.questionText}
                                             onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'questionText', e.target.value)}
-                                            placeholder="Write question text here..."
+                                            placeholder="ჩაწერეთ კითხვის ტექსტი აქ..."
                                             className="flex-1 px-2.5 py-1 rounded-lg border border-gray-200 focus:border-purple-600 outline-none text-xs font-semibold text-totc-navy"
                                           />
                                         </div>
@@ -1376,7 +1376,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                           type="button"
                                           onClick={() => handleRemoveQuizQuestion(sIdx, lIdx, qIdx)}
                                           className="text-gray-400 hover:text-red-500 p-1"
-                                          title="Remove question"
+                                          title="კითხვის წაშლა"
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -1385,7 +1385,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                       {/* Options */}
                                       <div className="space-y-1.5 pl-7">
                                         <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                                          Options (select the green radio for the correct answer):
+                                          ვარიანტები (მონიშნეთ სწორი პასუხი მწვანე ღილაკით):
                                         </span>
                                         {q.options?.map((opt, oIdx) => (
                                           <div key={opt.id || oIdx} className="flex items-center gap-2">
@@ -1395,13 +1395,13 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                               checked={Boolean(opt.isCorrect)}
                                               onChange={() => handleSetCorrectOption(sIdx, lIdx, qIdx, oIdx)}
                                               className="text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                              title="Mark as correct answer"
+                                              title="მონიშნეთ სწორ პასუხად"
                                             />
                                             <input
                                               type="text"
                                               value={opt.optionText}
                                               onChange={(e) => handleQuizOptionChange(sIdx, lIdx, qIdx, oIdx, e.target.value)}
-                                              placeholder={`Option ${oIdx + 1}`}
+                                              placeholder={`ვარიანტი ${oIdx + 1}`}
                                               className={`flex-1 px-2.5 py-1 rounded-lg border text-xs ${
                                                 opt.isCorrect 
                                                   ? 'border-emerald-400 bg-emerald-50/50 text-emerald-950 font-bold'
@@ -1409,13 +1409,13 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                               }`}
                                             />
                                             {opt.isCorrect && (
-                                              <span className="text-[10px] text-emerald-600 font-bold shrink-0">✓ Correct</span>
+                                              <span className="text-[10px] text-emerald-600 font-bold shrink-0">✓ სწორია</span>
                                             )}
                                             <button
                                               type="button"
                                               onClick={() => handleRemoveQuizOption(sIdx, lIdx, qIdx, oIdx)}
                                               className="text-gray-400 hover:text-red-500 p-1"
-                                              title="Remove option"
+                                              title="ვარიანტის წაშლა"
                                             >
                                               <X className="w-3 h-3" />
                                             </button>
@@ -1428,7 +1428,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                           className="text-[11px] font-bold text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 mt-1"
                                         >
                                           <Plus className="w-3 h-3" />
-                                          <span>Add Option</span>
+                                          <span>ვარიანტის დამატება</span>
                                         </button>
                                       </div>
 
@@ -1438,7 +1438,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                           type="text"
                                           value={q.explanation || ''}
                                           onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'explanation', e.target.value)}
-                                          placeholder="Explanation for students after answering (optional)..."
+                                          placeholder="განმარტება სტუდენტებისთვის პასუხის გაცემის შემდეგ (არასავალდებულო)..."
                                           className="w-full px-2.5 py-1 rounded-lg border border-purple-100 bg-purple-50/30 text-[11px] text-totc-gray"
                                         />
                                       </div>
@@ -1451,7 +1451,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                                     className="w-full py-2 rounded-xl bg-purple-100/70 hover:bg-purple-100 text-purple-800 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
                                   >
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>Add Question to Quiz</span>
+                                    <span>კითხვის დამატება ტესტში</span>
                                   </button>
                                 </div>
                               </div>
@@ -1468,7 +1468,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                           className="py-2.5 px-4 rounded-xl border border-dashed border-indigo-300 hover:border-indigo-500 bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>+ Add Lecture (ლექცია)</span>
+                          <span>+ ლექციის დამატება</span>
                         </button>
                         <button
                           type="button"
@@ -1476,7 +1476,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                           className="py-2.5 px-4 rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 hover:bg-purple-100/50 text-purple-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                         >
                           <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
-                          <span>+ Add Module Final Exam (გამოცდა)</span>
+                          <span>+ მოდულის ფინალური გამოცდა</span>
                         </button>
                       </div>
                     </div>
@@ -1492,7 +1492,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                   className="px-5 py-2.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add Another Module</span>
+                  <span>ახალი მოდულის დამატება</span>
                 </button>
 
                 <div className="flex items-center gap-3">
@@ -1503,7 +1503,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                     className="px-5 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-1.5"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Save Draft</span>
+                    <span>მონახაზად შენახვა</span>
                   </button>
 
                   <button
@@ -1515,10 +1515,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                     <Sparkles className="w-4 h-4" />
                     <span>
                       {submitting 
-                        ? 'Saving...' 
+                        ? 'ინახება...' 
                         : isEditing 
-                          ? (currentUser?.role === 'Admin' ? 'Save & Update Course' : 'Save & Resubmit for Approval') 
-                          : (currentUser?.role === 'Admin' ? 'Save & Publish Course' : 'Submit for Review')}
+                          ? (currentUser?.role === 'Admin' ? 'შენახვა და განახლება' : 'შენახვა და განხილვაზე გაგზავნა') 
+                          : (currentUser?.role === 'Admin' ? 'შენახვა და გამოქვეყნება' : 'განხილვაზე გაგზავნა')}
                     </span>
                   </button>
                 </div>

@@ -8,10 +8,10 @@ export default function WhatIsTotc({ openAuthModal }) {
         {/* Section Heading */}
         <div className="max-w-4xl mx-auto space-y-5 mb-16 md:mb-20">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            What is <span className="text-totc-mint">TOTC?</span>
+            რა არის <span className="text-totc-mint">TOTC?</span>
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed max-w-3xl mx-auto">
-            TOTC is a platform that allows educators to create online classes whereby they can store the course materials online; manage assignments, quizzes and exams; monitor due dates; grade results and provide students with feedback all in one place.
+            TOTC არის ინოვაციური საგანმანათლებლო პლატფორმა, რომელიც პედაგოგებსა და ექსპერტებს აძლევს საშუალებას შექმნან ონლაინ კურსები, მართონ დავალებები და გამოცდები, ხოლო სტუდენტებს სთავაზობს ინტერაქტიულ და პრაქტიკულ სწავლებას ერთ სივრცეში.
           </p>
         </div>
 
@@ -22,7 +22,7 @@ export default function WhatIsTotc({ openAuthModal }) {
           <div className="relative rounded-[24px] overflow-hidden group shadow-totc-card hover:shadow-2xl transition-all duration-300 h-[360px] sm:h-[420px] md:h-[460px]">
             <img
               src="/assets/instructor_card.png"
-              alt="For Instructors"
+              alt="ინსტრუქტორებისთვის"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.85]"
             />
             {/* Dark gradient overlay */}
@@ -31,13 +31,13 @@ export default function WhatIsTotc({ openAuthModal }) {
             {/* Content overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-6">
               <h3 className="font-poppins font-bold text-2xl sm:text-3xl md:text-4xl text-white tracking-wider uppercase drop-shadow-md">
-                FOR INSTRUCTORS
+                ინსტრუქტორებისთვის
               </h3>
               <button
                 onClick={() => openAuthModal('register')}
                 className="px-8 py-3.5 rounded-full font-medium text-base sm:text-lg text-white border-2 border-white hover:bg-white hover:text-totc-navy transition-all duration-300 backdrop-blur-sm active:scale-95 shadow-lg"
               >
-                Start a class today
+                დაიწყე სწავლება დღესვე
               </button>
             </div>
           </div>
@@ -46,7 +46,7 @@ export default function WhatIsTotc({ openAuthModal }) {
           <div className="relative rounded-[24px] overflow-hidden group shadow-totc-card hover:shadow-2xl transition-all duration-300 h-[360px] sm:h-[420px] md:h-[460px]">
             <img
               src="/assets/student_card.png"
-              alt="For Students"
+              alt="სტუდენტებისთვის"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.85]"
             />
             {/* Dark gradient overlay */}
@@ -55,13 +55,13 @@ export default function WhatIsTotc({ openAuthModal }) {
             {/* Content overlay */}
             <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-6">
               <h3 className="font-poppins font-bold text-2xl sm:text-3xl md:text-4xl text-white tracking-wider uppercase drop-shadow-md">
-                FOR STUDENTS
+                სტუდენტებისთვის
               </h3>
               <button
                 onClick={() => openAuthModal('login')}
                 className="px-8 py-3.5 rounded-full font-medium text-base sm:text-lg text-white bg-totc-cyan hover:bg-cyan-500 transition-all duration-300 active:scale-95 shadow-lg shadow-totc-cyan/30"
               >
-                Enter access code
+                დაიწყე სწავლა ახლავე
               </button>
             </div>
           </div>

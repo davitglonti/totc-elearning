@@ -5,63 +5,63 @@ export default function BlogPage({ setActivePage }) {
   const posts = [
     {
       id: 1,
-      title: 'Class adds $30 million to its balance sheet for a Zoom-friendly edtech solution',
-      category: 'Funding & Growth',
-      date: 'November 8, 2026',
-      readTime: '5 min read',
-      author: 'Michael Chasen',
+      title: 'Class-მა Zoom-ზე დაფუძნებული EdTech პლატფორმის განსავითარებლად $30 მილიონი მოიზიდა',
+      category: 'ინვესტიციები და ზრდა',
+      date: '8 ნოემბერი, 2026',
+      readTime: '5 წთ საკითხავი',
+      author: 'მაიკლ ჩეისენი',
       image: '/assets/news_laptop.png',
-      desc: 'Class Technologies Inc., the company creating specialized classroom tools on top of Zoom, closed a major growth round to accelerate institutional school deployments.'
+      desc: 'კომპანია Class Technologies Inc.-მა, რომელიც ქმნის სპეციალიზებულ საკლასო ინსტრუმენტებს Zoom-ის ბაზაზე, დახურა მსხვილი საინვესტიციო რაუნდი სასწავლო დაწესებულებებში დანერგვის დასაჩქარებლად.'
     },
     {
       id: 2,
-      title: 'Class Technologies Inc. Closes $30 Million Series A Financing to Meet High Demand',
-      category: 'Press Release',
-      date: 'November 4, 2026',
-      readTime: '4 min read',
-      author: 'Sarah Jenkins',
+      title: 'Class Technologies Inc.-მა მაღალი მოთხოვნის დასაკმაყოფილებლად $30M Series A დაფინანსება დახურა',
+      category: 'პრეს-რელიზი',
+      date: '4 ნოემბერი, 2026',
+      readTime: '4 წთ საკითხავი',
+      author: 'სარა ჯენკინსი',
       image: '/assets/news_thumb_1.png',
-      desc: 'High demand from K-12 school districts and higher education institutions drives rapid scaling of virtual classroom management tools.'
+      desc: 'სკოლებისა და უმაღლესი სასწავლებლების მხრიდან გაზრდილი მოთხოვნა აჩქარებს ვირტუალური საკლასო ოთახების მართვის სისტემების განვითარებას.'
     },
     {
       id: 3,
-      title: "Zoom's earliest investors are betting millions on a better Zoom for schools",
-      category: 'Venture Capital',
-      date: 'October 28, 2026',
-      readTime: '6 min read',
-      author: 'David Vance',
+      title: 'Zoom-ის პირველი ინვესტორები მილიონებს დებენ სკოლებისთვის უკეთესი პლატფორმის შექმნაში',
+      category: 'ვენჩურული კაპიტალი',
+      date: '28 ოქტომბერი, 2026',
+      readTime: '6 წთ საკითხავი',
+      author: 'დეივიდ ვენსი',
       image: '/assets/news_thumb_2.png',
-      desc: 'Early backers of remote communication platforms predict interactive learning features like gradebooks and proctored quizzes will define the next decade of edtech.'
+      desc: 'დისტანციური კომუნიკაციის პლატფორმების ადრეული ინვესტორები პროგნოზირებენ, რომ ინტერაქტიული შეფასების ჟურნალები და ტესტები განსაზღვრავს EdTech-ის მომავალს.'
     },
     {
       id: 4,
-      title: 'Former Blackboard CEO Raises $16M to Bring LMS Features to Zoom Classrooms',
-      category: 'EdTech Leadership',
-      date: 'October 20, 2026',
-      readTime: '7 min read',
-      author: 'Elena Rostova',
+      title: 'Blackboard-ის ყოფილმა CEO-მ $16M მოიზიდა Zoom-ში LMS ფუნქციების ინტეგრაციისთვის',
+      category: 'EdTech ლიდერობა',
+      date: '20 ოქტომბერი, 2026',
+      readTime: '7 წთ საკითხავი',
+      author: 'ელენა როსტოვა',
       image: '/assets/news_thumb_3.png',
-      desc: 'Integrating live quizzes, podium views, and attendance tracking directly into digital meeting interfaces solves the engagement crisis in virtual learning.'
+      desc: 'ცოცხალი ტესტების, ტრიბუნისა და დასწრების აღრიცხვის ინტეგრაცია ციფრულ შეხვედრებში წყვეტს ჩართულობის პრობლემას ონლაინ სწავლებაში.'
     },
     {
       id: 5,
-      title: 'The Future of Hybrid Classrooms: Lessons from 100,000 Active Students',
-      category: 'Research',
-      date: 'October 15, 2026',
-      readTime: '8 min read',
-      author: 'Gloria Rose',
+      title: 'ჰიბრიდული საკლასო ოთახების მომავალი: 100,000 აქტიური სტუდენტის გამოცდილება',
+      category: 'კვლევა',
+      date: '15 ოქტომბერი, 2026',
+      readTime: '8 წთ საკითხავი',
+      author: 'გლორია როუზი',
       image: '/assets/classroom_feature.png',
-      desc: 'Comprehensive pedagogical data reveals how private one-on-one breakout discussions double student retention and comprehension rates.'
+      desc: 'პედაგოგიური მონაცემები აჩვენებს, რომ პრივატული ინდივიდუალური დისკუსიები აორმაგებს სტუდენტების ჩართულობასა და მასალის ათვისებას.'
     },
     {
       id: 6,
-      title: 'How Teachers Are Saving 10+ Hours Every Week with Automated Grading',
-      category: 'Educator Tips',
-      date: 'October 10, 2026',
-      readTime: '4 min read',
-      author: 'Marcus Chen',
+      title: 'როგორ ზოგავენ მასწავლებლები კვირაში 10+ საათს ავტომატური შეფასებით',
+      category: 'რჩევები ლექტორებს',
+      date: '10 ოქტომბერი, 2026',
+      readTime: '4 წთ საკითხავი',
+      author: 'მარკუს ჩენი',
       image: '/assets/instructor_card.png',
-      desc: 'Explore practical workflows for structuring instant multiple-choice assessments and synchronizing scorecards straight into your institution SIS.'
+      desc: 'გაეცანით პრაქტიკულ მეთოდებს მყისიერი ტესტირებების შესადგენად და შედეგების ავტომატურ სინქრონიზაციას სასწავლო ჟურნალში.'
     }
   ];
 
@@ -77,13 +77,13 @@ export default function BlogPage({ setActivePage }) {
         {/* Banner */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
           <span className="px-4 py-1.5 rounded-full bg-totc-teal-light text-totc-teal font-semibold text-xs tracking-wider uppercase">
-            TOTC Blog & Resources
+            TOTC ბლოგი და რესურსები
           </span>
           <h1 className="font-poppins font-bold text-3xl sm:text-5xl text-totc-navy leading-tight">
-            Latest Insights on Modern Education
+            უახლესი ამბები თანამედროვე განათლებაზე
           </h1>
           <p className="text-totc-gray text-base sm:text-lg">
-            Stay up to date with trends, product updates, pedagogy research, and tips for educators worldwide.
+            გაეცანით ტენდენციებს, პლატფორმის განახლებებს, პედაგოგიურ კვლევებსა და პრაქტიკულ რჩევებს.
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export default function BlogPage({ setActivePage }) {
             </div>
             <div className="pt-2">
               <span className="inline-flex items-center gap-1.5 text-totc-teal font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                Read full article <ArrowRight className="w-4 h-4" />
+                სრული სტატიის წაკითხვა <ArrowRight className="w-4 h-4" />
               </span>
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function BlogPage({ setActivePage }) {
               <div className="p-6 pt-0 border-t border-gray-100 mt-4 flex items-center justify-between text-xs text-totc-gray">
                 <span>{p.date}</span>
                 <span className="font-semibold text-totc-teal flex items-center gap-1">
-                  Read More <ArrowRight className="w-3 h-3" />
+                  ვრცლად <ArrowRight className="w-3 h-3" />
                 </span>
               </div>
             </div>

@@ -6,39 +6,39 @@ export default function ExploreCourses({ setActivePage }) {
 
   const categories = [
     {
-      name: 'Lorem Ipsum',
+      name: 'პროგრამირება და IT',
       image: '/assets/explore_row_1.png',
       featured: {
-        title: 'Integer id Orc Sed Ante Tincidunt',
-        desc: 'Cras convallis lacus orci, tristique tincidunt magna fringilla at faucibus vel.',
-        price: '$ 450',
+        title: 'თანამედროვე ვებ-დეველოპმენტი და არქიტექტურა',
+        desc: 'შეისწავლეთ სრული სტეკი React-ისა და .NET-ის გამოყენებით პრაქტიკულ პროექტებზე.',
+        price: '₾ 450',
         rating: 5,
         image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
-        tag: 'Culinary & Nutrition'
+        tag: 'პროგრამირება'
       }
     },
     {
-      name: 'Quisque a Consequat',
+      name: 'დიზაინი და კრეატივი',
       image: '/assets/explore_row_2.png',
       featured: {
-        title: 'Integer id Orc Sed Ante Tincidunt',
-        desc: 'Cras convallis lacus orci, tristique tincidunt magna fringilla at faucibus vel.',
-        price: '$ 450',
+        title: 'UI/UX დიზაინის სრული კურსი',
+        desc: 'შექმენით თანამედროვე ინტერფეისები Figma-ში და დაეუფლეთ პროდუქტის დიზაინს.',
+        price: '₾ 350',
         rating: 5,
         image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80',
-        tag: 'Astronomy & Physics'
+        tag: 'დიზაინი'
       }
     },
     {
-      name: 'Aenean Facilisis',
+      name: 'ბიზნესი და მენეჯმენტი',
       image: '/assets/explore_row_3.png',
       featured: {
-        title: 'Integer id Orc Sed Ante Tincidunt',
-        desc: 'Cras convallis lacus orci, tristique tincidunt magna fringilla at faucibus vel.',
-        price: '$ 450',
+        title: 'ციფრული მარკეტინგი და პროდუქტის მართვა',
+        desc: 'დაგეგმეთ წარმატებული კამპანიები და მართეთ პროდუქტების განვითარება.',
+        price: '₾ 390',
         rating: 5,
         image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80',
-        tag: 'Visual Arts & Photography'
+        tag: 'ბიზნესი'
       }
     },
   ];
@@ -60,10 +60,10 @@ export default function ExploreCourses({ setActivePage }) {
         {/* Section Header */}
         <div className="space-y-3 mb-14 md:mb-16">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-dark tracking-tight">
-            Explore Course
+            აღმოაჩინეთ კურსები
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg">
-            Ut sed eros finibus, placerat orci id, dapibus.
+            შეარჩიეთ თქვენთვის სასურველი მიმართულება და დაიწყეთ სწავლა პროფესიონალებთან.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default function ExploreCourses({ setActivePage }) {
               onClick={handleSeeAll}
               className="group flex items-center gap-2 text-totc-cyan hover:text-totc-teal font-semibold text-base sm:text-lg tracking-wider uppercase transition-colors"
             >
-              <span>SEE ALL</span>
+              <span>ყველას ნახვა</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
@@ -113,7 +113,7 @@ export default function ExploreCourses({ setActivePage }) {
             />
             {/* Click to explore pill badge */}
             <div className="absolute bottom-6 right-8 hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-full bg-totc-cyan text-white font-medium text-sm shadow-md group-hover:bg-totc-teal transition-colors">
-              <span>View Course Details</span>
+              <span>კურსის დეტალები</span>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
@@ -133,7 +133,7 @@ export default function ExploreCourses({ setActivePage }) {
               }`}
             >
               <span className="text-xs font-semibold uppercase tracking-wider text-totc-teal">
-                Collection {i + 1}
+                კოლექცია {i + 1}
               </span>
               <h4 className="font-poppins font-semibold text-xl text-totc-navy mt-1 mb-2">
                 {c.name}
@@ -144,7 +144,7 @@ export default function ExploreCourses({ setActivePage }) {
               <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
                 <span className="font-bold text-totc-purple">{c.featured.price}</span>
                 <span className="text-xs text-totc-cyan font-medium flex items-center gap-1">
-                  Explore <ArrowRight className="w-3 h-3" />
+                  დათვალიერება <ArrowRight className="w-3 h-3" />
                 </span>
               </div>
             </div>

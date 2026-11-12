@@ -31,26 +31,26 @@ export default function Navbar({
   let navLinks = [];
   if (currentUser?.role === 'Admin') {
     navLinks = [
-      { name: 'Admin Console', id: 'admin-dashboard' },
-      { name: 'Course Catalog', id: 'courses' },
-      { name: 'Public Site', id: 'home' },
-      { name: 'Blog', id: 'blog' },
+      { name: 'ადმინ პანელი', id: 'admin-dashboard' },
+      { name: 'კურსების კატალოგი', id: 'courses' },
+      { name: 'მთავარი', id: 'home' },
+      { name: 'ბლოგი', id: 'blog' },
     ];
   } else if (currentUser?.role === 'Instructor') {
     navLinks = [
-      { name: 'Instructor Studio', id: 'instructor-dashboard' },
-      { name: 'Course Catalog', id: 'courses' },
-      { name: 'Home', id: 'home' },
-      { name: 'Blog', id: 'blog' },
+      { name: 'ინსტრუქტორის სტუდია', id: 'instructor-dashboard' },
+      { name: 'კურსების კატალოგი', id: 'courses' },
+      { name: 'მთავარი', id: 'home' },
+      { name: 'ბლოგი', id: 'blog' },
     ];
   } else {
     // Student or Guest
     navLinks = [
-      { name: 'Home', id: 'home' },
-      { name: 'Courses', id: 'courses' },
-      ...(currentUser ? [{ name: 'My Learning', id: 'dashboard' }] : []),
-      { name: 'Membership', id: 'membership' },
-      { name: 'Blog', id: 'blog' },
+      { name: 'მთავარი', id: 'home' },
+      { name: 'კურსები', id: 'courses' },
+      ...(currentUser ? [{ name: 'ჩემი სწავლა', id: 'dashboard' }] : []),
+      { name: 'გამოწერა', id: 'membership' },
+      { name: 'ბლოგი', id: 'blog' },
     ];
   }
 
@@ -169,7 +169,7 @@ export default function Navbar({
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                   {/* User Profile Header */}
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-xs text-totc-gray font-medium">Signed in as</p>
+                    <p className="text-xs text-totc-gray font-medium">შესული ხართ როგორც</p>
                     <p className="text-sm font-bold text-totc-navy truncate">{currentUser.fullName}</p>
                     <p className="text-xs text-totc-gray truncate">{currentUser.email}</p>
                     <div className="flex items-center gap-1.5 mt-1.5">
@@ -195,7 +195,7 @@ export default function Navbar({
                           }`}
                         >
                           <Shield className="w-4 h-4 text-indigo-600" />
-                          <span>Admin Console</span>
+                          <span>ადმინ პანელი</span>
                         </button>
 
                         <button
@@ -203,7 +203,7 @@ export default function Navbar({
                           className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
                         >
                           <BookOpen className="w-4 h-4 text-totc-teal" />
-                          <span>Course Catalog</span>
+                          <span>კურსების კატალოგი</span>
                         </button>
 
                         <button
@@ -213,7 +213,7 @@ export default function Navbar({
                           }`}
                         >
                           <Sparkles className="w-4 h-4 text-purple-600" />
-                          <span>Instructor Studio</span>
+                          <span>ინსტრუქტორის სტუდია</span>
                         </button>
                       </>
                     )}
@@ -227,7 +227,7 @@ export default function Navbar({
                           }`}
                         >
                           <Sparkles className="w-4 h-4 text-purple-600" />
-                          <span>Instructor Studio</span>
+                          <span>ინსტრუქტორის სტუდია</span>
                         </button>
 
                         <button
@@ -235,7 +235,7 @@ export default function Navbar({
                           className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
                         >
                           <BookOpen className="w-4 h-4 text-totc-teal" />
-                          <span>Course Catalog</span>
+                          <span>კურსების კატალოგი</span>
                         </button>
                       </>
                     )}
@@ -249,7 +249,7 @@ export default function Navbar({
                           }`}
                         >
                           <LayoutDashboard className="w-4 h-4 text-totc-teal" />
-                          <span>My Learning Dashboard</span>
+                          <span>ჩემი სწავლა</span>
                         </button>
 
                         <button
@@ -257,7 +257,7 @@ export default function Navbar({
                           className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
                         >
                           <BookOpen className="w-4 h-4 text-totc-cyan" />
-                          <span>Explore Courses</span>
+                          <span>კურსების დათვალიერება</span>
                         </button>
 
                         <button
@@ -265,7 +265,7 @@ export default function Navbar({
                           className="w-full px-4 py-2 text-left text-sm text-totc-navy hover:bg-gray-50 flex items-center gap-3 transition-colors"
                         >
                           <CreditCard className="w-4 h-4 text-totc-orange" />
-                          <span>Membership & Billing</span>
+                          <span>გამოწერა და გადახდა</span>
                         </button>
                       </>
                     )}
@@ -281,7 +281,7 @@ export default function Navbar({
                       className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
                     >
                       <LogOut className="w-4 h-4 text-red-500" />
-                      <span>Sign Out</span>
+                      <span>გამოსვლა</span>
                     </button>
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export default function Navbar({
                     : 'bg-white text-totc-gray-dark hover:bg-white/90'
                 }`}
               >
-                Login
+                შესვლა
               </button>
               <button
                 onClick={() => {
@@ -313,7 +313,7 @@ export default function Navbar({
                     : 'bg-white/30 text-white hover:bg-white/40 backdrop-blur-sm'
                 }`}
               >
-                Sign Up
+                რეგისტრაცია
               </button>
             </>
           )}
@@ -325,7 +325,7 @@ export default function Navbar({
           className={`lg:hidden p-2 rounded-lg transition-colors ${
             isLightNav ? 'text-totc-navy hover:bg-gray-100' : 'text-white hover:bg-white/20'
           }`}
-          aria-label="Toggle menu"
+          aria-label="მენიუ"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -373,7 +373,7 @@ export default function Navbar({
                     : 'text-totc-gray hover:text-purple-700 hover:bg-gray-50'
                 }`}
               >
-                Instructor Studio
+                ინსტრუქტორის სტუდია
               </button>
             )}
           </div>
@@ -387,7 +387,7 @@ export default function Navbar({
                 }}
                 className="w-full py-2.5 rounded-full font-medium text-sm bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
               >
-                Sign Out
+                გამოსვლა
               </button>
             ) : (
               <>
@@ -399,7 +399,7 @@ export default function Navbar({
                   }}
                   className="w-full py-3 rounded-full font-medium text-base bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors"
                 >
-                  Login
+                  შესვლა
                 </button>
                 <button
                   onClick={() => {
@@ -409,7 +409,7 @@ export default function Navbar({
                   }}
                   className="w-full py-3 rounded-full font-medium text-base bg-totc-teal text-white hover:bg-totc-teal-dark transition-colors shadow-sm"
                 >
-                  Sign Up
+                  რეგისტრაცია
                 </button>
               </>
             )}

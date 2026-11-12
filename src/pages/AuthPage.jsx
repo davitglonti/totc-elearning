@@ -223,7 +223,7 @@ export default function AuthPage({
       } else {
         // Registering either as Student or Instructor
         const extra = role === 'Instructor' ? {
-          headline: headline.trim() || 'Instructor & Subject Specialist',
+          headline: headline.trim() || 'ინსტრუქტორი და საგნის სპეციალისტი',
           education: education.trim(),
           experience: experience.trim(),
           bio: bio.trim(),
@@ -233,7 +233,7 @@ export default function AuthPage({
         if (onAuthSuccess) onAuthSuccess(res.user);
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
+      setError(err.message || 'ავტორიზაცია ვერ მოხერხდა. გთხოვთ გადაამოწმოთ მონაცემები.');
     } finally {
       setLoading(false);
     }
@@ -262,15 +262,15 @@ export default function AuthPage({
           <div className="mt-12 space-y-4">
             <span className="px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold uppercase tracking-wider backdrop-blur-sm inline-flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Next-Gen Interactive E-Learning</span>
+              <span>ახალი თაობის ინტერაქტიული ონლაინ სწავლება</span>
             </span>
             <h1 className="font-poppins font-bold text-3xl xl:text-4xl leading-tight">
               {mode === 'login'
-                ? 'Welcome Back to Your Interactive Virtual Classroom.'
-                : 'Start Teaching or Learning with World-Class Tools.'}
+                ? 'მოგესალმებით თქვენს ინტერაქტიულ საკლასო ოთახში.'
+                : 'დაიწყეთ სწავლა ან სწავლება თანამედროვე ინსტრუმენტებით.'}
             </h1>
             <p className="text-white/80 text-sm xl:text-base leading-relaxed">
-              Empower your career with ultra-fast Bunny CDN video streaming, interactive multi-question quizzes, downloadable lecture resources, and verified certificates.
+              განავითარეთ კარიერა მაღალი ხარისხის ვიდეო გაკვეთილებით, ინტერაქტიული ტესტებით, ჩამოსატვირთი მასალებითა და ვერიფიცირებული სერტიფიკატებით.
             </p>
           </div>
         </div>
@@ -282,8 +282,8 @@ export default function AuthPage({
               <Video className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Bunny CDN Ultra HD Video Player</p>
-              <p className="text-xs text-white/70">Seamless 1080p, 720p, 480p manual resolution control.</p>
+              <p className="text-sm font-bold text-white">Bunny CDN Ultra HD ვიდეო ფლეიერი</p>
+              <p className="text-xs text-white/70">შეუფერხებელი 1080p, 720p, 480p ხარისხის კონტროლი.</p>
             </div>
           </div>
 
@@ -292,8 +292,8 @@ export default function AuthPage({
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Sequential Lesson & Quiz Unlocking</p>
-              <p className="text-xs text-white/70">Gamified learning paths preventing premature skipping.</p>
+              <p className="text-sm font-bold text-white">თანმიმდევრული გაკვეთილები და ტესტები</p>
+              <p className="text-xs text-white/70">გააზრებული სასწავლო პროცესი ეტაპობრივი პროგრესით.</p>
             </div>
           </div>
 
@@ -302,19 +302,19 @@ export default function AuthPage({
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Full Instructor Studio & Public Bios</p>
-              <p className="text-xs text-white/70">Showcase your qualifications, experience, and authored courses.</p>
+              <p className="text-sm font-bold text-white">ინსტრუქტორის სტუდია და საჯარო პროფილი</p>
+              <p className="text-xs text-white/70">წარმოადგინეთ თქვენი კვალიფიკაცია, გამოცდილება და კურსები.</p>
             </div>
           </div>
         </div>
 
         {/* Footer info */}
         <div className="relative z-10 flex items-center justify-between text-xs text-white/60 pt-6 border-t border-white/15">
-          <span>© 2026 TOTC E-Learning System</span>
+          <span>© 2026 TOTC ელექტრონული სწავლება</span>
           <div className="flex items-center gap-3">
-            <span className="hover:text-white cursor-pointer">Privacy</span>
+            <span className="hover:text-white cursor-pointer">კონფიდენციალურობა</span>
             <span>•</span>
-            <span className="hover:text-white cursor-pointer">Terms</span>
+            <span className="hover:text-white cursor-pointer">წესები</span>
           </div>
         </div>
       </div>
@@ -338,7 +338,7 @@ export default function AuthPage({
               onClick={() => setActivePage('home')}
               className="text-xs font-semibold text-totc-teal hover:underline"
             >
-              ← Back to Site
+              ← მთავარ გვერდზე
             </button>
           </div>
 
@@ -347,12 +347,12 @@ export default function AuthPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-totc-navy tracking-tight">
-                  {mode === 'login' ? 'Sign In to Your Account' : 'Create Your TOTC Account'}
+                  {mode === 'login' ? 'ანგარიშში შესვლა' : 'შექმენით TOTC ანგარიში'}
                 </h2>
                 <p className="text-totc-gray text-sm mt-1">
                   {mode === 'login'
-                    ? 'Enter your credentials or use Google for one-click access.'
-                    : 'Choose whether you are enrolling as a student or teaching as an instructor.'}
+                    ? 'შეიყვანეთ თქვენი მონაცემები ან შედით Google-ით.'
+                    : 'აირჩიეთ სტუდენტის ან ინსტრუქტორის სტატუსი.'}
                 </p>
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function AuthPage({
                     : 'text-totc-gray hover:text-totc-navy'
                 }`}
               >
-                Sign In (ავტორიზაცია)
+                შესვლა
               </button>
               <button
                 type="button"
@@ -387,7 +387,7 @@ export default function AuthPage({
                     : 'text-totc-gray hover:text-totc-navy'
                 }`}
               >
-                Sign Up (რეგისტრაცია)
+                რეგისტრაცია
               </button>
             </div>
           </div>
@@ -416,7 +416,7 @@ export default function AuthPage({
                 </div>
                 <div className="flex items-center justify-between text-xs text-totc-gray px-1">
                   <span className="flex items-center gap-1.5 text-emerald-600 font-medium text-[11px]">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Google Cryptographic ID Token Verified
+                    <ShieldCheck className="w-3.5 h-3.5" /> Google ტოკენი კრიპტოგრაფიულად ვერიფიცირებულია
                   </span>
                   <button
                     type="button"
@@ -437,11 +437,11 @@ export default function AuthPage({
                   <GoogleIcon className="w-5 h-5" />
                   <span>
                     {mode === 'login'
-                      ? 'Sign in with Google (Google-ით შესვლა)'
-                      : `Continue with Google as ${role} (Google-ით რეგისტრაცია)`}
+                      ? 'Google-ით შესვლა'
+                      : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}
                   </span>
                   <span className="text-[10px] bg-totc-teal/10 text-totc-teal font-bold px-2 py-0.5 rounded-full border border-totc-teal/30 shrink-0 flex items-center gap-1 group-hover:bg-totc-teal group-hover:text-white transition-colors">
-                    <Settings className="w-3 h-3" /> ჩართვა / Setup
+                    <Settings className="w-3 h-3" /> ჩართვა
                   </span>
                 </button>
                 <p className="text-[11px] text-totc-gray text-center mt-1.5">
@@ -471,7 +471,7 @@ export default function AuthPage({
           {mode === 'register' && (
             <div className="space-y-2">
               <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider">
-                Select Your Role (აირჩიეთ სტატუსი):
+                აირჩიეთ თქვენი სტატუსი:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Student Option */}
@@ -495,9 +495,9 @@ export default function AuthPage({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-totc-navy text-sm">🎓 Student (სტუდენტი)</h4>
+                    <h4 className="font-bold text-totc-navy text-sm">🎓 სტუდენტი</h4>
                     <p className="text-xs text-totc-gray mt-0.5">
-                      I want to learn, watch courses & pass quizzes.
+                      მსურს კურსების ყურება, სწავლა და ტესტების გავლა.
                     </p>
                   </div>
                 </button>
@@ -523,9 +523,9 @@ export default function AuthPage({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-totc-navy text-sm">👨‍🏫 Instructor (ლექტორი)</h4>
+                    <h4 className="font-bold text-totc-navy text-sm">👨‍🏫 ინსტრუქტორი</h4>
                     <p className="text-xs text-totc-gray mt-0.5">
-                      I want to author courses & teach students.
+                      მსურს კურსების შექმნა და სტუდენტებისთვის სწავლება.
                     </p>
                   </div>
                 </button>
@@ -538,7 +538,7 @@ export default function AuthPage({
             {mode === 'register' && (
               <div>
                 <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
-                  Full Name (სახელი და გვარი) *
+                  სახელი და გვარი *
                 </label>
                 <div className="relative">
                   <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
@@ -547,7 +547,7 @@ export default function AuthPage({
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. David Beridze"
+                    placeholder="მაგ. დავით ბერიძე"
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
                   />
                 </div>
@@ -556,7 +556,7 @@ export default function AuthPage({
 
             <div>
               <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
-                Email Address (ელ.ფოსტა) *
+                ელ-ფოსტა *
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
@@ -574,15 +574,15 @@ export default function AuthPage({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  Password (პაროლი) *
+                  პაროლი *
                 </label>
                 {mode === 'login' && (
                   <button
                     type="button"
-                    onClick={() => alert('Password reset link sent to your registered email.')}
+                    onClick={() => alert('პაროლის აღდგენის ბმული გამოგზავნილია თქვენს ელ-ფოსტაზე.')}
                     className="text-xs font-semibold text-totc-teal hover:underline"
                   >
-                    Forgot password?
+                    დაგავიწყდათ პაროლი?
                   </button>
                 )}
               </div>
@@ -594,7 +594,7 @@ export default function AuthPage({
                   minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="•••••••• (Min 6 characters)"
+                  placeholder="•••••••• (მინიმუმ 6 სიმბოლო)"
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
                 />
               </div>
@@ -605,19 +605,19 @@ export default function AuthPage({
               <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-4 animate-in fade-in">
                 <div className="flex items-center gap-2 text-purple-900 font-bold text-xs uppercase tracking-wide">
                   <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span>Instructor Qualifications & Public Profile (ლექტორის მონაცემები)</span>
+                  <span>ინსტრუქტორის კვალიფიკაცია და საჯარო პროფილი</span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-purple-900 mb-1">
-                    Specialty / Headline (წოდება / სპეციალობა) *
+                    წოდება / სპეციალობა *
                   </label>
                   <input
                     type="text"
                     required
                     value={headline}
                     onChange={(e) => setHeadline(e.target.value)}
-                    placeholder="e.g. Senior Cloud Architect & AI Researcher"
+                    placeholder="მაგ. Senior Cloud Architect & AI Researcher"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
                   />
                 </div>
@@ -625,25 +625,25 @@ export default function AuthPage({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-purple-900 mb-1">
-                      Education (განათლება)
+                      განათლება
                     </label>
                     <input
                       type="text"
                       value={education}
                       onChange={(e) => setEducation(e.target.value)}
-                      placeholder="e.g. M.S. in Computer Science, TSU / MIT"
+                      placeholder="მაგ. კომპიუტერული მეცნიერების მაგისტრი"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-purple-900 mb-1">
-                      Experience (გამოცდილება)
+                      გამოცდილება
                     </label>
                     <input
                       type="text"
                       value={experience}
                       onChange={(e) => setExperience(e.target.value)}
-                      placeholder="e.g. 10+ years at Big Tech, 15k+ students"
+                      placeholder="მაგ. 10+ წლიანი გამოცდილება IT სფეროში"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
                     />
                   </div>
@@ -651,13 +651,13 @@ export default function AuthPage({
 
                 <div>
                   <label className="block text-xs font-semibold text-purple-900 mb-1">
-                    Short Bio (მოკლე ბიოგრაფია)
+                    მოკლე ბიოგრაფია
                   </label>
                   <textarea
                     rows={2}
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Tell students about your industry background, teaching philosophy, and achievements..."
+                    placeholder="გაუზიარეთ სტუდენტებს თქვენი პროფესიული გამოცდილება და მიღწევები..."
                     className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600 resize-none"
                   />
                 </div>
@@ -674,20 +674,20 @@ export default function AuthPage({
               }`}
             >
               {loading ? (
-                <span>Processing Account...</span>
+                <span>ანგარიშის დამუშავება...</span>
               ) : mode === 'login' ? (
                 <>
-                  <span>Sign In to TOTC</span>
+                  <span>სისტემაში შესვლა</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : role === 'Instructor' ? (
                 <>
-                  <span>Register as Instructor & Open Studio</span>
+                  <span>ინსტრუქტორად რეგისტრაცია</span>
                   <Sparkles className="w-4 h-4" />
                 </>
               ) : (
                 <>
-                  <span>Create Free Student Account</span>
+                  <span>უფასო ანგარიშის შექმნა</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -698,24 +698,24 @@ export default function AuthPage({
           <div className="text-center pt-2">
             {mode === 'login' ? (
               <p className="text-sm text-totc-gray">
-                Don't have an account yet?{' '}
+                ჯერ არ გაქვთ ანგარიში?{' '}
                 <button
                   type="button"
                   onClick={() => setMode('register')}
                   className="font-bold text-totc-teal hover:underline"
                 >
-                  Create Account (რეგისტრაცია)
+                  რეგისტრაცია
                 </button>
               </p>
             ) : (
               <p className="text-sm text-totc-gray">
-                Already registered?{' '}
+                უკვე გაქვთ ანგარიში?{' '}
                 <button
                   type="button"
                   onClick={() => setMode('login')}
                   className="font-bold text-totc-teal hover:underline"
                 >
-                  Sign In (ავტორიზაცია)
+                  შესვლა
                 </button>
               </p>
             )}

@@ -15,36 +15,36 @@ export default function BlogDetailPage({ setActivePage }) {
           className="inline-flex items-center gap-2 text-totc-teal hover:text-totc-navy transition-colors font-medium text-sm mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to all articles</span>
+          <span>ყველა სტატიაზე დაბრუნება</span>
         </button>
 
         {/* Article Header */}
         <div className="space-y-4 mb-8">
           <span className="px-3.5 py-1 rounded-full bg-totc-teal-light text-totc-teal font-semibold text-xs uppercase tracking-wider">
-            NEWS & FUNDING
+            სიახლეები და ინვესტიციები
           </span>
 
           <h1 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-navy leading-tight">
-            Class adds $30 million to its balance sheet for a Zoom-friendly edtech solution
+            Class-მა Zoom-ზე დაფუძნებული EdTech პლატფორმის განსავითარებლად $30 მილიონი მოიზიდა
           </h1>
 
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-b border-gray-200 pb-6 text-sm text-totc-gray">
             <div className="flex items-center gap-3">
               <img
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                alt="Author"
+                alt="ავტორი"
                 className="w-10 h-10 rounded-full object-cover border border-totc-teal"
               />
               <div>
-                <span className="font-semibold text-totc-navy block">Michael Chasen</span>
-                <span className="text-xs text-totc-gray">Co-founder & CEO</span>
+                <span className="font-semibold text-totc-navy block">მაიკლ ჩეისენი</span>
+                <span className="text-xs text-totc-gray">თანადამფუძნებელი და CEO</span>
               </div>
             </div>
 
             <div className="flex items-center gap-4 text-xs">
-              <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Nov 8, 2026</span>
+              <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> 8 ნოემბერი, 2026</span>
               <span>•</span>
-              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> 5 min read</span>
+              <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> 5 წთ საკითხავი</span>
             </div>
           </div>
         </div>
@@ -53,7 +53,7 @@ export default function BlogDetailPage({ setActivePage }) {
         <div className="rounded-[28px] overflow-hidden shadow-2xl mb-12">
           <img
             src="/assets/news_laptop.png"
-            alt="Class in action on a laptop"
+            alt="Class-ის ინტერფეისი ლეპტოპზე"
             className="w-full h-[360px] sm:h-[480px] object-cover"
           />
         </div>
@@ -61,35 +61,35 @@ export default function BlogDetailPage({ setActivePage }) {
         {/* Article Body */}
         <div className="prose prose-lg max-w-none text-totc-gray space-y-6 leading-relaxed font-nunito text-base sm:text-lg">
           <p className="font-semibold text-totc-navy text-xl leading-relaxed">
-            Class, launched to bring specialized school management and active engagement tools directly inside Zoom meetings, announced today that it has secured $30 million in Series A funding.
+            პლატფორმა Class, რომელიც Zoom-ის შეხვედრებში სკოლის მართვისა და აქტიური ჩართულობის ინსტრუმენტებს აერთიანებს, დღეს $30 მილიონიანი Series A დაფინანსების მოზიდვას იუწყება.
           </p>
 
           <p>
-            Traditional video conferencing platforms were built for business meetings, not pedagogical engagement. In a typical corporate call, having participants silent on mute works well. However, in an academic environment, instructors require dedicated podium views, automatic attendance rosters, real-time proctored quizzes, and private breakout rooms for one-on-one interventions.
+            ტრადიციული ვიდეოკონფერენციის პლატფორმები ბიზნეს შეხვედრებისთვის შეიქმნა და არა პედაგოგიური პროცესებისთვის. სასწავლო გარემოში ინსტრუქტორებს სჭირდებათ გამოყოფილი ტრიბუნა, ავტომატური დასწრების აღრიცხვა, რეალურ დროში ტესტირება და პრივატული კონსულტაციის ოთახები.
           </p>
 
           {/* Key Quote / Callout */}
           <div className="my-8 p-8 rounded-2xl bg-totc-teal-light border-l-4 border-totc-teal text-totc-navy font-poppins font-medium text-lg sm:text-xl italic">
-            "We aren't trying to replace Zoom; we're elevating it into an intuitive, high-fidelity digital campus where learning feels just as engaging as being in a real classroom."
+            „ჩვენ არ ვცდილობთ Zoom-ის ჩანაცვლებას; ჩვენ მას ვაქცევთ ინტუიციურ, მაღალტექნოლოგიურ ციფრულ კამპუსად, სადაც სწავლა ისეთივე ცოცხალია, როგორც რეალურ აუდიტორიაში.“
           </div>
 
           <h2 className="font-poppins font-bold text-2xl sm:text-3xl text-totc-navy pt-4">
-            Solving the Engagement Gap with Native EdTech Workflows
+            ჩართულობის გაზრდა თანამედროვე EdTech ინსტრუმენტებით
           </h2>
 
           <p>
-            The newly secured capital will be utilized to double the engineering team and expand international deployments across school districts in Europe, North America, and Asia. Features currently rolling out include:
+            მოზიდული კაპიტალი მოხმარდება საინჟინრო გუნდის გაორმაგებას და საერთაშორისო მასშტაბირებას ევროპის, ჩრდილოეთ ამერიკისა და აზიის სასწავლო დაწესებულებებში. ძირითადი ფუნქციებია:
           </p>
 
           <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Automated Attendance & Roster Sync:</strong> Instructors no longer manually verify attendance—student arrival times and duration are automatically recorded into the school SIS.</li>
-            <li><strong>Podium & Front-of-Class Placement:</strong> Teaching assistants, co-professors, and presenting students can be pinned prominently without disturbing the class grid.</li>
-            <li><strong>Instant Formative Assessments:</strong> Teachers can launch quick true/false or multiple-choice questions in real-time, receiving instant telemetry on student comprehension.</li>
-            <li><strong>Private One-on-One Breakout Channels:</strong> A teacher can invite a struggling student into a discreet whisper consultation without removing them from the class environment.</li>
+            <li><strong>ავტომატური დასწრება და სინქრონიზაცია:</strong> ინსტრუქტორებს აღარ უწევთ სიის ხელით ამოკითხვა — სტუდენტის შემოსვლის დრო ავტომატურად აისახება ჟურნალში.</li>
+            <li><strong>ტრიბუნა და წინა რიგი:</strong> ასისტენტებისა და პრეზენტატორი სტუდენტების გამოყოფა ხდება კლასის საერთო ბადის დარღვევის გარეშე.</li>
+            <li><strong>მყისიერი ფორმატიული შეფასება:</strong> ლექტორებს შეუძლიათ სწრაფი ტესტების გაშვება ლექციის მსვლელობისას და შედეგების მყისიერი ნახვა.</li>
+            <li><strong>პრივატული კონსულტაციის არხები:</strong> ინსტრუქტორს შეუძლია სტუდენტთან ინდივიდუალური გასაუბრება კლასიდან გაუსვლელად.</li>
           </ul>
 
           <p>
-            With more than 100,000 active students and over 5,000 courses hosted on the platform, TOTC continues to pioneer the future of hybrid and distance learning.
+            100,000-ზე მეტი აქტიური სტუდენტითა და 5,000-ზე მეტი კურსით, TOTC აგრძელებს ჰიბრიდული და დისტანციური სწავლების მომავლის ფორმირებას.
           </p>
         </div>
 
@@ -97,7 +97,7 @@ export default function BlogDetailPage({ setActivePage }) {
         <div className="mt-12 pt-8 border-t border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-totc-teal/10 text-totc-teal hover:bg-totc-teal/20 transition-colors text-sm font-semibold">
-              <ThumbsUp className="w-4 h-4" /> <span>342 Claps</span>
+              <ThumbsUp className="w-4 h-4" /> <span>342 მოწონება</span>
             </button>
             <button className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
               <Bookmark className="w-5 h-5" />
@@ -105,7 +105,7 @@ export default function BlogDetailPage({ setActivePage }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-totc-gray font-medium">Share:</span>
+            <span className="text-xs text-totc-gray font-medium">გაზიარება:</span>
             <button className="p-2 rounded-full hover:bg-gray-100 text-totc-teal transition-colors">
               <Share2 className="w-5 h-5" />
             </button>

@@ -43,10 +43,10 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
       const res = await api.promoCodes.validate(cleanCoupon, basePrice, courseId);
       if (res && res.valid) {
         setDiscountPercent(res.discountPercentage || 20);
-        setDiscountMessage(res.message || `Promo code "${cleanCoupon}" applied: ${res.discountPercentage}% discount!`);
+        setDiscountMessage(res.message || `პრომოკოდი "${cleanCoupon}" გააქტიურდა: ${res.discountPercentage}% ფასდაკლება!`);
         setErrorMessage('');
       } else {
-        setErrorMessage(res?.message || 'Invalid promo code. Try: TOTC (20% off)');
+        setErrorMessage(res?.message || 'არასწორი პრომოკოდი. სცადეთ: TOTC (20% ფასდაკლება)');
         setDiscountPercent(0);
         setDiscountMessage('');
       }
@@ -54,12 +54,12 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
       // Fallback local evaluation if offline
       if (cleanCoupon === 'TOTC' || cleanCoupon === 'TOTC2026') {
         setDiscountPercent(20);
-        setDiscountMessage(`Promo code "${cleanCoupon}" applied: 20% discount!`);
+        setDiscountMessage(`პრომოკოდი "${cleanCoupon}" გააქტიურდა: 20% ფასდაკლება!`);
       } else if (cleanCoupon === 'WELCOME50') {
         setDiscountPercent(50);
-        setDiscountMessage(`Promo code "${cleanCoupon}" applied: 50% discount!`);
+        setDiscountMessage(`პრომოკოდი "${cleanCoupon}" გააქტიურდა: 50% ფასდაკლება!`);
       } else {
-        setErrorMessage('Invalid promo code. Try: TOTC (20% off)');
+        setErrorMessage('არასწორი პრომოკოდი. სცადეთ: TOTC (20% ფასდაკლება)');
         setDiscountPercent(0);
         setDiscountMessage('');
       }
@@ -72,7 +72,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
 
     const effectiveUser = currentUser || api.auth.getCurrentUser();
     if (!effectiveUser) {
-      setErrorMessage('Please log in or register before completing your purchase.');
+      setErrorMessage('შეძენის დასასრულებლად გთხოვთ გაიაროთ ავტორიზაცია ან რეგისტრაცია.');
       return;
     }
 
@@ -97,11 +97,11 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
         orderId: checkoutRes.orderId || `ORD-${Date.now().toString(36).toUpperCase()}`,
         transactionId: checkoutRes.transactionId || `TXN-${Date.now()}`,
         amount: checkoutRes.amount ?? totalDue,
-        currency: checkoutRes.currency || 'USD',
+        currency: checkoutRes.currency || 'GEL',
         course: course
       });
     } catch (err) {
-      setErrorMessage(err.message || 'Payment processing failed. Please verify your details.');
+      setErrorMessage(err.message || 'გადახდის დამუშავება ვერ მოხერხდა. შეამოწმეთ მონაცემები.');
     } finally {
       setProcessing(false);
     }
@@ -117,32 +117,32 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
 
           <div className="space-y-2">
             <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider">
-              Payment Confirmed
+              გადახდა დადასტურებულია
             </span>
             <h2 className="font-poppins font-black text-2xl sm:text-3xl text-totc-navy tracking-tight">
-              Enrollment Successful!
+              კურსზე ჩარიცხვა წარმატებულია!
             </h2>
             <p className="text-totc-gray text-xs sm:text-sm leading-relaxed">
-              Congratulations! You now have full lifetime access to <strong>{successOrder.course.title}</strong>.
+              გილოცავთ! თქვენ გაქვთ სრული წვდომა კურსზე <strong>{successOrder.course.title}</strong>.
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-left text-xs space-y-2 text-totc-gray">
             <div className="flex justify-between">
-              <span>Transaction Ref:</span>
+              <span>ტრანზაქციის კოდი:</span>
               <span className="font-mono font-bold text-totc-navy truncate max-w-[180px]">
                 {successOrder.transactionId}
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Amount Paid:</span>
+              <span>გადახდილი თანხა:</span>
               <span className="font-bold text-emerald-600">
-                ${successOrder.amount}.00 {successOrder.currency}
+                ₾{successOrder.amount}.00
               </span>
             </div>
             <div className="flex justify-between">
-              <span>Access Level:</span>
-              <span className="font-semibold text-totc-navy">Lifetime Interactive Access</span>
+              <span>წვდომის დონე:</span>
+              <span className="font-semibold text-totc-navy">მუდმივი სრული წვდომა</span>
             </div>
           </div>
 
@@ -155,7 +155,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
               className="w-full py-3.5 rounded-full bg-totc-teal text-white font-bold text-sm hover:bg-totc-teal-dark transition-all shadow-lg shadow-totc-teal/20 flex items-center justify-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
-              <span>Go to Course Classroom</span>
+              <span>სასწავლო ოთახში გადასვლა</span>
             </button>
 
             <button
@@ -165,7 +165,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
               }}
               className="w-full py-3 rounded-full bg-gray-100 text-totc-navy font-semibold text-xs hover:bg-gray-200 transition-colors"
             >
-              Back to My Dashboard
+              ჩემს კაბინეტში დაბრუნება
             </button>
           </div>
         </div>
@@ -185,11 +185,11 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
           className="inline-flex items-center gap-2 text-totc-teal hover:text-totc-navy transition-colors font-medium text-sm mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to course overview</span>
+          <span>კურსის გვერდზე დაბრუნება</span>
         </button>
 
         <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight mb-8">
-          Secure Checkout & Enrollment
+          დაცული გადახდა და შეკვეთის გაფორმება
         </h1>
 
         {errorMessage && (
@@ -205,7 +205,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
             {/* Payment Method Selector */}
             <div className="bg-white p-6 sm:p-8 rounded-[24px] border border-gray-100 shadow-sm space-y-6">
               <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                Select Payment Method
+                აირჩიეთ გადახდის მეთოდი
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
@@ -219,7 +219,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                   }`}
                 >
                   <CreditCard className="w-6 h-6" />
-                  <span className="text-xs sm:text-sm">Credit / Debit Card</span>
+                  <span className="text-xs sm:text-sm">საბანკო ბარათი</span>
                 </button>
 
                 <button
@@ -232,7 +232,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                   }`}
                 >
                   <span className="font-black text-xl italic tracking-tighter text-blue-800">PayPal</span>
-                  <span className="text-xs sm:text-sm">Instant Checkout</span>
+                  <span className="text-xs sm:text-sm">მომენტალური გადახდა</span>
                 </button>
               </div>
 
@@ -240,21 +240,21 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
               <form id="checkout-form" onSubmit={handleCompleteOrder} className="space-y-4 pt-2">
                 <div>
                   <label className="block text-xs font-bold text-totc-navy uppercase mb-1">
-                    Cardholder Name
+                    ბარათის მფლობელის სახელი
                   </label>
                   <input
                     type="text"
                     required
                     value={cardholderName}
                     onChange={(e) => setCardholderName(e.target.value)}
-                    placeholder="Jane Doe"
+                    placeholder="გიორგი ბერიძე"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-totc-teal"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-totc-navy uppercase mb-1">
-                    Card Number
+                    ბარათის ნომერი
                   </label>
                   <div className="relative">
                     <input
@@ -272,7 +272,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-totc-navy uppercase mb-1">
-                      Expiry Date
+                      მოქმედების ვადა
                     </label>
                     <input
                       type="text"
@@ -286,7 +286,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-totc-navy uppercase mb-1">
-                      CVC / CVV
+                      CVC / CVV კოდი
                     </label>
                     <input
                       type="password"
@@ -305,7 +305,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
             {/* Security Guarantee */}
             <div className="flex items-center gap-3 p-4 rounded-xl bg-white border border-gray-100 text-xs text-totc-gray shadow-sm">
               <Lock className="w-5 h-5 text-totc-mint shrink-0" />
-              <span>Payments are encrypted with 256-bit bank-grade SSL security. Your financial credentials are never stored on our servers.</span>
+              <span>გადახდები დაცულია 256-ბიტიანი SSL დაშიფვრით. ბარათის მონაცემები არ ინახება ჩვენს სერვერებზე.</span>
             </div>
           </div>
 
@@ -313,7 +313,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white p-6 sm:p-8 rounded-[24px] border border-gray-100 shadow-xl space-y-6">
               <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                Order Summary
+                შეკვეთის შეჯამება
               </h3>
 
               {/* Item preview */}
@@ -328,7 +328,7 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                     {course.title}
                   </h4>
                   <span className="text-xs text-totc-gray block truncate">
-                    Instructor: {course.instructorName || course.instructor || 'Certified Specialist'}
+                    ინსტრუქტორი: {course.instructorName || course.instructor || 'სერტიფიცირებული სპეციალისტი'}
                   </span>
                 </div>
               </div>
@@ -339,14 +339,14 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                   type="text"
                   value={coupon}
                   onChange={(e) => setCoupon(e.target.value)}
-                  placeholder="Coupon code (e.g. TOTC)"
+                  placeholder="პრომოკოდი (მაგ. TOTC)"
                   className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm focus:outline-none focus:border-totc-teal uppercase font-mono"
                 />
                 <button
                   type="submit"
                   className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-totc-navy text-xs font-bold transition-colors shrink-0"
                 >
-                  Apply
+                  გამოყენება
                 </button>
               </form>
 
@@ -360,18 +360,18 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
               {/* Price Breakdown */}
               <div className="space-y-2 text-sm text-totc-gray pt-2">
                 <div className="flex justify-between">
-                  <span>Course Price:</span>
-                  <span className="text-totc-navy font-semibold">${basePrice}.00</span>
+                  <span>კურსის ღირებულება:</span>
+                  <span className="text-totc-navy font-semibold">₾{basePrice}.00</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-emerald-600 font-semibold">
-                    <span>Discount ({discountPercent}%):</span>
-                    <span>-${discountAmount}.00</span>
+                    <span>ფასდაკლება ({discountPercent}%):</span>
+                    <span>-₾{discountAmount}.00</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-3 border-t border-gray-100 text-lg font-black text-totc-purple">
-                  <span>Total Due:</span>
-                  <span>${totalDue}.00 USD</span>
+                  <span>სულ გადასახდელი:</span>
+                  <span>₾{totalDue}.00</span>
                 </div>
               </div>
 
@@ -383,15 +383,15 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
                 className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-base transition-all shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {processing ? (
-                  <span>Processing Payment Session...</span>
+                  <span>გადახდის დამუშავება...</span>
                 ) : (
-                  <span>Complete Purchase (${totalDue}.00)</span>
+                  <span>გადახდის დასრულება (₾{totalDue}.00)</span>
                 )}
               </button>
 
               <div className="flex items-center justify-center gap-2 text-xs text-totc-gray pt-2">
                 <ShieldCheck className="w-4 h-4 text-totc-teal" />
-                <span>30-Day Full Refund Guarantee</span>
+                <span>თანხის დაბრუნების 30-დღიანი გარანტია</span>
               </div>
             </div>
           </div>

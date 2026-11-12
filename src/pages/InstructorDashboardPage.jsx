@@ -20,7 +20,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
       setSummary(data);
     } catch (err) {
       console.warn('Failed to load instructor courses:', err);
-      setActionMessage({ type: 'error', text: 'Failed to load your courses: ' + err.message });
+      setActionMessage({ type: 'error', text: 'კურსების ჩატვირთვა ვერ მოხერხდა: ' + err.message });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -37,7 +37,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
       const res = await api.instructor.toggleCoursePublish(courseId);
       setActionMessage({ 
         type: 'success', 
-        text: `Course status changed to ${res.isPublished ? 'Live (Published)' : 'Draft (Hidden)'}.` 
+        text: `კურსის სტატუსი შეიცვალა: ${res.isPublished ? 'გამოქვეყნებულია' : 'შავი ვერსია (დამალული)'}.` 
       });
       setSummary(prev => {
         if (!prev) return prev;
@@ -47,22 +47,22 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
         };
       });
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not toggle course status: ' + err.message });
+      setActionMessage({ type: 'error', text: 'სტატუსის შეცვლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
   // Handle deleting course
   const handleDeleteCourse = async (courseId, courseTitle) => {
-    if (!window.confirm(`Are you sure you want to delete course "${courseTitle}"? All associated lessons and enrollments will be deleted.`)) {
+    if (!window.confirm(`დარწმუნებული ხართ, რომ გსურთ კურსის "${courseTitle}" წაშლა? ყველა ლექცია და ჩარიცხვა წაიშლება.`)) {
       return;
     }
 
     try {
       await api.instructor.deleteCourse(courseId);
-      setActionMessage({ type: 'success', text: `Course "${courseTitle}" deleted successfully.` });
+      setActionMessage({ type: 'success', text: `კურსი "${courseTitle}" წარმატებით წაიშალა.` });
       loadInstructorData();
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not delete course: ' + err.message });
+      setActionMessage({ type: 'error', text: 'კურსის წაშლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
@@ -77,13 +77,13 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              Instructor Studio
+              ინსტრუქტორის სტუდია
             </div>
             <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight">
-              Instructor Dashboard
+              ინსტრუქტორის პანელი
             </h1>
             <p className="font-poppins text-totc-gray text-sm sm:text-base">
-              Welcome back, <span className="text-totc-navy font-bold">{currentUser?.fullName || 'Instructor'}</span>! Track your lectures, enrolled students, and manage curriculum.
+              მოგესალმებით, <span className="text-totc-navy font-bold">{currentUser?.fullName || 'ინსტრუქტორო'}</span>! მართეთ თქვენი ლექციები, სტუდენტები და სასწავლო პროგრამა.
             </p>
           </div>
 
@@ -92,10 +92,10 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               onClick={loadInstructorData}
               disabled={refreshing}
               className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
-              title="Refresh statistics"
+              title="სტატისტიკის განახლება"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <span>განახლება</span>
             </button>
 
             {/* Direct navigation to Course Creation Studio page */}
@@ -104,7 +104,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               className="px-6 py-3.5 rounded-full font-bold text-xs sm:text-sm bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Create New Course</span>
+              <span>ახალი კურსის შექმნა</span>
             </button>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               <span>{actionMessage.text}</span>
             </div>
             <button onClick={() => setActionMessage(null)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">
-              Dismiss
+              დახურვა
             </button>
           </div>
         )}
@@ -134,11 +134,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">My Courses</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">ჩემი კურსები</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
                 {summary ? summary.totalCourses : <span className="animate-pulse">...</span>}
               </h3>
-              <p className="text-[11px] text-purple-600 font-medium">Published & Drafts</p>
+              <p className="text-[11px] text-purple-600 font-medium">გამოქვეყნებული და შავი</p>
             </div>
           </div>
 
@@ -148,11 +148,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               <Video className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Lectures</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სულ ლექცია</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
                 {summary ? summary.totalLessons : <span className="animate-pulse">...</span>}
               </h3>
-              <p className="text-[11px] text-indigo-600 font-medium">Video & Quiz Units</p>
+              <p className="text-[11px] text-indigo-600 font-medium">ვიდეო და ტესტები</p>
             </div>
           </div>
 
@@ -162,11 +162,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Enrolled Students</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სტუდენტები</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
                 {summary ? summary.totalStudents : <span className="animate-pulse">...</span>}
               </h3>
-              <p className="text-[11px] text-totc-teal font-medium">Joined Your Courses</p>
+              <p className="text-[11px] text-totc-teal font-medium">ჩარიცხული მსმენელები</p>
             </div>
           </div>
 
@@ -176,11 +176,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
               <DollarSign className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Course Revenue</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">შემოსავალი</p>
               <h3 className="font-poppins font-black text-2xl text-emerald-600">
-                {summary ? `$${Number(summary.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
+                {summary ? `₾${Number(summary.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
               </h3>
-              <p className="text-[11px] text-totc-gray font-medium">Rating: ⭐ {summary?.averageRating || '5.0'}</p>
+              <p className="text-[11px] text-totc-gray font-medium">რეიტინგი: ⭐ {summary?.averageRating || '5.0'}</p>
             </div>
           </div>
         </div>
@@ -189,11 +189,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
         <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden mb-12">
           <div className="p-6 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-poppins font-bold text-xl text-totc-navy">My Course Curriculum</h3>
-              <p className="text-xs text-totc-gray">Manage your modules, video lectures, student counts, and publishing.</p>
+              <h3 className="font-poppins font-bold text-xl text-totc-navy">ჩემი შექმნილი კურსები</h3>
+              <p className="text-xs text-totc-gray">მართეთ მოდულები, ვიდეო ლექციები, სტუდენტები და გამოქვეყნების სტატუსი.</p>
             </div>
             <span className="text-xs font-bold text-totc-teal bg-teal-50 px-3 py-1.5 rounded-full">
-              {courses.length} Courses Authored by You
+              {courses.length} კურსი
             </span>
           </div>
 
@@ -201,14 +201,14 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
             <table className="w-full text-left text-xs text-totc-gray">
               <thead className="bg-gray-50/80 text-[10px] font-bold uppercase tracking-wider text-totc-navy border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4">Course</th>
-                  <th className="px-6 py-4">Category & Level</th>
-                  <th className="px-6 py-4">Lectures</th>
-                  <th className="px-6 py-4">Students</th>
-                  <th className="px-6 py-4">Price</th>
-                  <th className="px-6 py-4">Revenue</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-4">კურსი</th>
+                  <th className="px-6 py-4">კატეგორია და დონე</th>
+                  <th className="px-6 py-4">ლექციები</th>
+                  <th className="px-6 py-4">სტუდენტები</th>
+                  <th className="px-6 py-4">ფასი</th>
+                  <th className="px-6 py-4">შემოსავალი</th>
+                  <th className="px-6 py-4">სტატუსი</th>
+                  <th className="px-6 py-4 text-right">მოქმედებები</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -241,26 +241,26 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                     <td className="px-6 py-4">
                       <span className="font-bold text-totc-navy flex items-center gap-1.5">
                         <Video className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>{c.lessonsCount} Lectures</span>
+                        <span>{c.lessonsCount} ლექცია</span>
                       </span>
-                      <p className="text-[10px] text-totc-gray">{c.sectionsCount} Modules</p>
+                      <p className="text-[10px] text-totc-gray">{c.sectionsCount} მოდული</p>
                     </td>
 
                     {/* Students Count */}
                     <td className="px-6 py-4">
                       <span className="font-bold text-totc-teal bg-teal-50 px-2.5 py-1 rounded-full text-[11px]">
-                        {c.studentsCount} Students
+                        {c.studentsCount} სტუდენტი
                       </span>
                     </td>
 
                     {/* Price */}
                     <td className="px-6 py-4 font-bold text-totc-navy text-sm">
-                      ${Number(c.price).toFixed(2)}
+                      ₾{Number(c.price).toFixed(2)}
                     </td>
 
                     {/* Revenue */}
                     <td className="px-6 py-4 font-poppins font-black text-emerald-600 text-sm">
-                      ${Number(c.revenue).toFixed(2)}
+                      ₾{Number(c.revenue).toFixed(2)}
                     </td>
 
                     {/* Status with Admin Moderation Info */}
@@ -269,9 +269,9 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                         <div className="space-y-1">
                           <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200 inline-flex items-center gap-1">
                             <Clock className="w-3 h-3 text-amber-600 animate-spin" />
-                            <span>Pending Review</span>
+                            <span>განხილვაშია</span>
                           </span>
-                          <p className="text-[10px] text-totc-gray">Waiting for Admin</p>
+                          <p className="text-[10px] text-totc-gray">ელოდება ადმინს</p>
                         </div>
                       )}
 
@@ -279,7 +279,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                         <div className="space-y-1">
                           <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 inline-flex items-center gap-1">
                             <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>Approved & Live</span>
+                            <span>დამტკიცებულია</span>
                           </span>
                         </div>
                       )}
@@ -288,11 +288,11 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                         <div className="space-y-1.5">
                           <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px] border border-red-200 inline-flex items-center gap-1">
                             <AlertCircle className="w-3 h-3 text-red-600" />
-                            <span>Changes Requested</span>
+                            <span>საჭიროებს ცვლილებებს</span>
                           </span>
                           {c.rejectionReason && (
                             <p className="text-[10px] text-red-600 font-medium line-clamp-2 max-w-[150px]" title={c.rejectionReason}>
-                              Feedback: {c.rejectionReason}
+                              შენიშვნა: {c.rejectionReason}
                             </p>
                           )}
                           <button
@@ -302,7 +302,7 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                             }}
                             className="text-[10px] font-bold text-red-700 underline hover:text-red-900 block"
                           >
-                            Edit & Resubmit →
+                            რედაქტირება და ხელახლა გაგზავნა →
                           </button>
                         </div>
                       )}
@@ -318,10 +318,10 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                             else setActivePage('edit-course', c);
                           }}
                           className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-600 hover:text-white text-xs font-bold text-indigo-600 transition-colors inline-flex items-center gap-1 shadow-2xs"
-                          title="Edit Course Curriculum & Lectures"
+                          title="კურსის რედაქტირება"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
+                          <span>რედაქტირება</span>
                         </button>
 
                         <button
@@ -335,10 +335,10 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                             setActivePage('course-player', courseObj);
                           }}
                           className="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-totc-teal hover:text-white text-xs font-bold text-totc-teal transition-colors inline-flex items-center gap-1 shadow-2xs"
-                          title="Open Video Classroom Player directly"
+                          title="სასწავლო ოთახში გადასვლა"
                         >
                           <Video className="w-3.5 h-3.5" />
-                          <span>Classroom</span>
+                          <span>სასწავლო ოთახი</span>
                         </button>
 
                         <button
@@ -353,15 +353,15 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                             setActivePage('course-detail', courseObj);
                           }}
                           className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-totc-teal hover:text-white text-xs font-bold text-totc-navy transition-colors"
-                          title="View Course Syllabus & Details"
+                          title="კურსის დეტალების ნახვა"
                         >
-                          Preview
+                          ნახვა
                         </button>
 
                         <button
                           onClick={() => handleDeleteCourse(c.id, c.title)}
                           className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                          title="Delete course"
+                          title="კურსის წაშლა"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -377,16 +377,16 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                 <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
                   <BookOpen className="w-6 h-6" />
                 </div>
-                <h4 className="font-poppins font-bold text-totc-navy text-base">You haven't authored any courses yet</h4>
+                <h4 className="font-poppins font-bold text-totc-navy text-base">ჯერ არ გაქვთ შექმნილი კურსები</h4>
                 <p className="text-xs text-totc-gray max-w-sm mx-auto">
-                  Get started by defining your curriculum, uploading lecture videos, and teaching students globally.
+                  დაიწყეთ სასწავლო გეგმის შედგენით, ატვირთეთ ვიდეო ლექციები და ასწავლეთ სტუდენტებს.
                 </p>
                 <button
                   onClick={() => setActivePage('create-course')}
                   className="px-6 py-2.5 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark transition-all inline-flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Create Your First Course</span>
+                  <span>შექმენით პირველი კურსი</span>
                 </button>
               </div>
             )}

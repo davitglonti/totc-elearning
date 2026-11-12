@@ -61,7 +61,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       setOrdersList(ordersData || []);
     } catch (err) {
       console.error('Failed to load admin telemetry:', err);
-      setActionMessage({ type: 'error', text: 'Error connecting to admin API: ' + err.message });
+      setActionMessage({ type: 'error', text: 'ადმინის API-სთან დაკავშირების შეცდომა: ' + err.message });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -86,17 +86,17 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       if (res.success) {
         setActionMessage({ 
           type: 'success', 
-          text: `✓ Bunny Stream CDN Connected Successfully! (HTTP ${res.statusCode} OK - Library: ${res.libraryId || bunnyConfig.libraryId})` 
+          text: `✓ Bunny Stream CDN წარმატებით დაკავშირდა! (HTTP ${res.statusCode} OK - ბიბლიოთეკა: ${res.libraryId || bunnyConfig.libraryId})` 
         });
       } else {
         setActionMessage({ 
           type: 'error', 
-          text: `Bunny Stream Authentication: ${res.message}. Please verify the API key copied from dash.bunny.net.` 
+          text: `Bunny Stream ავტორიზაცია: ${res.message}. გთხოვთ გადაამოწმოთ API გასაღები dash.bunny.net-დან.` 
         });
       }
     } catch (err) {
       setBunnyTestResult({ success: false, message: err.message });
-      setActionMessage({ type: 'error', text: `Bunny Stream Test Failed: ${err.message}` });
+      setActionMessage({ type: 'error', text: `Bunny Stream ტესტი ვერ მოხერხდა: ${err.message}` });
     } finally {
       setTestingBunny(false);
     }
@@ -109,10 +109,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       const res = await api.admin.updateBunnyConfig(bunnyConfig);
       setActionMessage({ 
         type: 'success', 
-        text: '✓ Bunny Stream CDN configuration updated and active in backend pipeline!' 
+        text: '✓ Bunny Stream CDN კონფიგურაცია განახლდა და გააქტიურდა სერვერზე!' 
       });
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Failed to update Bunny settings: ' + err.message });
+      setActionMessage({ type: 'error', text: 'Bunny პარამეტრების განახლება ვერ მოხერხდა: ' + err.message });
     } finally {
       setSavingBunny(false);
     }
@@ -125,7 +125,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       const detailed = await api.admin.getCourseReview(courseId);
       setReviewModalCourse(detailed);
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not load course curriculum: ' + err.message });
+      setActionMessage({ type: 'error', text: 'კურსის პროგრამის ჩატვირთვა ვერ მოხერხდა: ' + err.message });
     } finally {
       setLoadingReview(false);
     }
@@ -137,12 +137,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       const res = await api.admin.approveCourse(courseId);
       setActionMessage({ 
         type: 'success', 
-        text: `🎉 Course "${courseTitle}" has been APPROVED and is now live in the TOTC public catalog!` 
+        text: `🎉 კურსი „${courseTitle}“ დამტკიცდა და გამოქვეყნდა TOTC საჯარო კატალოგში!` 
       });
       setReviewModalCourse(null);
       loadAdminData();
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Course approval failed: ' + err.message });
+      setActionMessage({ type: 'error', text: 'კურსის დამტკიცება ვერ მოხერხდა: ' + err.message });
     }
   };
 
@@ -153,14 +153,14 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       const res = await api.admin.rejectCourse(rejectDialogCourse.id, rejectionFeedback);
       setActionMessage({ 
         type: 'success', 
-        text: `Course "${rejectDialogCourse.title}" returned to instructor with change request.` 
+        text: `კურსი „${rejectDialogCourse.title}“ დაუბრუნდა ინსტრუქტორს ცვლილებების მოთხოვნით.` 
       });
       setRejectDialogCourse(null);
       setRejectionFeedback('');
       setReviewModalCourse(null);
       loadAdminData();
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Rejection failed: ' + err.message });
+      setActionMessage({ type: 'error', text: 'უარყოფა ვერ მოხერხდა: ' + err.message });
     }
   };
 
@@ -168,29 +168,29 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const handleRoleChange = async (userId, newRole) => {
     try {
       await api.admin.updateUserRole(userId, newRole);
-      setActionMessage({ type: 'success', text: `User role updated to ${newRole} successfully!` });
+      setActionMessage({ type: 'success', text: `მომხმარებლის როლი წარმატებით შეიცვალა (${newRole})!` });
       setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
       const updatedStats = await api.admin.getStats();
       setStats(updatedStats);
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Failed to update user role: ' + err.message });
+      setActionMessage({ type: 'error', text: 'როლის შეცვლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
   // Handle deleting a user
   const handleDeleteUser = async (userId, userEmail) => {
-    if (!window.confirm(`Are you sure you want to delete user "${userEmail}"? This action cannot be undone.`)) {
+    if (!window.confirm(`დარწმუნებული ხართ, რომ გსურთ მომხმარებლის „${userEmail}“ წაშლა? ეს მოქმედება შეუქცევადია.`)) {
       return;
     }
 
     try {
       await api.admin.deleteUser(userId);
-      setActionMessage({ type: 'success', text: `User "${userEmail}" deleted successfully.` });
+      setActionMessage({ type: 'success', text: `მომხმარებელი „${userEmail}“ წარმატებით წაიშალა.` });
       setUsersList(prev => prev.filter(u => u.id !== userId));
       const updatedStats = await api.admin.getStats();
       setStats(updatedStats);
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not delete user: ' + err.message });
+      setActionMessage({ type: 'error', text: 'მომხმარებლის წაშლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
@@ -200,30 +200,30 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       const res = await api.admin.toggleCoursePublish(courseId);
       setActionMessage({ 
         type: 'success', 
-        text: `Course is now ${res.isPublished ? 'Published (Live)' : 'Draft (Hidden)'}.` 
+        text: `კურსი ახლა ${res.isPublished ? 'გამოქვეყნებულია (აქტიური)' : 'მონახაზია (დამალული)'}.` 
       });
       setCoursesList(prev => prev.map(c => c.id === courseId ? { ...c, isPublished: res.isPublished } : c));
       const updatedStats = await api.admin.getStats();
       setStats(updatedStats);
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not toggle course publish state: ' + err.message });
+      setActionMessage({ type: 'error', text: 'სტატუსის შეცვლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
   // Handle deleting a course
   const handleDeleteCourse = async (courseId, courseTitle) => {
-    if (!window.confirm(`Are you sure you want to permanently delete course "${courseTitle}"?`)) {
+    if (!window.confirm(`დარწმუნებული ხართ, რომ გსურთ კურსის „${courseTitle}“ სამუდამოდ წაშლა?`)) {
       return;
     }
 
     try {
       await api.admin.deleteCourse(courseId);
-      setActionMessage({ type: 'success', text: `Course "${courseTitle}" deleted successfully.` });
+      setActionMessage({ type: 'success', text: `კურსი „${courseTitle}“ წარმატებით წაიშალა.` });
       setCoursesList(prev => prev.filter(c => c.id !== courseId));
       const updatedStats = await api.admin.getStats();
       setStats(updatedStats);
     } catch (err) {
-      setActionMessage({ type: 'error', text: 'Could not delete course: ' + err.message });
+      setActionMessage({ type: 'error', text: 'კურსის წაშლა ვერ მოხერხდა: ' + err.message });
     }
   };
 
@@ -262,13 +262,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
               <Shield className="w-3.5 h-3.5" />
-              Super Administrator Control Center
+              სუპერ ადმინისტრატორის მართვის ცენტრი
             </div>
             <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight">
-              Platform Administration
+              პლატფორმის ადმინისტრირება
             </h1>
             <p className="font-poppins text-totc-gray text-sm sm:text-base">
-              Course review & verification pipeline, user roles, catalog publishing, and financial transaction ledger.
+              კურსების მოდერაცია და ვერიფიკაცია, მომხმარებელთა როლები, კატალოგის მართვა და ფინანსური ტრანზაქციები.
             </p>
           </div>
 
@@ -277,10 +277,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               onClick={loadAdminData}
               disabled={refreshing}
               className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
-              title="Refresh live server data"
+              title="სერვერის მონაცემების განახლება"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>Refresh Data</span>
+              <span>მონაცემების განახლება</span>
             </button>
 
             <a
@@ -324,10 +324,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               </div>
               <div>
                 <h3 className="font-poppins font-black text-lg">
-                  {pendingCourses.length} Course{pendingCourses.length > 1 ? 's' : ''} Awaiting Review & Verification
+                  {pendingCourses.length} კურსი ელოდება განხილვას და ვერიფიკაციას
                 </h3>
                 <p className="text-xs text-white/90">
-                  Instructors have submitted new curriculum. Review syllabus videos and approve to make them live.
+                  ინსტრუქტორებმა წარადგინეს ახალი პროგრამები. შეამოწმეთ სილაბუსი და დაამტკიცეთ გამოსაქვეყნებლად.
                 </p>
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               onClick={() => setActiveTab('approvals')}
               className="px-6 py-2.5 rounded-full font-bold text-xs bg-white text-orange-600 hover:bg-orange-50 transition-all shadow-md shrink-0 flex items-center gap-2"
             >
-              <span>Review Now</span>
+              <span>განხილვა ახლავე</span>
               <ArrowUpRight className="w-4 h-4" />
             </button>
           </div>
@@ -350,12 +350,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Users</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სულ მომხმარებელი</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
                 {stats ? stats.totalUsers : <span className="animate-pulse">...</span>}
               </h3>
               <p className="text-[11px] text-indigo-600 font-medium">
-                {stats ? `${stats.proSubscribers} Pro Members` : ''}
+                {stats ? `${stats.proSubscribers} Pro წევრი` : ''}
               </p>
             </div>
           </div>
@@ -366,12 +366,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <DollarSign className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Total Revenue</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">მთლიანი შემოსავალი</p>
               <h3 className="font-poppins font-black text-2xl text-emerald-600">
-                {stats ? `$${Number(stats.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
+                {stats ? `₾${Number(stats.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
               </h3>
               <p className="text-[11px] text-totc-gray font-medium">
-                {stats ? `${stats.totalOrders} Transactions` : ''}
+                {stats ? `${stats.totalOrders} ტრანზაქცია` : ''}
               </p>
             </div>
           </div>
@@ -382,12 +382,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Catalog & Queue</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">კატალოგი და რიგი</p>
               <h3 className="font-poppins font-black text-2xl text-totc-navy">
-                {stats ? `${stats.publishedCourses} Live` : <span className="animate-pulse">...</span>}
+                {stats ? `${stats.publishedCourses} აქტიური` : <span className="animate-pulse">...</span>}
               </h3>
               <p className="text-[11px] text-amber-600 font-bold">
-                {stats ? `${pendingCourses.length} Pending Review` : ''}
+                {stats ? `${pendingCourses.length} მოლოდინში` : ''}
               </p>
             </div>
           </div>
@@ -398,10 +398,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <Server className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Backend Status</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სერვერის სტატუსი</p>
               <h3 className="font-poppins font-black text-lg text-emerald-600 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Active (200 OK)</span>
+                <span>აქტიური (200 OK)</span>
               </h3>
               <p className="text-[11px] text-totc-gray font-medium">
                 {stats?.dbEngine || 'SQLite'}
@@ -413,13 +413,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         {/* Admin Navigation Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 border-b border-gray-200">
           {[
-            { id: 'overview', label: 'Overview & Telemetry', icon: Activity, count: null },
-            { id: 'approvals', label: 'Course Approvals', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
-            { id: 'users', label: 'Users & Roles', icon: Users, count: usersList.length, alert: false },
-            { id: 'courses', label: 'Courses Management', icon: BookOpen, count: coursesList.length, alert: false },
-            { id: 'orders', label: 'Orders & Revenue', icon: CreditCard, count: ordersList.length, alert: false },
+            { id: 'overview', label: 'მიმოხილვა და ტელემეტრია', icon: Activity, count: null },
+            { id: 'approvals', label: 'კურსების დამტკიცება', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
+            { id: 'users', label: 'მომხმარებლები და როლები', icon: Users, count: usersList.length, alert: false },
+            { id: 'courses', label: 'კურსების მართვა', icon: BookOpen, count: coursesList.length, alert: false },
+            { id: 'orders', label: 'შეკვეთები და შემოსავალი', icon: CreditCard, count: ordersList.length, alert: false },
             { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
-            { id: 'system', label: 'System Architecture', icon: Server, count: null, alert: false },
+            { id: 'system', label: 'სისტემის არქიტექტურა', icon: Server, count: null, alert: false },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -458,30 +458,30 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-5">
                 <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
                   <Users className="w-5 h-5 text-indigo-600" />
-                  <span>Platform Demographics</span>
+                  <span>პლატფორმის დემოგრაფია</span>
                 </h3>
 
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100/60 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold text-indigo-900">Enrolled Students</p>
-                      <p className="text-[11px] text-indigo-600">Active learners with course access</p>
+                      <p className="text-xs font-semibold text-indigo-900">ჩარიცხული სტუდენტები</p>
+                      <p className="text-[11px] text-indigo-600">აქტიური მსმენელები კურსებზე წვდომით</p>
                     </div>
                     <span className="font-poppins font-black text-xl text-indigo-700">{stats?.totalStudents || 0}</span>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100/60 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold text-amber-900">⭐ Pro All-Access Members</p>
-                      <p className="text-[11px] text-amber-700">Subscribers with universal access</p>
+                      <p className="text-xs font-semibold text-amber-900">⭐ Pro სრული წვდომის წევრები</p>
+                      <p className="text-[11px] text-amber-700">გამომწერები უნივერსალური წვდომით</p>
                     </div>
                     <span className="font-poppins font-black text-xl text-amber-700">{stats?.proSubscribers || 0}</span>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100/60 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold text-purple-900">Certified Instructors</p>
-                      <p className="text-[11px] text-purple-600">Course authors with studio rights</p>
+                      <p className="text-xs font-semibold text-purple-900">სერტიფიცირებული ინსტრუქტორები</p>
+                      <p className="text-[11px] text-purple-600">კურსების ავტორები სტუდიის უფლებით</p>
                     </div>
                     <span className="font-poppins font-black text-xl text-purple-700">{stats?.totalInstructors || 0}</span>
                   </div>
@@ -493,13 +493,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div className="flex items-center justify-between">
                   <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-emerald-600" />
-                    <span>Recent Financial Transactions</span>
+                    <span>ბოლო ფინანსური ტრანზაქციები</span>
                   </h3>
                   <button 
                     onClick={() => setActiveTab('orders')}
                     className="text-xs font-bold text-totc-teal hover:underline flex items-center gap-1"
                   >
-                    <span>View All ({ordersList.length})</span>
+                    <span>ყველას ნახვა ({ordersList.length})</span>
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -510,12 +510,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-totc-navy truncate">{order.itemTitle}</p>
                         <p className="text-[11px] text-totc-gray truncate">
-                          Customer: <span className="text-totc-navy font-semibold">{order.userEmail}</span> • {new Date(order.createdAt).toLocaleDateString()}
+                          მყიდველი: <span className="text-totc-navy font-semibold">{order.userEmail}</span> • {new Date(order.createdAt).toLocaleDateString('ka-GE')}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
                         <span className="font-poppins font-black text-sm text-emerald-600">
-                          ${Number(order.amount).toFixed(2)}
+                          ₾{Number(order.amount).toFixed(2)}
                         </span>
                         <div className="text-[10px] font-bold text-emerald-700 uppercase">
                           {order.paymentStatus}
@@ -526,7 +526,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
                   {ordersList.length === 0 && (
                     <div className="p-8 text-center text-totc-gray text-xs">
-                      No transaction records in database yet.
+                      ტრანზაქციების ჩანაწერები ჯერ არ არის.
                     </div>
                   )}
                 </div>
@@ -543,15 +543,15 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <div>
                 <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
                   <CheckSquare className="w-5 h-5 text-amber-500" />
-                  <span>Course Moderation & Quality Verification</span>
+                  <span>კურსების მოდერაცია და ხარისხის შემოწმება</span>
                 </h3>
                 <p className="text-xs text-totc-gray">
-                  Audit instructor curriculums, inspect video stream URLs, and approve courses before publishing to the LMS catalog.
+                  შეამოწმეთ ინსტრუქტორების სასწავლო გეგმები, ვიდეო ბმულები და დაამტკიცეთ კურსები კატალოგში გამოსაქვეყნებლად.
                 </p>
               </div>
 
               <span className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-black text-xs">
-                {pendingCourses.length} Courses Pending Verification
+                {pendingCourses.length} კურსი მოლოდინშია
               </span>
             </div>
 
@@ -560,9 +560,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                   <CheckCircle className="w-6 h-6" />
                 </div>
-                <h4 className="font-poppins font-bold text-totc-navy text-base">All Caught Up!</h4>
+                <h4 className="font-poppins font-bold text-totc-navy text-base">ყველაფერი შემოწმებულია!</h4>
                 <p className="text-xs text-totc-gray max-w-sm mx-auto">
-                  There are currently no courses pending administrator approval. Any new courses created by instructors will appear here.
+                  ამჟამად არც ერთი კურსი არ ელოდება დამტკიცებას. ინსტრუქტორების მიერ შექმნილი ახალი კურსები აქ გამოჩნდება.
                 </p>
               </div>
             ) : (
@@ -581,7 +581,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white font-black text-[10px] tracking-wide uppercase">
-                            Pending Approval
+                            განხილვის მოლოდინში
                           </span>
                           <span className="px-2 py-0.5 rounded-full bg-gray-100 text-totc-gray text-[10px] font-semibold">
                             {course.categoryName} • {course.level}
@@ -594,11 +594,11 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                           {course.description}
                         </p>
                         <div className="text-[11px] text-totc-gray flex items-center gap-3 pt-1">
-                          <span>Instructor: <strong className="text-totc-navy">{course.instructorName}</strong> ({course.instructorEmail})</span>
+                          <span>ინსტრუქტორი: <strong className="text-totc-navy">{course.instructorName}</strong> ({course.instructorEmail})</span>
                           <span>•</span>
-                          <span>Lectures: <strong className="text-totc-navy">{course.lessonsCount}</strong></span>
+                          <span>ლექციები: <strong className="text-totc-navy">{course.lessonsCount}</strong></span>
                           <span>•</span>
-                          <span>Price: <strong className="text-totc-navy">${course.price}</strong></span>
+                          <span>ფასი: <strong className="text-totc-navy">₾{course.price}</strong></span>
                         </div>
                       </div>
                     </div>
@@ -610,7 +610,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         className="px-4 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors flex items-center gap-1.5"
                       >
                         <FileText className="w-3.5 h-3.5" />
-                        <span>Inspect Curriculum</span>
+                        <span>პროგრამის ნახვა</span>
                       </button>
 
                       {/* Request Changes / Reject */}
@@ -619,7 +619,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         className="px-4 py-2.5 rounded-full font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-1.5 border border-red-200"
                       >
                         <XCircle className="w-3.5 h-3.5" />
-                        <span>Reject</span>
+                        <span>უარყოფა</span>
                       </button>
 
                       {/* Approve & Publish Live */}
@@ -628,7 +628,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         className="px-5 py-2.5 rounded-full font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md flex items-center gap-1.5"
                       >
                         <Check className="w-4 h-4" />
-                        <span>Approve & Publish</span>
+                        <span>დამტკიცება და გამოქვეყნება</span>
                       </button>
                     </div>
                   </div>
@@ -643,8 +643,8 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-poppins font-bold text-xl text-totc-navy">Registered Users Management</h3>
-                <p className="text-xs text-totc-gray">Inspect real platform accounts, switch user roles, or delete users.</p>
+                <h3 className="font-poppins font-bold text-xl text-totc-navy">რეგისტრირებული მომხმარებლების მართვა</h3>
+                <p className="text-xs text-totc-gray">მართეთ პლატფორმის ანგარიშები, შეცვალეთ როლები ან წაშალეთ მომხმარებლები.</p>
               </div>
 
               {/* Filters */}
@@ -653,7 +653,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <Search className="w-4 h-4 text-totc-gray absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search by name or email..."
+                    placeholder="ძებნა სახელით ან ელფოსტით..."
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
                     className="pl-9 pr-4 py-2.5 rounded-full border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal w-56 sm:w-64"
@@ -665,10 +665,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   onChange={(e) => setUserRoleFilter(e.target.value)}
                   className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold text-totc-navy bg-white focus:outline-none focus:border-totc-teal cursor-pointer"
                 >
-                  <option value="ALL">All Roles ({usersList.length})</option>
-                  <option value="STUDENT">Students</option>
-                  <option value="INSTRUCTOR">Instructors</option>
-                  <option value="ADMIN">Administrators</option>
+                  <option value="ALL">ყველა როლი ({usersList.length})</option>
+                  <option value="STUDENT">სტუდენტები</option>
+                  <option value="INSTRUCTOR">ინსტრუქტორები</option>
+                  <option value="ADMIN">ადმინისტრატორები</option>
                 </select>
               </div>
             </div>
@@ -678,12 +678,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-gray-100 text-totc-gray font-bold uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4">User</th>
-                    <th className="py-3 px-4">Role</th>
-                    <th className="py-3 px-4">Membership</th>
-                    <th className="py-3 px-4">Enrollments</th>
-                    <th className="py-3 px-4">Joined Date</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">მომხმარებელი</th>
+                    <th className="py-3 px-4">როლი</th>
+                    <th className="py-3 px-4">წევრობა</th>
+                    <th className="py-3 px-4">აქტივობა</th>
+                    <th className="py-3 px-4">რეგისტრაცია</th>
+                    <th className="py-3 px-4 text-right">მოქმედება</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -700,7 +700,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                             />
                             <div className="min-w-0">
                               <p className="font-bold text-totc-navy truncate">
-                                {user.fullName} {isSelf && <span className="text-[10px] text-totc-teal">(You)</span>}
+                                {user.fullName} {isSelf && <span className="text-[10px] text-totc-teal">(თქვენ)</span>}
                               </p>
                               <p className="text-[11px] text-totc-gray truncate">{user.email}</p>
                             </div>
@@ -721,32 +721,32 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                                 : 'bg-teal-50 text-totc-teal border-teal-200'
                             } ${isSelf ? 'opacity-80 cursor-not-allowed' : ''}`}
                           >
-                            <option value="Student">Student</option>
-                            <option value="Instructor">Instructor</option>
-                            <option value="Admin">Admin</option>
+                            <option value="Student">სტუდენტი</option>
+                            <option value="Instructor">ინსტრუქტორი</option>
+                            <option value="Admin">ადმინისტრატორი</option>
                           </select>
                         </td>
 
                         <td className="py-3.5 px-4">
                           {user.isSubscribed ? (
                             <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-black text-[10px] tracking-wide inline-flex items-center gap-1">
-                              ⭐ PRO PASS
+                              ⭐ PRO პაკეტი
                             </span>
                           ) : (
-                            <span className="text-totc-gray font-medium text-[11px]">Free Tier</span>
+                            <span className="text-totc-gray font-medium text-[11px]">უფასო პაკეტი</span>
                           )}
                         </td>
 
                         <td className="py-3.5 px-4 font-semibold text-totc-navy">
                           {user.role === 'Instructor' ? (
-                            <span className="text-purple-700">{user.authoredCoursesCount} Authored Courses</span>
+                            <span className="text-purple-700">{user.authoredCoursesCount} საავტორო კურსი</span>
                           ) : (
-                            <span>{user.enrollmentsCount} Enrolled</span>
+                            <span>{user.enrollmentsCount} ჩარიცხვა</span>
                           )}
                         </td>
 
                         <td className="py-3.5 px-4 text-totc-gray">
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {new Date(user.createdAt).toLocaleDateString('ka-GE')}
                         </td>
 
                         <td className="py-3.5 px-4 text-right">
@@ -754,7 +754,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                             <button
                               onClick={() => handleDeleteUser(user.id, user.email)}
                               className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                              title="Delete user account"
+                              title="მომხმარებლის წაშლა"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -768,7 +768,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
               {filteredUsers.length === 0 && (
                 <div className="py-12 text-center text-totc-gray text-xs">
-                  No users found matching your search.
+                  თქვენი ძიების შესაბამისი მომხმარებლები ვერ მოიძებნა.
                 </div>
               )}
             </div>
@@ -780,8 +780,8 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-poppins font-bold text-xl text-totc-navy">Course Catalog & Publishing</h3>
-                <p className="text-xs text-totc-gray">All courses, verification statuses, student enrollments, and visibility controls.</p>
+                <h3 className="font-poppins font-bold text-xl text-totc-navy">კურსების კატალოგი და გამოქვეყნება</h3>
+                <p className="text-xs text-totc-gray">ყველა კურსი, ვერიფიკაციის სტატუსი, ჩარიცხული სტუდენტები და ხილვადობის მართვა.</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -789,7 +789,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <Search className="w-4 h-4 text-totc-gray absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search course title or instructor..."
+                    placeholder="ძებნა კურსით ან ინსტრუქტორით..."
                     value={courseSearch}
                     onChange={(e) => setCourseSearch(e.target.value)}
                     className="pl-9 pr-4 py-2.5 rounded-full border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal w-56 sm:w-64"
@@ -801,10 +801,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   onChange={(e) => setCourseStatusFilter(e.target.value)}
                   className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold text-totc-navy bg-white focus:outline-none focus:border-totc-teal cursor-pointer"
                 >
-                  <option value="ALL">All Statuses</option>
-                  <option value="PENDING">Pending Approval ({pendingCourses.length})</option>
-                  <option value="APPROVED">Approved & Live</option>
-                  <option value="REJECTED">Rejected</option>
+                  <option value="ALL">ყველა სტატუსი</option>
+                  <option value="PENDING">განხილვის მოლოდინში ({pendingCourses.length})</option>
+                  <option value="APPROVED">დამტკიცებული და აქტიური</option>
+                  <option value="REJECTED">უარყოფილი</option>
                 </select>
               </div>
             </div>
@@ -813,13 +813,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-gray-100 text-totc-gray font-bold uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4">Course</th>
-                    <th className="py-3 px-4">Instructor</th>
-                    <th className="py-3 px-4">Approval Status</th>
-                    <th className="py-3 px-4">Price</th>
-                    <th className="py-3 px-4">Students</th>
-                    <th className="py-3 px-4">Visibility</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4">კურსი</th>
+                    <th className="py-3 px-4">ინსტრუქტორი</th>
+                    <th className="py-3 px-4">მოდერაციის სტატუსი</th>
+                    <th className="py-3 px-4">ფასი</th>
+                    <th className="py-3 px-4">სტუდენტები</th>
+                    <th className="py-3 px-4">ხილვადობა</th>
+                    <th className="py-3 px-4 text-right">მოქმედება</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -851,34 +851,34 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         {course.approvalStatus === 'Approved' && (
                           <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200 inline-flex items-center gap-1">
                             <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>Approved</span>
+                            <span>დამტკიცებული</span>
                           </span>
                         )}
                         {course.approvalStatus === 'PendingApproval' && (
                           <button
                             onClick={() => handleOpenReviewModal(course.id)}
                             className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200 inline-flex items-center gap-1 hover:bg-amber-100"
-                            title="Click to review and approve"
+                            title="დააჭირეთ განსახილველად და დასამტკიცებლად"
                           >
                             <Clock className="w-3 h-3 text-amber-600 animate-spin" />
-                            <span>Pending Review</span>
+                            <span>განხილვის მოლოდინში</span>
                           </button>
                         )}
                         {course.approvalStatus === 'Rejected' && (
                           <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-700 font-bold text-[10px] border border-red-200 inline-flex items-center gap-1">
                             <XCircle className="w-3 h-3 text-red-600" />
-                            <span>Changes Needed</span>
+                            <span>საჭიროებს ცვლილებებს</span>
                           </span>
                         )}
                       </td>
 
                       <td className="py-3.5 px-4 font-poppins font-black text-totc-navy">
-                        ${Number(course.price).toFixed(2)}
+                        ₾{Number(course.price).toFixed(2)}
                       </td>
 
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-totc-teal bg-teal-50 px-2.5 py-1 rounded-full text-[11px]">
-                          {course.studentsCount} Students
+                          {course.studentsCount} სტუდენტი
                         </span>
                       </td>
 
@@ -891,10 +891,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                               ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
                               : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
                           }`}
-                          title="Click to toggle publish status"
+                          title="სტატუსის შეცვლა"
                         >
                           {course.isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                          <span>{course.isPublished ? 'Live' : 'Hidden'}</span>
+                          <span>{course.isPublished ? 'აქტიური' : 'დამალული'}</span>
                         </button>
                       </td>
 
@@ -903,9 +903,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                           <button
                             onClick={() => handleOpenReviewModal(course.id)}
                             className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-                            title="Audit syllabus modules & lectures"
+                            title="პროგრამისა და ლექციების შემოწმება"
                           >
-                            Inspect
+                            შემოწმება
                           </button>
 
                           <button
@@ -915,13 +915,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                             }}
                             className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-totc-navy hover:bg-totc-teal hover:text-white transition-colors"
                           >
-                            Preview
+                            ნახვა
                           </button>
 
                           <button
                             onClick={() => handleDeleteCourse(course.id, course.title)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                            title="Delete course"
+                            title="კურსის წაშლა"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -934,7 +934,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
               {filteredCourses.length === 0 && (
                 <div className="py-12 text-center text-totc-gray text-xs">
-                  No courses found matching your query.
+                  თქვენი მოთხოვნის შესაბამისი კურსები ვერ მოიძებნა.
                 </div>
               )}
             </div>
@@ -946,14 +946,14 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-poppins font-bold text-xl text-totc-navy">Real Financial Ledger & Orders</h3>
-                <p className="text-xs text-totc-gray">All recorded purchases, checkout webhooks, and Pro subscriptions.</p>
+                <h3 className="font-poppins font-bold text-xl text-totc-navy">ფინანსური რეესტრი და შეკვეთები</h3>
+                <p className="text-xs text-totc-gray">ყველა დაფიქსირებული შესყიდვა, გადახდა და Pro გამოწერა.</p>
               </div>
 
               <div className="text-right">
-                <span className="text-xs font-bold text-totc-gray">Total Processed: </span>
+                <span className="text-xs font-bold text-totc-gray">სულ დამუშავებული: </span>
                 <span className="font-poppins font-black text-lg text-emerald-600">
-                  ${stats ? Number(stats.totalRevenue).toLocaleString() : '0'}
+                  ₾{stats ? Number(stats.totalRevenue).toLocaleString() : '0'}
                 </span>
               </div>
             </div>
@@ -962,13 +962,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-gray-100 text-totc-gray font-bold uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4">Transaction ID</th>
-                    <th className="py-3 px-4">Customer</th>
-                    <th className="py-3 px-4">Item / Plan</th>
-                    <th className="py-3 px-4">Type</th>
-                    <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Date</th>
+                    <th className="py-3 px-4">ტრანზაქციის ID</th>
+                    <th className="py-3 px-4">მომხმარებელი</th>
+                    <th className="py-3 px-4">პროდუქტი / პაკეტი</th>
+                    <th className="py-3 px-4">ტიპი</th>
+                    <th className="py-3 px-4">თანხა</th>
+                    <th className="py-3 px-4">სტატუსი</th>
+                    <th className="py-3 px-4 text-right">თარიღი</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -998,7 +998,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       </td>
 
                       <td className="py-3.5 px-4 font-poppins font-black text-emerald-600 text-sm">
-                        ${Number(order.amount).toFixed(2)}
+                        ₾{Number(order.amount).toFixed(2)}
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -1008,7 +1008,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       </td>
 
                       <td className="py-3.5 px-4 text-right text-totc-gray">
-                        {new Date(order.createdAt).toLocaleString()}
+                        {new Date(order.createdAt).toLocaleString('ka-GE')}
                       </td>
                     </tr>
                   ))}
@@ -1017,7 +1017,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
               {ordersList.length === 0 && (
                 <div className="py-12 text-center text-totc-gray text-xs">
-                  No orders recorded yet.
+                  შეკვეთები ჯერ არ დაფიქსირებულა.
                 </div>
               )}
             </div>
@@ -1032,13 +1032,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-[11px] font-bold uppercase tracking-wider">
                   <Video className="w-3.5 h-3.5 text-white" />
-                  <span>Video Transcoding & Delivery Pipeline</span>
+                  <span>ვიდეო ტრანსკოდირება და მიწოდების სისტემა</span>
                 </div>
                 <h3 className="font-poppins font-black text-2xl sm:text-3xl text-white">
-                  Bunny.net Stream Video CDN
+                  Bunny.net Stream ვიდეო CDN
                 </h3>
                 <p className="text-xs sm:text-sm text-white/90 max-w-2xl">
-                  Automated video ingestion pipeline: when instructors upload videos in Course Studio, files are streamed directly to Bunny Stream, transcoded to adaptive multi-bitrate HLS, and served via edge caching.
+                  ავტომატური ვიდეო დამუშავება: როდესაც ინსტრუქტორი ტვირთავს ვიდეოს სტუდიაში, ფაილი იგზავნება Bunny Stream-ზე, კოდირდება HLS ფორმატში და მიეწოდება გლობალური CDN-ით.
                 </p>
               </div>
 
@@ -1048,7 +1048,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 rel="noopener noreferrer"
                 className="px-6 py-3 rounded-full bg-white text-orange-600 hover:bg-orange-50 font-bold text-xs transition-all shadow-md shrink-0 flex items-center gap-2 self-start md:self-center"
               >
-                <span>Bunny Dashboard</span>
+                <span>Bunny პანელი</span>
                 <ExternalLink className="w-4 h-4" />
               </a>
             </div>
@@ -1056,27 +1056,27 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             {/* Quick Specs Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">Video Library ID</span>
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">ვიდეო ბიბლიოთეკის ID</span>
                 <p className="font-poppins font-black text-xl text-totc-navy mt-1 font-mono">
                   {bunnyConfig.libraryId || '805955'}
                 </p>
-                <p className="text-[10px] text-totc-gray mt-0.5">Assigned Bunny Stream Library</p>
+                <p className="text-[10px] text-totc-gray mt-0.5">მიმაგრებული Bunny Stream ბიბლიოთეკა</p>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">Edge Pull Zone</span>
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">Edge Pull ზონა</span>
                 <p className="font-poppins font-black text-xl text-totc-teal mt-1 font-mono">
                   {bunnyConfig.pullZone || 'vz-f0959c15-d92'}
                 </p>
-                <p className="text-[10px] text-totc-gray mt-0.5">Global Anycast CDN Distribution</p>
+                <p className="text-[10px] text-totc-gray mt-0.5">გლობალური Anycast CDN დისტრიბუცია</p>
               </div>
 
               <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">CDN Hostname</span>
+                <span className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">CDN ჰოსტნეიმი</span>
                 <p className="font-bold text-sm text-indigo-700 mt-1 font-mono truncate">
                   {bunnyConfig.cdnHostname || 'vz-f0959c15-d92.b-cdn.net'}
                 </p>
-                <p className="text-[10px] text-totc-gray mt-0.5">HLS playlist & segment endpoint</p>
+                <p className="text-[10px] text-totc-gray mt-0.5">HLS პლეილისტის და სეგმენტების მისამართი</p>
               </div>
             </div>
 
@@ -1084,8 +1084,8 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
                 <div>
-                  <h4 className="font-poppins font-bold text-lg text-totc-navy">Bunny Stream API Credentials</h4>
-                  <p className="text-xs text-totc-gray">Manage and verify connection parameters between TOTC LMS and Bunny.net.</p>
+                  <h4 className="font-poppins font-bold text-lg text-totc-navy">Bunny Stream API პარამეტრები</h4>
+                  <p className="text-xs text-totc-gray">მართეთ და შეამოწმეთ კავშირი TOTC LMS-სა და Bunny.net-ს შორის.</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1096,7 +1096,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                     className="px-5 py-2.5 rounded-full border border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${testingBunny ? 'animate-spin' : ''}`} />
-                    <span>{testingBunny ? 'Testing Connection...' : 'Test Bunny Connection'}</span>
+                    <span>{testingBunny ? 'მოწმდება...' : 'კავშირის შემოწმება'}</span>
                   </button>
                 </div>
               </div>
@@ -1115,7 +1115,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                     )}
                     <div>
-                      <p className="font-bold">{bunnyTestResult.success ? 'Bunny API Connected' : 'Bunny Connection Notice'}</p>
+                      <p className="font-bold">{bunnyTestResult.success ? 'Bunny API დაკავშირებულია' : 'Bunny კავშირის შეტყობინება'}</p>
                       <p className="font-normal">{bunnyTestResult.message}</p>
                     </div>
                   </div>
@@ -1133,7 +1133,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-totc-navy mb-1">
-                      Video Library ID
+                      ვიდეო ბიბლიოთეკის ID
                     </label>
                     <input
                       type="text"
@@ -1146,7 +1146,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
                   <div>
                     <label className="block text-xs font-bold text-totc-navy mb-1">
-                      CDN Hostname
+                      CDN ჰოსტნეიმი
                     </label>
                     <input
                       type="text"
@@ -1161,7 +1161,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-totc-navy mb-1">
-                      Pull Zone Name
+                      Pull ზონის სახელი
                     </label>
                     <input
                       type="text"
@@ -1175,7 +1175,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-totc-navy">
-                        API Access Key
+                        API წვდომის გასაღები
                       </label>
                       <button
                         type="button"
@@ -1183,14 +1183,14 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         className="text-[11px] text-totc-teal hover:underline flex items-center gap-1 font-semibold"
                       >
                         {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        <span>{showApiKey ? 'Hide' : 'Reveal'}</span>
+                        <span>{showApiKey ? 'დამალვა' : 'ჩვენება'}</span>
                       </button>
                     </div>
                     <input
                       type={showApiKey ? 'text' : 'password'}
                       value={bunnyConfig.apiKey || ''}
                       onChange={(e) => setBunnyConfig({ ...bunnyConfig, apiKey: e.target.value })}
-                      placeholder="Paste API Key from dash.bunny.net"
+                      placeholder="ჩასვით API გასაღები dash.bunny.net-დან"
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"
                     />
                   </div>
@@ -1203,7 +1203,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                     className="px-6 py-2.5 rounded-full bg-totc-navy hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>{savingBunny ? 'Saving Credentials...' : 'Save Configuration'}</span>
+                    <span>{savingBunny ? 'ინახება...' : 'კონფიგურაციის შენახვა'}</span>
                   </button>
                 </div>
               </form>
@@ -1213,10 +1213,10 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             <div className="bg-slate-900 rounded-[28px] p-6 sm:p-8 text-white space-y-4">
               <h4 className="font-poppins font-bold text-lg text-totc-teal flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-totc-teal" />
-                <span>How Lecturer Video Ingestion Operates</span>
+                <span>როგორ მუშაობს ლექციის ვიდეოს ატვირთვა</span>
               </h4>
               <p className="text-xs text-slate-300">
-                Lecturers upload lectures directly inside the Instructor Studio. Here is what happens behind the scenes:
+                ლექტორები ტვირთავენ ლექციებს პირდაპირ ინსტრუქტორის სტუდიიდან. აი, რა ხდება ფონურ რეჟიმში:
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
@@ -1224,9 +1224,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 font-black text-xs flex items-center justify-center">
                     1
                   </div>
-                  <h5 className="font-bold text-xs text-white">Browser Chunk Streaming</h5>
+                  <h5 className="font-bold text-xs text-white">ბრაუზერიდან სტრიმინგი</h5>
                   <p className="text-[11px] text-slate-400">
-                    The lecturer selects an MP4/MOV file. TOTC shows live progress (0-100%) as bytes transfer.
+                    ლექტორი ირჩევს MP4/MOV ფაილს. TOTC აჩვენებს ატვირთვის პროგრესს (0-100%).
                   </p>
                 </div>
 
@@ -1234,9 +1234,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <div className="w-7 h-7 rounded-lg bg-totc-teal/20 text-totc-teal font-black text-xs flex items-center justify-center">
                     2
                   </div>
-                  <h5 className="font-bold text-xs text-white">Bunny Stream Transcoding</h5>
+                  <h5 className="font-bold text-xs text-white">Bunny Stream ტრანსკოდირება</h5>
                   <p className="text-[11px] text-slate-400">
-                    The API creates a video entry in Library 805955 and streams raw binary chunks to Bunny's transcode cluster.
+                    API ქმნის ვიდეოს ჩანაწერს ბიბლიოთეკაში 805955 და აგზავნის ნაკადს Bunny-ს კლასტერში.
                   </p>
                 </div>
 
@@ -1244,9 +1244,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-black text-xs flex items-center justify-center">
                     3
                   </div>
-                  <h5 className="font-bold text-xs text-white">Adaptive Classroom Playback</h5>
+                  <h5 className="font-bold text-xs text-white">ადაპტური დაკვრა კლასში</h5>
                   <p className="text-[11px] text-slate-400">
-                    The classroom player renders the embed with automatic bitrate switching (1080p down to 360p) for students.
+                    საკლასო პლეერი ავტომატურად ცვლის ხარისხს (1080p-დან 360p-მდე) სტუდენტის ინტერნეტის მიხედვით.
                   </p>
                 </div>
               </div>
@@ -1258,39 +1258,39 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         {activeTab === 'system' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-poppins font-bold text-xl text-totc-navy">Clean Architecture Telemetry</h3>
-              <p className="text-xs text-totc-gray">Active services, ORM engine, and token security policies:</p>
+              <h3 className="font-poppins font-bold text-xl text-totc-navy">სისტემის არქიტექტურის ტელემეტრია</h3>
+              <p className="text-xs text-totc-gray">აქტიური სერვისები, ORM ძრავა და ტოკენების უსაფრთხოების პოლიტიკა:</p>
 
               <div className="space-y-3">
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="text-xs">
-                    <p className="font-bold text-emerald-900">Database Engine: SQLite (EF Core 9.0)</p>
-                    <p className="text-emerald-700">Clean Architecture repository layer with automatic migrations and seeding.</p>
+                    <p className="font-bold text-emerald-900">მონაცემთა ბაზა: SQLite (EF Core 9.0)</p>
+                    <p className="text-emerald-700">Clean Architecture რეპოზიტორიის შრე ავტომატური მიგრაციებით.</p>
                   </div>
                 </div>
 
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="text-xs">
-                    <p className="font-bold text-emerald-900">Moderation Workflow Active</p>
-                    <p className="text-emerald-700">All instructor course submissions gated by Administrator quality check.</p>
+                    <p className="font-bold text-emerald-900">მოდერაციის პროცესი აქტიურია</p>
+                    <p className="text-emerald-700">ინსტრუქტორების მიერ გამოგზავნილი კურსები გადის ადმინის შემოწმებას.</p>
                   </div>
                 </div>
 
                 <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-100 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
                   <div className="text-xs">
-                    <p className="font-bold text-emerald-900">JWT Bearer Authentication (HS256)</p>
-                    <p className="text-emerald-700">Cryptographically signed token issuance with role claim guards.</p>
+                    <p className="font-bold text-emerald-900">JWT Bearer ავტორიზაცია (HS256)</p>
+                    <p className="text-emerald-700">კრიპტოგრაფიულად ხელმოწერილი ტოკენები როლების დაცვით.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-poppins font-bold text-xl text-totc-navy">API Endpoints Documentation</h3>
-              <p className="text-xs text-totc-gray">Interactive OpenAPI / Swagger documentation:</p>
+              <h3 className="font-poppins font-bold text-xl text-totc-navy">API ენდპოინტების დოკუმენტაცია</h3>
+              <p className="text-xs text-totc-gray">ინტერაქტიული OpenAPI / Swagger დოკუმენტაცია:</p>
 
               <div className="p-6 bg-slate-900 rounded-2xl text-white space-y-4">
                 <div className="flex items-center justify-between">
@@ -1298,7 +1298,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">200 OK</span>
                 </div>
                 <p className="text-xs text-slate-300">
-                  Includes full documentation for Auth, Admin Approvals, Courses, Subscriptions, Payments, Quizzes, and Reviews.
+                  მოიცავს სრულ დოკუმენტაციას ავტორიზაციის, მოდერაციის, კურსების, გამოწერების, გადახდებისა და ტესტების შესახებ.
                 </p>
                 <a
                   href="http://localhost:5000/swagger"
@@ -1306,7 +1306,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-totc-teal text-white font-bold text-xs hover:bg-totc-teal-dark transition-colors"
                 >
-                  <span>Launch Swagger UI</span>
+                  <span>Swagger UI-ს გახსნა</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -1331,19 +1331,19 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase">
-                      Curriculum Audit
+                      პროგრამის შემოწმება
                     </span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       reviewModalCourse.approvalStatus === 'Approved' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                     }`}>
-                      {reviewModalCourse.approvalStatus}
+                      {reviewModalCourse.approvalStatus === 'Approved' ? 'დამტკიცებული' : reviewModalCourse.approvalStatus === 'PendingApproval' ? 'განხილვის მოლოდინში' : 'უარყოფილი'}
                     </span>
                   </div>
                   <h3 className="font-poppins font-black text-xl text-totc-navy mt-1">
                     {reviewModalCourse.title}
                   </h3>
                   <p className="text-xs text-totc-gray">
-                    Authored by: <strong className="text-totc-navy">{reviewModalCourse.instructorName}</strong> ({reviewModalCourse.instructorEmail})
+                    ავტორი: <strong className="text-totc-navy">{reviewModalCourse.instructorName}</strong> ({reviewModalCourse.instructorEmail})
                   </p>
                 </div>
               </div>
@@ -1359,22 +1359,22 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             {/* Course Overview Metrics */}
             <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs">
               <div>
-                <span className="text-totc-gray">Category & Level:</span>
+                <span className="text-totc-gray">კატეგორია და დონე:</span>
                 <p className="font-bold text-totc-navy">{reviewModalCourse.categoryName} • {reviewModalCourse.level}</p>
               </div>
               <div>
-                <span className="text-totc-gray">Price:</span>
-                <p className="font-bold text-totc-navy">${reviewModalCourse.price}</p>
+                <span className="text-totc-gray">ფასი:</span>
+                <p className="font-bold text-totc-navy">₾{reviewModalCourse.price}</p>
               </div>
               <div>
-                <span className="text-totc-gray">Total Modules / Lectures:</span>
-                <p className="font-bold text-totc-navy">{reviewModalCourse.sections?.length || 0} Modules • {reviewModalCourse.lessonsCount} Lectures</p>
+                <span className="text-totc-gray">მოდულები / ლექციები:</span>
+                <p className="font-bold text-totc-navy">{reviewModalCourse.sections?.length || 0} მოდული • {reviewModalCourse.lessonsCount} ლექცია</p>
               </div>
             </div>
 
             {/* Description */}
             <div className="space-y-1">
-              <span className="text-xs font-bold text-totc-navy uppercase tracking-wider">Course Syllabus Description:</span>
+              <span className="text-xs font-bold text-totc-navy uppercase tracking-wider">კურსის სილაბუსის აღწერა:</span>
               <p className="text-xs text-totc-gray bg-slate-50 p-3.5 rounded-xl border border-gray-100 leading-relaxed">
                 {reviewModalCourse.description}
               </p>
@@ -1384,7 +1384,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             <div className="space-y-4">
               <h4 className="font-poppins font-bold text-sm text-totc-navy flex items-center gap-2">
                 <Video className="w-4 h-4 text-totc-teal" />
-                <span>Submitted Modules & Video Lectures:</span>
+                <span>წარმოდგენილი მოდულები და ვიდეო ლექციები:</span>
               </h4>
 
               {reviewModalCourse.sections && reviewModalCourse.sections.map((section, sIdx) => (
@@ -1397,7 +1397,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                       <span>{section.title}</span>
                     </span>
                     <span className="text-[10px] font-bold text-totc-gray">
-                      {section.lessons?.length || 0} Lessons
+                      {section.lessons?.length || 0} ლექცია
                     </span>
                   </div>
 
@@ -1409,15 +1409,15 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                             {lIdx + 1}. {lesson.title}
                           </span>
                           <span className="text-[10px] font-semibold text-totc-gray">
-                            ⏱️ {lesson.durationMinutes} mins {lesson.isFreePreview && '• 🎁 Free Preview'}
+                            ⏱️ {lesson.durationMinutes} წთ {lesson.isFreePreview && '• 🎁 უფასო ნახვა'}
                           </span>
                         </div>
                         <p className="text-[11px] font-mono text-totc-teal truncate">
-                          Stream URL: {lesson.videoUrl}
+                          სტრიმის ბმული: {lesson.videoUrl}
                         </p>
                         {lesson.contentText && (
                           <p className="text-[11px] text-totc-gray italic">
-                            Notes: {lesson.contentText}
+                            შენიშვნები: {lesson.contentText}
                           </p>
                         )}
                       </div>
@@ -1433,7 +1433,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 onClick={() => setReviewModalCourse(null)}
                 className="px-5 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-colors"
               >
-                Close Audit
+                დახურვა
               </button>
 
               <button
@@ -1443,7 +1443,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 className="px-5 py-2.5 rounded-full font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-200 flex items-center gap-1.5"
               >
                 <XCircle className="w-4 h-4" />
-                <span>Reject & Request Changes</span>
+                <span>უარყოფა და ცვლილებების მოთხოვნა</span>
               </button>
 
               <button
@@ -1451,7 +1451,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 className="px-6 py-2.5 rounded-full font-bold text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
-                <span>Approve & Publish Live to Catalog</span>
+                <span>დამტკიცება და გამოქვეყნება</span>
               </button>
             </div>
 
@@ -1466,7 +1466,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             <div className="flex items-center justify-between">
               <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-red-600" />
-                <span>Request Curriculum Changes</span>
+                <span>პროგრამაში ცვლილებების მოთხოვნა</span>
               </h3>
               <button onClick={() => setRejectDialogCourse(null)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-4 h-4" />
@@ -1474,12 +1474,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             </div>
 
             <p className="text-xs text-totc-gray">
-              Provide constructive feedback for instructor <strong className="text-totc-navy">{rejectDialogCourse.instructorName}</strong> on course <strong>"{rejectDialogCourse.title}"</strong>:
+              მიუთითეთ კონსტრუქციული უკუკავშირი ინსტრუქტორისთვის <strong className="text-totc-navy">{rejectDialogCourse.instructorName}</strong> კურსზე <strong>„{rejectDialogCourse.title}“</strong>:
             </p>
 
             <textarea
               rows={4}
-              placeholder="e.g., Please add video lessons with at least 720p resolution and provide code downloads for Module 2..."
+              placeholder="მაგ: გთხოვთ ატვირთოთ მინიმუმ 720p ხარისხის ვიდეო ლექციები და დაამატოთ კოდის ფაილები მეორე მოდულში..."
               value={rejectionFeedback}
               onChange={(e) => setRejectionFeedback(e.target.value)}
               className="w-full p-3 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-red-500"
@@ -1490,14 +1490,14 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 onClick={() => setRejectDialogCourse(null)}
                 className="px-4 py-2 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200"
               >
-                Cancel
+                გაუქმება
               </button>
 
               <button
                 onClick={handleConfirmReject}
                 className="px-5 py-2 rounded-full font-bold text-xs bg-red-600 text-white hover:bg-red-700 transition-colors"
               >
-                Send Feedback & Reject
+                გაგზავნა და უარყოფა
               </button>
             </div>
           </div>

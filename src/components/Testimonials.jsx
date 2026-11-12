@@ -4,23 +4,23 @@ import { ArrowRight, ChevronRight, ChevronLeft, Star } from 'lucide-react';
 export default function Testimonials({ openAssessmentModal }) {
   const testimonials = [
     {
-      quote: "Thank you so much for your help. It's exactly what I've been looking for. You won't regret it. It really saves me time and effort. TOTC is exactly what our business has been lacking.",
-      author: "Gloria Rose",
-      reviews: "12 reviews at Yelp",
+      quote: "დიდი მადლობა დახმარებისთვის. ზუსტად ის არის, რასაც ვეძებდი. საოცრად ზოგავს დროსა და ძალისხმევას. TOTC იდეალურად მოერგო ჩვენს სასწავლო პროცესს.",
+      author: "გლორია როუზი",
+      reviews: "12 შეფასება Yelp-ზე",
       rating: 5,
       image: "/assets/testimonial_avatar.png"
     },
     {
-      quote: "TOTC completely transformed how our university manages live digital seminars. The interaction between professors and students feels natural, responsive, and seamless.",
-      author: "David Vance",
-      reviews: "28 reviews at Trustpilot",
+      quote: "TOTC-მ სრულიად შეცვალა ჩვენი უნივერსიტეტის ციფრული სემინარების მართვა. ლექტორებსა და სტუდენტებს შორის კომუნიკაცია ბუნებრივი და შეუფერხებელია.",
+      author: "დავით ვანსი",
+      reviews: "28 შეფასება Trustpilot-ზე",
       rating: 5,
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80"
     },
     {
-      quote: "The gradebook and interactive quiz integration are unmatched. My students look forward to live assessments, and grading takes half the time it used to.",
-      author: "Elena Rostova",
-      reviews: "19 reviews at EdTech Digest",
+      quote: "შეფასების ჟურნალი და ინტერაქტიული ტესტები შეუდარებელია. ჩემი სტუდენტები მოუთმენლად ელიან ქვიზებს, ხოლო შეფასებას ნახევარი დრო სჭირდება.",
+      author: "ელენა როსტოვა",
+      reviews: "19 შეფასება EdTech Digest-ზე",
       rating: 5,
       image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80"
     }
@@ -48,23 +48,23 @@ export default function Testimonials({ openAssessmentModal }) {
             <div className="flex items-center justify-center lg:justify-start gap-4">
               <span className="w-16 h-0.5 bg-totc-purple inline-block" />
               <span className="font-poppins font-medium text-totc-purple text-base sm:text-lg tracking-widest uppercase">
-                TESTIMONIAL
+                შეფასებები
               </span>
             </div>
 
             <h2 className="font-poppins font-bold text-4xl sm:text-5xl text-totc-purple leading-tight tracking-tight">
-              What They Say?
+              რას ამბობენ ჩვენზე?
             </h2>
 
             <div className="space-y-4 text-totc-gray text-base sm:text-lg leading-relaxed max-w-lg mx-auto lg:mx-0">
               <p>
-                TOTC has got more than 100k positive ratings from our users around the world.
+                TOTC-ს უკვე 100,000-ზე მეტი დადებითი შეფასება აქვს მთელი მსოფლიოდან.
               </p>
               <p>
-                Some of the students and teachers were greatly helped by the Skilline.
+                ათასობით სტუდენტმა და ლექტორმა გააუმჯობესა სასწავლო გამოცდილება ჩვენი პლატფორმით.
               </p>
               <p>
-                Are you too? Please give your assessment
+                გაგვიზიარეთ თქვენი შთაბეჭდილებაც!
               </p>
             </div>
 
@@ -73,7 +73,7 @@ export default function Testimonials({ openAssessmentModal }) {
                 onClick={openAssessmentModal}
                 className="group inline-flex items-center gap-4 px-8 py-4 rounded-full border border-totc-teal text-totc-teal hover:bg-totc-teal hover:text-white transition-all duration-300 font-medium text-base sm:text-lg shadow-sm hover:shadow-md"
               >
-                <span>Write your assessment</span>
+                <span>დაწერეთ შეფასება</span>
                 <div className="w-8 h-8 rounded-full border border-totc-teal flex items-center justify-center group-hover:border-white transition-colors">
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>

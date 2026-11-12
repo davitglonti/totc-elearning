@@ -93,12 +93,12 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
             instructorAvatar: c.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
             rating: c.averageRating || 5.0,
             reviews: c.reviewsCount || 0,
-            hours: `${Math.round(c.totalDurationMinutes / 60) || 15} hrs`,
+            hours: `${Math.round(c.totalDurationMinutes / 60) || 15} სთ`,
             students: `${c.studentsCount || 0}`,
-            price: `$${c.price}`,
-            oldPrice: `$${Math.round(c.price * 1.3)}`,
+            price: `₾${c.price}`,
+            oldPrice: `₾${Math.round(c.price * 1.3)}`,
             image: c.thumbnailUrl || '/assets/explore_row_1.png',
-            badge: c.price > 400 ? 'Bestseller' : 'Featured'
+            badge: c.price > 400 ? 'ბესტსელერი' : 'რჩეული'
           }));
           setCoursesList(mapped);
         } else if (isMounted) {
@@ -143,13 +143,13 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
         <div className="bg-totc-teal rounded-[32px] p-8 sm:p-14 text-white relative overflow-hidden mb-16 shadow-xl">
           <div className="max-w-2xl space-y-4 z-10 relative">
             <span className="px-4 py-1.5 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider">
-              Course Catalog
+              კურსების კატალოგი
             </span>
             <h1 className="font-poppins font-bold text-3xl sm:text-5xl leading-tight">
-              Explore Our Comprehensive Online Classes
+              აღმოაჩინეთ ჩვენი ონლაინ კურსები
             </h1>
             <p className="text-white/80 text-base sm:text-lg">
-              Learn in live interactive sessions with certified instructors, real-time gradebooks, and collaborative virtual podiums.
+              ისწავლეთ ინტერაქტიულ გარემოში სერტიფიცირებულ ინსტრუქტორებთან ერთად, რეალური პროექტებითა და ტესტებით.
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by topic, skill, or instructor name..."
+              placeholder="მოძებნეთ სასურველი კურსი, თემა ან ინსტრუქტორი..."
               className="w-full pl-14 pr-6 py-4 rounded-full bg-white text-totc-navy placeholder-gray-400 focus:outline-none shadow-lg text-base"
             />
           </div>
@@ -180,7 +180,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
                   : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-100 border border-gray-200'
               }`}
             >
-              {cat}
+              {cat === 'All' ? 'ყველა' : cat}
             </button>
           ))}
         </div>
@@ -221,7 +221,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
                       <Star className="w-4 h-4 fill-[#F48C06]" />
                     </div>
                     <span className="font-bold text-totc-navy">{c.rating}</span>
-                    <span>({c.reviews} ratings)</span>
+                    <span>({c.reviews} შეფასება)</span>
                   </div>
 
                   <h3 className="font-poppins font-semibold text-xl text-totc-navy group-hover:text-totc-teal transition-colors leading-snug line-clamp-2">
@@ -254,7 +254,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
                 </div>
 
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-totc-teal group-hover:translate-x-1 transition-transform">
-                  Enroll Now <ArrowRight className="w-4 h-4" />
+                  კურსის ნახვა <ArrowRight className="w-4 h-4" />
                 </span>
               </div>
             </div>

@@ -60,10 +60,10 @@ export default function InstructorProfilePage({
             email: instructor?.email || instructor?.instructorEmail || 'lina@totc.com',
             role: 'Instructor',
             avatarUrl: instructor?.avatarUrl || instructor?.instructorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-            headline: instructor?.headline || 'Principal Cloud Architect & Senior EdTech Consultant',
-            bio: instructor?.bio || 'Passionate educator and technologist with over a decade of hands-on experience designing modern distributed systems, cloud architectures, and scalable interactive curriculum.',
-            education: instructor?.education || 'M.S. in Computer Science - Stanford University (2014) • AWS Authorized Instructor Champion',
-            experience: instructor?.experience || '12+ years in cloud architecture and enterprise software engineering. Mentored 45,000+ students globally.',
+            headline: instructor?.headline || 'მთავარი ქლაუდ არქიტექტორი და EdTech კონსულტანტი',
+            bio: instructor?.bio || 'გამოცდილი ლექტორი და ტექნოლოგი 10+ წლიანი პრაქტიკული გამოცდილებით განაწილებული სისტემების, ქლაუდ არქიტექტურისა და ინტერაქტიული სასწავლო პროგრამების შექმნაში.',
+            education: instructor?.education || 'კომპიუტერული მეცნიერებების მაგისტრი - სტენფორდის უნივერსიტეტი (2014) • AWS სერტიფიცირებული ინსტრუქტორი',
+            experience: instructor?.experience || '12+ წელი ქლაუდ არქიტექტურასა და პროგრამულ ინჟინერიაში. 45,000+ მენტორებული სტუდენტი მსოფლიოს მასშტაბით.',
             website: instructor?.website || 'https://totc.edu',
             createdAt: new Date().toISOString(),
             coursesCount: 2,
@@ -99,7 +99,7 @@ export default function InstructorProfilePage({
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-totc-teal border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="font-poppins font-medium text-totc-gray text-sm">
-            Loading Instructor Profile & Curriculum...
+            იტვირთება ინსტრუქტორის პროფილი და კურსები...
           </p>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function InstructorProfilePage({
             className="flex items-center gap-2 text-sm font-semibold text-totc-gray hover:text-totc-teal transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to All Courses (ყველა კურსი)</span>
+            <span>ყველა კურსზე დაბრუნება</span>
           </button>
 
           {isSelf && (
@@ -127,7 +127,7 @@ export default function InstructorProfilePage({
               className="px-4 py-2 rounded-full bg-purple-100 text-purple-700 font-bold text-xs hover:bg-purple-200 transition-colors flex items-center gap-1.5 shadow-sm"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Go to Your Instructor Studio</span>
+              <span>ინსტრუქტორის სტუდიაში გადასვლა</span>
             </button>
           )}
         </div>
@@ -158,7 +158,7 @@ export default function InstructorProfilePage({
                   />
                   <span
                     className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-[11px] font-bold shadow"
-                    title="Active Instructor"
+                    title="აქტიური ინსტრუქტორი"
                   >
                     ✓
                   </span>
@@ -171,17 +171,17 @@ export default function InstructorProfilePage({
                     </h1>
                     <span className="px-3 py-1 rounded-full bg-totc-teal/10 text-totc-teal font-bold text-xs inline-flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Verified Instructor</span>
+                      <span>ვერიფიცირებული ინსტრუქტორი</span>
                     </span>
                     {isSelf && (
                       <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
-                        (You)
+                        (თქვენ)
                       </span>
                     )}
                   </div>
 
                   <p className="font-poppins text-sm sm:text-base text-totc-gray font-medium">
-                    {p.headline || 'Principal Lecturer & Curriculum Architect'}
+                    {p.headline || 'მთავარი ლექტორი და კურიკულუმის არქიტექტორი'}
                   </p>
 
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-totc-gray pt-1">
@@ -197,12 +197,12 @@ export default function InstructorProfilePage({
                         className="flex items-center gap-1.5 text-totc-teal hover:underline font-semibold"
                       >
                         <Globe className="w-3.5 h-3.5" />
-                        <span>Personal Website</span>
+                        <span>პირადი ვებსაიტი</span>
                       </a>
                     )}
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                      <span>Joined TOTC community</span>
+                      <span>TOTC-ის საზოგადოების წევრი</span>
                     </div>
                   </div>
                 </div>
@@ -217,25 +217,25 @@ export default function InstructorProfilePage({
                       className="w-full sm:w-auto px-6 py-3 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>+ Create New Course</span>
+                      <span>+ ახალი კურსის შექმნა</span>
                     </button>
                     <button
                       onClick={() => setActivePage('instructor-dashboard')}
                       className="w-full sm:w-auto px-6 py-3 rounded-full bg-gray-100 hover:bg-gray-200 text-totc-navy font-bold text-sm transition-all"
                     >
-                      Studio Console
+                      სტუდიის პანელი
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={() => {
-                      const subject = encodeURIComponent(`Inquiry for TOTC Instructor ${p.fullName}`);
+                      const subject = encodeURIComponent(`შეკითხვა TOTC ინსტრუქტორთან: ${p.fullName}`);
                       window.location.href = `mailto:${p.email}?subject=${subject}`;
                     }}
                     className="w-full sm:w-auto px-7 py-3 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"
                   >
                     <Mail className="w-4 h-4" />
-                    <span>Contact Instructor</span>
+                    <span>ინსტრუქტორთან დაკავშირება</span>
                   </button>
                 )}
               </div>
@@ -247,7 +247,7 @@ export default function InstructorProfilePage({
               <div className="p-4 rounded-2xl bg-slate-50 border border-gray-100 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-totc-teal mb-1">
                   <BookOpen className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">Total Courses</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">სულ კურსი</span>
                 </div>
                 <p className="font-poppins font-black text-2xl text-totc-navy">
                   {p.coursesCount || p.authoredCourses?.length || 0}
@@ -257,7 +257,7 @@ export default function InstructorProfilePage({
               <div className="p-4 rounded-2xl bg-slate-50 border border-gray-100 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-cyan-600 mb-1">
                   <User className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">Students Enrolled</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">ჩარიცხული სტუდენტი</span>
                 </div>
                 <p className="font-poppins font-black text-2xl text-totc-navy">
                   {(p.studentsCount || 0).toLocaleString()}
@@ -267,7 +267,7 @@ export default function InstructorProfilePage({
               <div className="p-4 rounded-2xl bg-slate-50 border border-gray-100 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-amber-500 mb-1">
                   <Star className="w-4 h-4 fill-amber-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">Instructor Rating</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">რეიტინგი</span>
                 </div>
                 <p className="font-poppins font-black text-2xl text-totc-navy">
                   {p.averageRating ? p.averageRating.toFixed(1) : '5.0'}
@@ -277,7 +277,7 @@ export default function InstructorProfilePage({
               <div className="p-4 rounded-2xl bg-slate-50 border border-gray-100 text-center sm:text-left">
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-purple-600 mb-1">
                   <Award className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">Student Reviews</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-totc-gray">შეფასებები</span>
                 </div>
                 <p className="font-poppins font-black text-2xl text-totc-navy">
                   {p.reviewsCount || 0}
@@ -302,7 +302,7 @@ export default function InstructorProfilePage({
                 : 'text-totc-gray hover:text-totc-navy'
             }`}
           >
-            <span>Courses by {p.fullName?.split(' ')[0]} ({p.authoredCourses?.length || p.coursesCount || 0})</span>
+            <span>კურსები ({p.authoredCourses?.length || p.coursesCount || 0})</span>
             {activeTab === 'courses' && (
               <span className="absolute bottom-0 left-0 right-0 h-1 bg-totc-teal rounded-full" />
             )}
@@ -316,7 +316,7 @@ export default function InstructorProfilePage({
                 : 'text-totc-gray hover:text-totc-navy'
             }`}
           >
-            <span>About & Background (ბიოგრაფია)</span>
+            <span>ბიოგრაფია</span>
             {activeTab === 'bio' && (
               <span className="absolute bottom-0 left-0 right-0 h-1 bg-totc-teal rounded-full" />
             )}
@@ -330,7 +330,7 @@ export default function InstructorProfilePage({
                 : 'text-totc-gray hover:text-totc-navy'
             }`}
           >
-            <span>Education & Qualifications (განათლება და გამოცდილება)</span>
+            <span>განათლება და გამოცდილება</span>
             {activeTab === 'experience' && (
               <span className="absolute bottom-0 left-0 right-0 h-1 bg-totc-teal rounded-full" />
             )}
@@ -348,19 +348,19 @@ export default function InstructorProfilePage({
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                    Published Courses & Curriculum
+                    გამოქვეყნებული კურსები და სასწავლო პროგრამა
                   </h3>
                   <span className="text-xs font-semibold text-totc-gray">
-                    Showing all courses authored by this lecturer
+                    ამ ლექტორის ყველა საავტორო კურსი
                   </span>
                 </div>
 
                 {(!p.authoredCourses || p.authoredCourses.length === 0) ? (
                   <div className="p-10 rounded-2xl bg-white border border-gray-100 text-center space-y-3">
                     <BookOpen className="w-12 h-12 text-gray-300 mx-auto" />
-                    <h4 className="font-bold text-totc-navy text-lg">No Published Courses Yet</h4>
+                    <h4 className="font-bold text-totc-navy text-lg">გამოქვეყნებული კურსები ჯერ არ არის</h4>
                     <p className="text-sm text-totc-gray max-w-md mx-auto">
-                      This instructor is currently working on curriculum and video lectures. Check back soon!
+                      ინსტრუქტორი ამჟამად მუშაობს სასწავლო პროგრამასა და ვიდეო ლექციებზე. ეწვიეთ მოგვიანებით!
                     </p>
                   </div>
                 ) : (
@@ -387,12 +387,12 @@ export default function InstructorProfilePage({
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
 
                             <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-totc-navy font-bold text-xs shadow-sm">
-                              {c.categoryName || 'Development'}
+                              {c.categoryName || 'პროგრამირება'}
                             </span>
 
                             <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md text-white text-[11px] font-semibold flex items-center gap-1">
                               <Clock className="w-3 h-3 text-totc-teal" />
-                              <span>{c.totalDurationMinutes || 45} mins</span>
+                              <span>{c.totalDurationMinutes || 45} წთ</span>
                             </span>
                           </div>
 
@@ -400,7 +400,7 @@ export default function InstructorProfilePage({
                           <div className="p-5 space-y-2.5">
                             <div className="flex items-center justify-between text-xs text-totc-gray">
                               <span className="font-semibold uppercase tracking-wider text-totc-teal">
-                                {c.level || 'Beginner'}
+                                {c.level || 'დამწყები'}
                               </span>
                               <div className="flex items-center gap-1 text-totc-orange font-bold">
                                 <Star className="w-3.5 h-3.5 fill-totc-orange" />
@@ -420,7 +420,7 @@ export default function InstructorProfilePage({
                             </h4>
 
                             <p className="text-xs text-totc-gray line-clamp-2 leading-relaxed">
-                              {c.description || 'Comprehensive step-by-step masterclass with interactive video lectures and quizzes.'}
+                              {c.description || 'სრული ნაბიჯ-ნაბიჯ მასტერკლასი ინტერაქტიული ვიდეო ლექციებითა და ტესტებით.'}
                             </p>
                           </div>
                         </div>
@@ -428,7 +428,7 @@ export default function InstructorProfilePage({
                         {/* Card Footer */}
                         <div className="p-5 pt-0 flex items-center justify-between border-t border-gray-50 mt-2">
                           <span className="font-poppins font-black text-lg text-totc-teal">
-                            {c.price ? (String(c.price).startsWith('$') ? c.price : `$${c.price}`) : 'Free'}
+                            {c.price ? `₾${String(c.price).replace('$', '')}` : 'უფასო'}
                           </span>
 
                           <button
@@ -438,7 +438,7 @@ export default function InstructorProfilePage({
                             }}
                             className="px-4 py-2 rounded-full bg-totc-teal-light text-totc-teal hover:bg-totc-teal hover:text-white font-bold text-xs transition-colors flex items-center gap-1"
                           >
-                            <span>Explore Course</span>
+                            <span>კურსის ნახვა</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -458,26 +458,26 @@ export default function InstructorProfilePage({
                   </div>
                   <div>
                     <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                      About {p.fullName} (ბიოგრაფია)
+                      {p.fullName} — ბიოგრაფია
                     </h3>
-                    <p className="text-xs text-totc-gray">Professional biography and educational philosophy</p>
+                    <p className="text-xs text-totc-gray">პროფესიული ბიოგრაფია და სწავლების ფილოსოფია</p>
                   </div>
                 </div>
 
                 <div className="prose max-w-none text-totc-navy/90 text-sm leading-relaxed space-y-4">
                   <p className="text-base font-medium text-totc-gray">
-                    {p.bio || 'Passionate educator committed to creating high-yield, engaging learning experiences.'}
+                    {p.bio || 'გამოცდილი ლექტორი, რომელიც ორიენტირებულია შედეგიანი და საინტერესო სასწავლო გამოცდილების შექმნაზე.'}
                   </p>
 
                   <div className="p-5 rounded-2xl bg-teal-50/60 border border-teal-100 text-teal-900 text-sm italic">
-                    "My mission at TOTC is to break down complex architectural and creative concepts into structured, hands-on masterclasses that give students real-world superpowers."
+                    „ჩემი მისიაა TOTC-ზე რთული არქიტექტურული და შემოქმედებითი კონცეფციების დაშლა სტრუქტურირებულ, პრაქტიკულ მასტერკლასებად.“
                   </div>
 
-                  <h4 className="font-bold text-base text-totc-navy pt-2">Teaching Methodology & Approach</h4>
+                  <h4 className="font-bold text-base text-totc-navy pt-2">სწავლების მეთოდოლოგია და მიდგომა</h4>
                   <ul className="list-disc pl-5 space-y-2 text-totc-gray">
-                    <li><strong className="text-totc-navy">Hands-on Problem Solving:</strong> Every lecture is paired with downloadable source files, assignments, and knowledge-check quizzes.</li>
-                    <li><strong className="text-totc-navy">Sequential Mastery:</strong> Curricula are structured progressively so each lesson builds upon solid foundations.</li>
-                    <li><strong className="text-totc-navy">Direct Lecturer Support:</strong> Students get real-time answers and insights during coursework.</li>
+                    <li><strong className="text-totc-navy">პრაქტიკული ამოცანები:</strong> ყოველი ლექცია მოიცავს ჩამოსატვირთ ფაილებს, დავალებებს და ცოდნის შესამოწმებელ ტესტებს.</li>
+                    <li><strong className="text-totc-navy">თანმიმდევრული სწავლება:</strong> პროგრამა აგებულია ეტაპობრივად, რათა ყოველი შემდეგი გაკვეთილი ეფუძნებოდეს მყარ საფუძვლებს.</li>
+                    <li><strong className="text-totc-navy">ლექტორის მხარდაჭერა:</strong> სტუდენტები იღებენ პასუხებსა და რჩევებს სწავლის პროცესში.</li>
                   </ul>
                 </div>
               </div>
@@ -495,18 +495,18 @@ export default function InstructorProfilePage({
                     </div>
                     <div>
                       <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                        Education & Academic Background (განათლება)
+                        განათლება და აკადემიური ხარისხი
                       </h3>
-                      <p className="text-xs text-totc-gray">Degrees, universities, and academic credentials</p>
+                      <p className="text-xs text-totc-gray">დიპლომები, უნივერსიტეტები და აკადემიური კვალიფიკაცია</p>
                     </div>
                   </div>
 
                   <div className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-2">
                     <p className="font-bold text-indigo-950 text-base">
-                      {p.education || 'Master of Science in Computer Science & Applied Information Systems'}
+                      {p.education || 'კომპიუტერული მეცნიერებებისა და გამოყენებითი ინფორმაციული სისტემების მაგისტრი'}
                     </p>
                     <p className="text-xs text-indigo-800 leading-relaxed">
-                      Rigorous academic foundation focused on distributed systems, human-computer interaction, and modern educational methodologies.
+                      მყარი აკადემიური ბაზა განაწილებული სისტემების, ადამიანი-კომპიუტერის ურთიერთქმედებისა და თანამედროვე სწავლების მეთოდების მიმართულებით.
                     </p>
                   </div>
                 </div>
@@ -519,18 +519,18 @@ export default function InstructorProfilePage({
                     </div>
                     <div>
                       <h3 className="font-poppins font-bold text-xl text-totc-navy">
-                        Professional Experience & Milestones (გამოცდილება)
+                        პროფესიული გამოცდილება და მიღწევები
                       </h3>
-                      <p className="text-xs text-totc-gray">Industry roles, leadership, and teaching track record</p>
+                      <p className="text-xs text-totc-gray">ინდუსტრიული როლები, ლიდერობა და სწავლების გამოცდილება</p>
                     </div>
                   </div>
 
                   <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100 space-y-2">
                     <p className="font-bold text-purple-950 text-base">
-                      {p.experience || '10+ years leading cross-functional engineering teams, authoring technical curricula, and mentoring students.'}
+                      {p.experience || '10+ წლიანი გამოცდილება საინჟინრო გუნდების ხელმძღვანელობასა და ტექნიკური კურიკულუმების შექმნაში.'}
                     </p>
                     <p className="text-xs text-purple-800 leading-relaxed">
-                      Proven track record collaborating with international companies and building scalable digital products.
+                      საერთაშორისო კომპანიებთან თანამშრომლობისა და მასშტაბური ციფრული პროდუქტების შექმნის მრავალწლიანი გამოცდილება.
                     </p>
                   </div>
                 </div>
@@ -546,22 +546,22 @@ export default function InstructorProfilePage({
             {/* Instructor Summary Card */}
             <div className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm space-y-5">
               <h4 className="font-poppins font-bold text-base text-totc-navy">
-                Instructor Credentials
+                ინსტრუქტორის კვალიფიკაცია
               </h4>
 
               <div className="space-y-3.5 text-xs">
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-totc-gray flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    <span>Identity Verification</span>
+                    <span>პირადობის ვერიფიკაცია</span>
                   </span>
-                  <span className="font-bold text-emerald-600">Verified ID</span>
+                  <span className="font-bold text-emerald-600">დადასტურებულია</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-totc-gray flex items-center gap-1.5">
                     <Video className="w-4 h-4 text-totc-teal" />
-                    <span>Bunny CDN Video Quality</span>
+                    <span>Bunny CDN ვიდეო ხარისხი</span>
                   </span>
                   <span className="font-bold text-totc-navy">1080p Ultra HD</span>
                 </div>
@@ -569,15 +569,15 @@ export default function InstructorProfilePage({
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-totc-gray flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-purple-500" />
-                    <span>Course Quizzes & Labs</span>
+                    <span>ტესტები და პრაქტიკა</span>
                   </span>
-                  <span className="font-bold text-totc-navy">Included</span>
+                  <span className="font-bold text-totc-navy">ჩართულია</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                   <span className="text-totc-gray flex items-center gap-1.5">
                     <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-                    <span>Avg Satisfaction</span>
+                    <span>საშუალო შეფასება</span>
                   </span>
                   <span className="font-bold text-totc-navy">{p.averageRating ? `${p.averageRating.toFixed(1)} / 5.0` : '5.0 / 5.0'}</span>
                 </div>
@@ -597,7 +597,7 @@ export default function InstructorProfilePage({
                   className="w-full py-3 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>Explore Featured Course</span>
+                  <span>რჩეული კურსის ნახვა</span>
                 </button>
               </div>
             </div>
@@ -607,9 +607,9 @@ export default function InstructorProfilePage({
               <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-amber-400" />
               </div>
-              <h5 className="font-bold text-sm">Official TOTC Instructor</h5>
+              <h5 className="font-bold text-sm">TOTC-ის ოფიციალური ინსტრუქტორი</h5>
               <p className="text-xs text-white/70 leading-relaxed">
-                All lectures by verified instructors comply with TOTC quality standards, high-definition streaming, and curriculum peer review.
+                ვერიფიცირებული ინსტრუქტორების ყველა ლექცია აკმაყოფილებს TOTC-ის ხარისხის სტანდარტებს, მაღალი გარჩევადობის სტრიმინგსა და პროგრამის შემოწმებას.
               </p>
             </div>
 

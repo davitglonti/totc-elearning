@@ -9,24 +9,24 @@ export default function LatestNews({ setActivePage }) {
   const sideNews = [
     {
       thumb: '/assets/news_thumb_1.png',
-      tag: 'PRESS RELEASE',
+      tag: 'პრეს-რელიზი',
       tagColor: 'bg-totc-teal',
-      title: 'Class Technologies Inc. Closes $30 Million Series A Financing to Meet High Demand',
-      desc: 'Class Technologies Inc., the company that created Class, announced today that it has raised $30 million in Series A funding...',
+      title: 'Class Technologies Inc.-მა $30 მილიონიანი ინვესტიცია მოიზიდა მზარდი მოთხოვნის დასაკმაყოფილებლად',
+      desc: 'საგანმანათლებლო ტექნოლოგიების კომპანიამ დღეს გამოაცხადა $30 მილიონიანი Series A დაფინანსების შესახებ...',
     },
     {
       thumb: '/assets/news_thumb_2.png',
-      tag: 'NEWS',
+      tag: 'სიახლეები',
       tagColor: 'bg-totc-cyan',
-      title: "Zoom's earliest investors are betting millions on a better Zoom for schools",
-      desc: 'Zoom was created to be a consumer product. Nonetheless, its adoption across schools and academic campuses exploded...',
+      title: 'ინვესტორები მილიონებს დებენ სკოლებისა და უნივერსიტეტებისთვის ადაპტირებულ ვირტუალურ კლასებში',
+      desc: 'ონლაინ სწავლების პლატფორმების გამოყენება სკოლებსა და აკადემიურ კამპუსებში რეკორდულად გაიზარდა...',
     },
     {
       thumb: '/assets/news_thumb_3.png',
-      tag: 'NEWS',
+      tag: 'სიახლეები',
       tagColor: 'bg-totc-teal',
-      title: 'Former Blackboard CEO Raises $16M to Bring LMS Features to Zoom Classrooms',
-      desc: 'This year, investors have made big financial returns from betting on virtual classroom technologies and distance education...',
+      title: 'LMS ფუნქციონალის გაფართოება თანამედროვე დისტანციური განათლებისთვის',
+      desc: 'წელს ტექნოლოგიურმა ინვესტიციებმა ვირტუალურ საკლასო ოთახებსა და ინტერაქტიულ სწავლებაში მნიშვნელოვანი ზრდა აჩვენა...',
     },
   ];
 
@@ -37,10 +37,10 @@ export default function LatestNews({ setActivePage }) {
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16 md:mb-20">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            Lastest News and Resources
+            ბოლო სიახლეები და რესურსები
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-            See the developments that have occurred to TOTC in the world
+            გაეცანით TOTC-ის განვითარებას და სიახლეებს საგანმანათლებლო ტექნოლოგიებში
           </p>
         </div>
 
@@ -56,27 +56,27 @@ export default function LatestNews({ setActivePage }) {
               <div className="rounded-[20px] overflow-hidden mb-6">
                 <img
                   src="/assets/news_laptop.png"
-                  alt="Class edtech solution on laptop"
+                  alt="საგანმანათლებლო ტექნოლოგია"
                   className="w-full h-[280px] sm:h-[340px] object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
 
               <span className="inline-block px-5 py-1.5 rounded-full bg-totc-teal text-white font-medium text-xs tracking-wider uppercase mb-4">
-                NEWS
+                სიახლეები
               </span>
 
               <h3 className="font-poppins font-semibold text-2xl sm:text-3xl text-totc-navy group-hover:text-totc-teal transition-colors leading-snug mb-4">
-                Class adds $30 million to its balance sheet for a Zoom-friendly edtech solution
+                ინტერაქტიული ონლაინ განათლების ახალი ეტაპი TOTC პლატფორმაზე
               </h3>
 
               <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed mb-6">
-                Class, launched less than a year ago by Blackboard co-founder Michael Chasen, integrates exclusively into Zoom to transform remote education with attendance, rosters, and live quizzes.
+                თანამედროვე სასწავლო ინსტრუმენტები აერთიანებს დასწრების კონტროლს, ვიდეო გაკვეთილებსა და ინტერაქტიულ ტესტებს ერთ სივრცეში.
               </p>
             </div>
 
             <div>
               <span className="font-poppins font-medium text-totc-gray underline underline-offset-4 group-hover:text-totc-teal transition-colors">
-                Read more
+                ვრცლად
               </span>
             </div>
           </div>

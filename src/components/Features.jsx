@@ -20,10 +20,10 @@ export default function Features({ openAuthModal }) {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-20 md:mb-32">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            Our <span className="text-totc-mint">Features</span>
+            ჩვენი <span className="text-totc-mint">შესაძლებლობები</span>
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-            This very extraordinary feature, can make learning activities more efficient
+            უნიკალური ფუნქციონალი, რომელიც სასწავლო პროცესს ბევრად უფრო ეფექტურს ხდის
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default function Features({ openAuthModal }) {
             <div className="relative w-full max-w-2xl group transition-transform duration-300 hover:scale-[1.01]">
               <img
                 src="/assets/card_classroom_ui.png"
-                alt="Classroom user interface"
+                alt="საკლასო ინტერფეისი"
                 className="w-full h-auto drop-shadow-2xl select-none"
               />
             </div>
@@ -43,7 +43,7 @@ export default function Features({ openAuthModal }) {
           {/* Text Right */}
           <div className="lg:col-span-5 space-y-8">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              A <span className="text-totc-mint">user interface</span> designed for the classroom
+              საკლასო ოთახზე მორგებული <span className="text-totc-mint">ინტერფეისი</span>
             </h3>
 
             <div className="space-y-6">
@@ -52,7 +52,7 @@ export default function Features({ openAuthModal }) {
                   <LayoutGrid className="w-5 h-5 text-totc-purple" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  Teachers don’t get lost in the grid view and have a dedicated Podium space.
+                  ლექტორებს აქვთ გამოყოფილი პოდიუმის სივრცე და მარტივი ნავიგაცია.
                 </p>
               </div>
 
@@ -61,7 +61,7 @@ export default function Features({ openAuthModal }) {
                   <Users className="w-5 h-5 text-totc-orange" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  TA’s and presenters can be moved to the front of the class.
+                  ასისტენტებსა და პრეზენტატორებს მარტივად შეუძლიათ აუდიტორიის წინ გამოსვლა.
                 </p>
               </div>
 
@@ -70,7 +70,7 @@ export default function Features({ openAuthModal }) {
                   <Eye className="w-5 h-5 text-totc-cyan" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  Teachers can easily see all students and class data at one time.
+                  ინსტრუქტორებს შეუძლიათ ერთდროულად აკონტროლონ ყველა სტუდენტი და პროგრესი.
                 </p>
               </div>
             </div>
@@ -82,10 +82,10 @@ export default function Features({ openAuthModal }) {
           {/* Text Left */}
           <div className="lg:col-span-6 lg:order-1 order-2 space-y-6">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              <span className="text-totc-mint">Tools</span> For Teachers And Learners
+              <span className="text-totc-mint">ინსტრუმენტები</span> ლექტორებისა და სტუდენტებისთვის
             </h3>
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-              Class has a dynamic set of teaching tools built to be deployed and used during class. Teachers can handout assignments in real-time for students to complete and submit.
+              სისტემა გთავაზობთ სასწავლო ინსტრუმენტების დინამიურ ნაკრებს. ინსტრუქტორებს შეუძლიათ რეალურ დროში გასცენ დავალებები სტუდენტებისთვის შესასრულებლად.
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export default function Features({ openAuthModal }) {
             <div className="relative w-full max-w-xl group transition-transform duration-300 hover:scale-[1.01]">
               <img
                 src="/assets/card_tools_girl.png"
-                alt="Tools for teachers and learners"
+                alt="სასწავლო ინსტრუმენტები"
                 className="w-full h-auto drop-shadow-2xl select-none"
               />
             </div>
@@ -108,7 +108,7 @@ export default function Features({ openAuthModal }) {
             <div className="relative w-full max-w-xl group transition-transform duration-300 hover:scale-[1.01]">
               <img
                 src="/assets/card_quiz.png"
-                alt="Assessments, Quizzes, Tests"
+                alt="შეფასება და ტესტები"
                 className="w-full h-auto drop-shadow-2xl select-none"
               />
             </div>
@@ -117,10 +117,10 @@ export default function Features({ openAuthModal }) {
           {/* Text Right */}
           <div className="lg:col-span-6 space-y-6">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              Assessments, <span className="text-totc-mint">Quizzes</span>, Tests
+              შეფასებები, <span className="text-totc-mint">ქვიზები</span> და გამოცდები
             </h3>
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-              Easily launch live assignments, quizzes, and tests. Student results are automatically entered in the online gradebook.
+              მარტივად გაუშვით დავალებები, ქვიზები და ტესტები. სტუდენტების შედეგები ავტომატურად აისახება ონლაინ ჟურნალში.
             </p>
           </div>
         </div>
@@ -130,10 +130,10 @@ export default function Features({ openAuthModal }) {
           {/* Text Left */}
           <div className="lg:col-span-5 lg:order-1 order-2 space-y-6">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              <span className="text-totc-mint">Class Management</span> Tools for Educators
+              <span className="text-totc-mint">კურსის მართვის</span> ინსტრუმენტები
             </h3>
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-              Class provides tools to help run and manage the class such as Class Roster, Attendance, and more. With the Gradebook, teachers can review and grade tests and quizzes in real-time.
+              პლატფორმა უზრუნველყოფს სტუდენტების სიის, დასწრების და ჟურნალის მართვას. ინსტრუქტორებს შეუძლიათ შედეგების შეფასება რეალურ დროში.
             </p>
           </div>
 
@@ -142,7 +142,7 @@ export default function Features({ openAuthModal }) {
             <div className="relative w-full max-w-2xl group transition-transform duration-300 hover:scale-[1.01]">
               <img
                 src="/assets/card_gradebook.png"
-                alt="Gradebook class management tool"
+                alt="შეფასების ჟურნალი"
                 className="w-full h-auto drop-shadow-2xl select-none"
               />
             </div>
@@ -156,7 +156,7 @@ export default function Features({ openAuthModal }) {
             <div className="relative w-full max-w-xl group transition-transform duration-300 hover:scale-[1.01]">
               <img
                 src="/assets/card_private_discussion.png"
-                alt="One-on-One Discussions"
+                alt="ინდივიდუალური კონსულტაციები"
                 className="w-full h-auto drop-shadow-2xl select-none"
               />
             </div>
@@ -165,10 +165,10 @@ export default function Features({ openAuthModal }) {
           {/* Text Right */}
           <div className="lg:col-span-6 space-y-6">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              <span className="text-totc-mint">One-on-One</span> Discussions
+              <span className="text-totc-mint">პირადი</span> დისკუსიები
             </h3>
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-              Teachers and teacher assistants can talk with students privately without leaving the Zoom environment.
+              ლექტორებსა და ასისტენტებს შეუძლიათ სტუდენტებთან ინდივიდუალურად გასაუბრება საკლასო სივრციდან გაუსვლელად.
             </p>
           </div>
         </div>
@@ -179,7 +179,7 @@ export default function Features({ openAuthModal }) {
             onClick={() => openAuthModal('register')}
             className="px-10 py-4 rounded-full font-medium text-lg text-totc-teal border-2 border-totc-teal hover:bg-totc-teal hover:text-white transition-all duration-300 active:scale-95 shadow-sm hover:shadow-md"
           >
-            See more features
+            მეტი შესაძლებლობის ნახვა
           </button>
         </div>
 

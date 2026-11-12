@@ -14,14 +14,14 @@ export default function PhysicalClassroom({ openVideoModal }) {
               <div className="absolute -top-4 -left-6 w-16 h-16 rounded-full bg-totc-mint/20 -z-10 blur-md" />
               
               <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple leading-[1.25] tracking-tight">
-                Everything you can do in a{' '}
-                <span className="text-totc-mint">physical classroom,</span>{' '}
-                <span className="text-totc-mint">you can do with TOTC</span>
+                ყველაფერი, რაც{' '}
+                <span className="text-totc-mint">ფიზიკურ აუდიტორიაშია შესაძლებელი,</span>{' '}
+                <span className="text-totc-mint">ხელმისაწვდომია TOTC-ში</span>
               </h2>
             </div>
 
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed">
-              TOTC’s school management software helps traditional and online schools manage scheduling, attendance, payments and virtual classrooms all in one secure cloud-based system.
+              TOTC-ის სასწავლო მართვის სისტემა ეხმარება ტრადიციულ და ონლაინ სკოლებს მართონ განრიგი, დასწრება, გადახდები და ვირტუალური გაკვეთილები ერთ დაცულ ღრუბლოვან სისტემაში.
             </p>
 
             <div className="pt-2">
@@ -29,7 +29,7 @@ export default function PhysicalClassroom({ openVideoModal }) {
                 onClick={openVideoModal}
                 className="inline-flex items-center text-totc-gray font-normal text-lg sm:text-xl underline underline-offset-8 decoration-totc-mint hover:text-totc-purple transition-colors"
               >
-                Learn more
+                გაიგეთ მეტი
               </button>
             </div>
           </div>

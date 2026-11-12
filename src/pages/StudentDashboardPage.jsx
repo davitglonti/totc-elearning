@@ -21,7 +21,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
         setCourses(myCourses || []);
       } catch (err) {
         console.warn('Could not load enrolled courses from API:', err.message);
-        setError('Failed to sync with live courses server. Showing offline state.');
+        setError('სერვერთან დაკავშირება ვერ მოხერხდა. ნაჩვენებია ოფლაინ მონაცემები.');
       } finally {
         setLoading(false);
       }
@@ -69,21 +69,21 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-totc-teal-light text-totc-teal text-xs font-bold tracking-wide uppercase">
                 <Sparkles className="w-3.5 h-3.5" />
-                Student Learning Space
+                სტუდენტის სასწავლო სივრცე
               </div>
 
               {currentUser?.isSubscribed && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black tracking-wide uppercase shadow-sm border border-amber-200">
-                  <span>⭐ {currentUser.subscriptionPlan || 'PRO'} ALL-ACCESS ACTIVE</span>
+                  <span>⭐ {currentUser.subscriptionPlan || 'PRO'} სრული წვდომა აქტიურია</span>
                 </div>
               )}
             </div>
 
             <h1 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-navy">
-              Welcome back, {currentUser?.fullName || 'Student'}! 👋
+              გამარჯობა, {currentUser?.fullName || 'სტუდენტო'}! 👋
             </h1>
             <p className="font-poppins text-totc-gray text-base">
-              Pick up where you left off and achieve your learning milestones today.
+              განაგრძეთ სწავლა იქიდან, სადაც გაჩერდით და მიაღწიეთ ახალ შედეგებს.
             </p>
           </div>
 
@@ -93,13 +93,13 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               className="px-6 py-3 rounded-full font-semibold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-sm hover:shadow flex items-center gap-2"
             >
               <Compass className="w-4 h-4" />
-              Explore Catalog
+              კურსების კატალოგი
             </button>
             <button
               onClick={() => setActivePage('membership')}
               className="px-6 py-3 rounded-full font-semibold text-sm bg-white border border-gray-200 text-totc-navy hover:bg-gray-50 transition-all shadow-sm"
             >
-              Upgrade to Pro
+              Pro პაკეტზე გადასვლა
             </button>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Enrolled Courses</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">ჩემი კურსები</p>
               <h3 className="font-poppins font-bold text-2xl text-totc-navy">{totalEnrolled}</h3>
             </div>
           </div>
@@ -121,8 +121,8 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               <Clock className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Hours Learned</p>
-              <h3 className="font-poppins font-bold text-2xl text-totc-navy">{estimatedHours} hrs</h3>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">ნასწავლი საათები</p>
+              <h3 className="font-poppins font-bold text-2xl text-totc-navy">{estimatedHours} სთ</h3>
             </div>
           </div>
 
@@ -131,7 +131,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               <CheckCircle className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Completed Lessons</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">გავლილი ლექციები</p>
               <h3 className="font-poppins font-bold text-2xl text-totc-navy">{totalCompletedLessons}</h3>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               <Award className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">Certificates</p>
+              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სერტიფიკატები</p>
               <h3 className="font-poppins font-bold text-2xl text-totc-navy">{completedCount}</h3>
             </div>
           </div>
@@ -153,19 +153,19 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
             <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="space-y-3 max-w-2xl">
                 <span className="px-3.5 py-1 rounded-full bg-white/20 text-white text-xs font-semibold uppercase tracking-wider">
-                  Resume Where You Left Off
+                  სწავლის გაგრძელება
                 </span>
                 <h2 className="font-poppins font-bold text-2xl sm:text-3xl text-white">
                   {continueCourse.title}
                 </h2>
                 <p className="text-white/80 text-sm sm:text-base">
-                  Instructor: <span className="font-semibold text-white">{continueCourse.instructorName}</span> • {continueCourse.completedLessonsCount || 0} of {continueCourse.totalLessonsCount || 10} lectures completed
+                  ინსტრუქტორი: <span className="font-semibold text-white">{continueCourse.instructorName}</span> • დასრულებულია {continueCourse.completedLessonsCount || 0} / {continueCourse.totalLessonsCount || 10} ლექცია
                 </p>
 
                 {/* Progress bar */}
                 <div className="space-y-1.5 pt-2">
                   <div className="flex items-center justify-between text-xs text-white/90 font-medium">
-                    <span>Course Progress</span>
+                    <span>კურსის პროგრესი</span>
                     <span className="font-bold text-totc-cyan">{continueCourse.progressPercentage || 0}%</span>
                   </div>
                   <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
@@ -184,7 +184,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Play className="w-4 h-4 fill-white text-white ml-0.5" />
                 </div>
-                <span>Continue Learning</span>
+                <span>გაგრძელება</span>
               </button>
             </div>
 
@@ -207,7 +207,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     : 'text-totc-gray hover:text-totc-navy'
                 }`}
               >
-                All Courses ({courses.length})
+                ყველა კურსი ({courses.length})
               </button>
               <button
                 onClick={() => setActiveTab('in-progress')}
@@ -217,7 +217,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     : 'text-totc-gray hover:text-totc-navy'
                 }`}
               >
-                In Progress ({inProgressCount})
+                მიმდინარე ({inProgressCount})
               </button>
               <button
                 onClick={() => setActiveTab('completed')}
@@ -227,7 +227,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     : 'text-totc-gray hover:text-totc-navy'
                 }`}
               >
-                Completed ({completedCount})
+                დასრულებული ({completedCount})
               </button>
             </div>
 
@@ -236,7 +236,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
               <Search className="w-4 h-4 text-totc-gray absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search my courses..."
+                placeholder="მოძებნეთ ჩემს კურსებში..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-11 pr-4 py-2.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-totc-navy focus:outline-none focus:border-totc-teal focus:bg-white transition-colors"
@@ -249,7 +249,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
         {loading ? (
           <div className="py-20 text-center space-y-4">
             <div className="w-10 h-10 border-4 border-totc-teal border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-totc-gray text-sm">Loading your personal learning curriculum...</p>
+            <p className="text-totc-gray text-sm">იტვირთება თქვენი სასწავლო პროგრამა...</p>
           </div>
         ) : filteredCourses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -268,12 +268,12 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                   {course.isCompleted ? (
                     <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-emerald-500 text-white font-bold text-xs shadow-md flex items-center gap-1">
                       <CheckCircle className="w-3.5 h-3.5" />
-                      Completed
+                      დასრულებულია
                     </div>
                   ) : course.isProAccess ? (
                     <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-amber-500 text-white font-bold text-[11px] shadow-md flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      Pro Unlocked
+                      Pro წვდომა
                     </div>
                   ) : null}
                 </div>
@@ -282,7 +282,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                 <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-totc-teal uppercase tracking-wider">
-                      Instructor: {course.instructorName}
+                      ინსტრუქტორი: {course.instructorName}
                     </p>
                     <h3 className="font-poppins font-bold text-lg text-totc-navy line-clamp-2 leading-snug group-hover:text-totc-teal transition-colors">
                       {course.title}
@@ -292,7 +292,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                   {/* Progress & Lessons Info */}
                   <div className="space-y-2 pt-2 border-t border-gray-50">
                     <div className="flex items-center justify-between text-xs text-totc-gray font-medium">
-                      <span>{course.completedLessonsCount || 0} / {course.totalLessonsCount || 10} Lessons</span>
+                      <span>{course.completedLessonsCount || 0} / {course.totalLessonsCount || 10} ლექცია</span>
                       <span className="font-bold text-totc-navy">{course.progressPercentage || 0}%</span>
                     </div>
                     <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -311,7 +311,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     className="w-full py-3 rounded-full font-semibold text-sm bg-totc-teal-light text-totc-teal hover:bg-totc-teal hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
                   >
                     <Play className="w-4 h-4 fill-current ml-0.5" />
-                    <span>{course.progressPercentage === 100 ? 'Review Course' : 'Continue Learning'}</span>
+                    <span>{course.progressPercentage === 100 ? 'კურსის გადახედვა' : 'სწავლის გაგრძელება'}</span>
                   </button>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
 
             <div className="space-y-2">
               <h3 className="font-poppins font-bold text-2xl text-totc-navy">
-                თქვენ ჯერ არ გაქვთ კურსები (No Enrolled Courses Yet)
+                თქვენ ჯერ არ გაქვთ კურსები
               </h3>
               <p className="font-poppins text-totc-gray text-base max-w-md mx-auto">
                 გაეცანით ჩვენს კატალოგს, აირჩიეთ სასურველი მიმართულება და დაიწყეთ სწავლა დღესვე!
@@ -339,7 +339,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full font-bold text-sm bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 <Compass className="w-4 h-4" />
-                <span>Explore Courses</span>
+                <span>კურსების დათვალიერება</span>
               </button>
 
               <button
@@ -347,7 +347,7 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full font-bold text-sm bg-totc-orange text-white hover:bg-[#e07f04] transition-all shadow-md flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Upgrade to Pro Plan</span>
+                <span>Pro გამოწერაზე გადასვლა</span>
               </button>
             </div>
           </div>
