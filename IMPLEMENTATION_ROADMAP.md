@@ -387,13 +387,13 @@ The following table provides the exhaustive engineering work breakdown structure
 | **TSK-008** | Phase 1 | Domain | Create `Certificate`, `PromoCode`, `QuizAttempt` domain models | P1 | @backend | TSK-007 | 1.0 | **COMPLETED ✅** |
 | **TSK-009** | Phase 1 | Database | Implement `ISoftDeletable`, `IAuditableEntity` & EF interceptor | P1 | @database | TSK-007 | 1.0 | **COMPLETED ✅** |
 | **TSK-010** | Phase 1 | Database | Add unique index on `TransactionId` & composite performance indexes | P1 | @database | TSK-007 | 0.5 | **COMPLETED ✅** |
-| **TSK-011** | Phase 2 | Backend | Decouple `InstructorCoursesController` from DbContext | P1 | @backend | TSK-008 | 1.5 | Pending |
-| **TSK-012** | Phase 2 | Backend | Decouple `AdminController` & `SubscriptionsController` from DbContext | P1 | @backend | TSK-011 | 1.0 | Pending |
-| **TSK-013** | Phase 2 | Backend | Integrate Stripe Checkout sessions and HMAC webhook verification | P0 | @backend | TSK-003 | 2.0 | Pending |
-| **TSK-014** | Phase 2 | Backend | Implement Bunny Stream signed video token generation | P1 | @security | TSK-001 | 1.0 | Pending |
-| **TSK-015** | Phase 2 | Backend | Implement server-side quiz grading, attempt limits & 1h cooldown | P1 | @backend | TSK-008 | 1.5 | Pending |
-| **TSK-016** | Phase 2 | Backend | Implement `ICertificateService` PDF generation and verification hash | P2 | @backend | TSK-008 | 1.5 | Pending |
-| **TSK-017** | Phase 2 | Security | Mandate Google OAuth Audience check & add RateLimiter middleware | P1 | @security | None | 1.0 | Pending |
+| **TSK-011** | Phase 2 | Backend | Decouple `InstructorCoursesController` from DbContext | P1 | @backend | TSK-008 | 1.5 | **COMPLETED ✅** |
+| **TSK-012** | Phase 2 | Backend | Decouple `AdminController` & `SubscriptionsController` from DbContext | P1 | @backend | TSK-011 | 1.0 | **COMPLETED ✅** |
+| **TSK-013** | Phase 2 | Backend | Integrate Stripe Checkout sessions and HMAC webhook verification | P0 | @backend | TSK-003 | 2.0 | **COMPLETED ✅** |
+| **TSK-014** | Phase 2 | Backend | Implement Bunny Stream signed video token generation | P1 | @security | TSK-001 | 1.0 | **COMPLETED ✅** |
+| **TSK-015** | Phase 2 | Backend | Implement server-side quiz grading, attempt limits & 1h cooldown | P1 | @backend | TSK-008 | 1.5 | **COMPLETED ✅** |
+| **TSK-016** | Phase 2 | Backend | Implement `ICertificateService` PDF generation and verification hash | P2 | @backend | TSK-008 | 1.5 | **COMPLETED ✅** |
+| **TSK-017** | Phase 2 | Security | Mandate Google OAuth Audience check & add RateLimiter middleware | P1 | @security | None | 1.0 | **COMPLETED ✅** |
 | **TSK-018** | Phase 3 | Frontend | Implement React route code splitting and lazy loading in `App.jsx` | P1 | @frontend | None | 1.0 | Pending |
 | **TSK-019** | Phase 3 | Frontend | Decompose `CoursePlayerPage.jsx` into modular child components | P2 | @frontend | None | 2.0 | Pending |
 | **TSK-020** | Phase 3 | Frontend | Connect real Stripe checkout session redirect and success callback | P0 | @frontend | TSK-013 | 1.5 | Pending |
