@@ -21,6 +21,8 @@ public class CourseService : ICourseService
     public async Task<PagedResult<CourseDto>> GetCoursesAsync(CourseFilterParams filter)
     {
         var query = _context.Courses
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(c => c.Category)
             .Include(c => c.Instructor)
             .Include(c => c.Sections).ThenInclude(s => s.Lessons)
@@ -89,6 +91,8 @@ public class CourseService : ICourseService
     public async Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId, string? currentUserEmail = null)
     {
         var course = await _context.Courses
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(c => c.Category)
             .Include(c => c.Instructor)
             .Include(c => c.Sections.OrderBy(s => s.OrderIndex))
@@ -167,6 +171,7 @@ public class CourseService : ICourseService
     public async Task<List<CategoryDto>> GetCategoriesAsync()
     {
         return await _context.Categories
+            .AsNoTracking()
             .Select(c => new CategoryDto
             {
                 Id = c.Id,
@@ -189,7 +194,8 @@ public class CourseService : ICourseService
             Level = dto.Level,
             CategoryId = dto.CategoryId,
             InstructorId = instructorId,
-            IsPublished = true
+            ApprovalStatus = "PendingApproval",
+            IsPublished = false
         };
 
         _context.Courses.Add(course);

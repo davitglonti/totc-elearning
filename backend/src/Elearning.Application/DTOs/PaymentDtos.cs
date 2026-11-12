@@ -46,3 +46,10 @@ public class SubscribeResponseDto
     public UserProfileDto User { get; set; } = null!;
     public int UnlockedCoursesCount { get; set; }
 }
+
+public class SubscriptionStatusDto
+{
+    public bool IsSubscribed { get; set; }
+    public string Plan { get; set; } = "None";
+    public DateTime? ExpiresAt { get; set; }
+}

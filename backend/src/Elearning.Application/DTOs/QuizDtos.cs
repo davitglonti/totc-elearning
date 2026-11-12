@@ -37,6 +37,9 @@ public class QuizSubmitResultDto
     public bool Passed { get; set; }
     public string FeedbackMessage { get; set; } = string.Empty;
     public List<QuestionFeedbackDto> QuestionFeedbacks { get; set; } = new();
+    public int AttemptsCount { get; set; }
+    public bool IsInCooldown { get; set; }
+    public int RemainingCooldownSeconds { get; set; }
 }
 
 public class QuestionFeedbackDto

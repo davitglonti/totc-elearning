@@ -13,11 +13,23 @@ public class BunnyUploadResult
     public string? Message { get; set; }
 }
 
+public class SignedVideoPlaybackDto
+{
+    public string VideoId { get; set; } = string.Empty;
+    public string EmbedUrl { get; set; } = string.Empty;
+    public string HlsUrl { get; set; } = string.Empty;
+    public string DirectPlayUrl { get; set; } = string.Empty;
+    public long ExpiresAt { get; set; }
+    public string Token { get; set; } = string.Empty;
+    public int TtlSeconds { get; set; } = 7200;
+}
+
 public class BunnyConfigDto
 {
     public string LibraryId { get; set; } = "805955";
     public string ApiKey { get; set; } = string.Empty;
     public string CdnHostname { get; set; } = "vz-f0959c15-d92.b-cdn.net";
+    public string TokenSecurityKey { get; set; } = string.Empty;
 }
 
 public interface IBunnyStreamService
@@ -26,4 +38,5 @@ public interface IBunnyStreamService
     void UpdateConfig(BunnyConfigDto config);
     Task<(bool Success, string Message, int TotalVideos)> TestConnectionAsync();
     Task<BunnyUploadResult> UploadVideoAsync(Stream fileStream, string fileName, string? videoTitle = null);
+    SignedVideoPlaybackDto GenerateSignedPlayback(string videoId, int ttlSeconds = 7200);
 }

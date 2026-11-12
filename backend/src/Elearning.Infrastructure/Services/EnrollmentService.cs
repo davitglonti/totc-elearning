@@ -189,10 +189,52 @@ public class EnrollmentService : IEnrollmentService
             throw new KeyNotFoundException("Lesson not found.");
 
         var courseId = lesson.Section!.CourseId;
+
+        // Auto-enroll active Pro subscriber if not explicitly enrolled
+        var user = await _context.Users.FindAsync(userId);
+        var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
         var isEnrolled = await _context.Enrollments.AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
+
+        if (!isEnrolled && isSubscribed)
+        {
+            _context.Enrollments.Add(new Enrollment
+            {
+                UserId = userId,
+                CourseId = courseId,
+                EnrolledAt = DateTime.UtcNow,
+                IsCompleted = false
+            });
+            await _context.SaveChangesAsync();
+            isEnrolled = true;
+        }
+
         if (!isEnrolled && !lesson.IsFreePreview)
         {
             throw new UnauthorizedAccessException("You must be enrolled in the course to complete lessons.");
+        }
+
+        // Enforce Sequential Lesson Progression: all prior lessons in curriculum order must be completed first
+        if (dto.MarkAsComplete)
+        {
+            var courseLessons = await _context.Lessons
+                .Where(l => l.Section!.CourseId == courseId)
+                .OrderBy(l => l.Section!.OrderIndex)
+                .ThenBy(l => l.OrderIndex)
+                .Select(l => l.Id)
+                .ToListAsync();
+
+            var currentLessonIndex = courseLessons.IndexOf(lessonId);
+            if (currentLessonIndex > 0)
+            {
+                var priorLessonIds = courseLessons.Take(currentLessonIndex).ToList();
+                var completedPriorCount = await _context.LessonProgresses
+                    .CountAsync(lp => lp.UserId == userId && lp.IsCompleted && priorLessonIds.Contains(lp.LessonId));
+
+                if (completedPriorCount < priorLessonIds.Count)
+                {
+                    throw new InvalidOperationException("Sequential lesson progression enforced. You must complete preceding lessons before completing this lesson.");
+                }
+            }
         }
 
         var progress = await _context.LessonProgresses.FirstOrDefaultAsync(lp => lp.LessonId == lessonId && lp.UserId == userId);
@@ -218,7 +260,7 @@ public class EnrollmentService : IEnrollmentService
             }
         }
 
-        // Check if all lessons are now complete to mark enrollment completed
+        // Check if all lessons are now complete to mark enrollment completed and issue Certificate
         if (isEnrolled && dto.MarkAsComplete)
         {
             var allLessonIds = await _context.Lessons
@@ -236,6 +278,26 @@ public class EnrollmentService : IEnrollmentService
                 {
                     enrollment.IsCompleted = true;
                     enrollment.CompletedAt = DateTime.UtcNow;
+                }
+
+                // Automatically generate Certificate upon 100% course completion
+                var certExists = await _context.Certificates.AnyAsync(c => c.UserId == userId && c.CourseId == courseId);
+                if (!certExists)
+                {
+                    var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
+                    var rawHash = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";
+                    var hashBytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawHash));
+                    var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
+
+                    _context.Certificates.Add(new Certificate
+                    {
+                        UserId = userId,
+                        CourseId = courseId,
+                        CertificateNumber = serialNumber,
+                        VerificationHash = verificationHash,
+                        IssuedAt = DateTime.UtcNow,
+                        PdfUrl = $"/api/certificates/{serialNumber}/download"
+                    });
                 }
             }
         }

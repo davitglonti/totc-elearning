@@ -1,12 +1,15 @@
 using Elearning.Application.DTOs;
 using Elearning.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Elearning.API.Controllers;
 
 /// <summary>
 /// Endpoints for student and instructor registration, JWT login, and Google sign-in.
+/// Protected against brute-force and credential stuffing via rate limiting.
 /// </summary>
+[EnableRateLimiting("auth-policy")]
 public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;

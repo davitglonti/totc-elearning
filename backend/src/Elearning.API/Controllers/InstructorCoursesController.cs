@@ -314,6 +314,7 @@ public class InstructorCoursesController : BaseApiController
     /// </summary>
     [HttpPut("courses/{id:guid}/toggle-publish")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> TogglePublish(Guid id)
     {
         if (!CurrentUserId.HasValue) return Unauthorized();
@@ -324,6 +325,15 @@ public class InstructorCoursesController : BaseApiController
         if (!IsAdmin && course.InstructorId != CurrentUserId.Value)
             return Forbid();
 
+        // Enforce moderation approval guard: instructors cannot publish unapproved or rejected courses
+        if (!course.IsPublished && !IsAdmin && course.ApprovalStatus != "Approved")
+        {
+            return BadRequest(new 
+            { 
+                message = $"Course cannot be published until approved by an administrator. Current status: '{course.ApprovalStatus}'." 
+            });
+        }
+
         course.IsPublished = !course.IsPublished;
         await _context.SaveChangesAsync();
 
@@ -331,7 +341,7 @@ public class InstructorCoursesController : BaseApiController
     }
 
     /// <summary>
-    /// Delete course authored by the instructor.
+    /// Soft delete course authored by the instructor.
     /// </summary>
     [HttpDelete("courses/{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -339,18 +349,15 @@ public class InstructorCoursesController : BaseApiController
     {
         if (!CurrentUserId.HasValue) return Unauthorized();
 
-        var course = await _context.Courses
-            .Include(c => c.Sections)
-                .ThenInclude(s => s.Lessons)
-            .Include(c => c.Enrollments)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
+        var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == id);
         if (course == null) return NotFound(new { message = "Course not found." });
 
         if (!IsAdmin && course.InstructorId != CurrentUserId.Value)
             return Forbid();
 
-        _context.Courses.Remove(course);
+        // Soft delete to protect relational consistency with existing orders and progress
+        course.IsDeleted = true;
+        course.DeletedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "Course deleted successfully." });

@@ -28,10 +28,12 @@ public class BunnyStreamService : IBunnyStreamService
         var libId = _configuration["BunnyStream:LibraryId"];
         var key = _configuration["BunnyStream:ApiKey"];
         var cdn = _configuration["BunnyStream:CdnHostname"];
+        var tokenKey = _configuration["BunnyStream:TokenSecurityKey"] ?? _configuration["BunnyStream:TokenKey"];
 
         if (!string.IsNullOrWhiteSpace(libId)) _activeConfig.LibraryId = libId.Trim();
         if (!string.IsNullOrWhiteSpace(key)) _activeConfig.ApiKey = key.Trim();
         if (!string.IsNullOrWhiteSpace(cdn)) _activeConfig.CdnHostname = cdn.Trim();
+        if (!string.IsNullOrWhiteSpace(tokenKey)) _activeConfig.TokenSecurityKey = tokenKey.Trim();
 
         if (string.IsNullOrWhiteSpace(_activeConfig.ApiKey) || string.IsNullOrWhiteSpace(_activeConfig.LibraryId))
         {
@@ -53,7 +55,8 @@ public class BunnyStreamService : IBunnyStreamService
         {
             LibraryId = _activeConfig.LibraryId,
             ApiKey = _activeConfig.ApiKey,
-            CdnHostname = _activeConfig.CdnHostname
+            CdnHostname = _activeConfig.CdnHostname,
+            TokenSecurityKey = _activeConfig.TokenSecurityKey
         };
     }
 
@@ -67,6 +70,57 @@ public class BunnyStreamService : IBunnyStreamService
 
         if (!string.IsNullOrWhiteSpace(config.CdnHostname))
             _activeConfig.CdnHostname = config.CdnHostname.Trim().Replace("https://", "").Replace("http://", "").TrimEnd('/');
+
+        if (!string.IsNullOrWhiteSpace(config.TokenSecurityKey))
+            _activeConfig.TokenSecurityKey = config.TokenSecurityKey.Trim();
+    }
+
+    public SignedVideoPlaybackDto GenerateSignedPlayback(string videoId, int ttlSeconds = 7200)
+    {
+        var config = _activeConfig;
+        var cdnHost = string.IsNullOrWhiteSpace(config.CdnHostname) 
+            ? "vz-f0959c15-d92.b-cdn.net" 
+            : config.CdnHostname.Trim().Replace("https://", "").Replace("http://", "").TrimEnd('/');
+            
+        var tokenKey = !string.IsNullOrWhiteSpace(config.TokenSecurityKey)
+            ? config.TokenSecurityKey
+            : (!string.IsNullOrWhiteSpace(config.ApiKey) ? config.ApiKey : "totc_bunny_drm_token_sec_2026");
+
+        var safeTtl = Math.Max(60, ttlSeconds);
+        var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + safeTtl;
+
+        // Standard Bunny Stream Token Authentication: SHA256(tokenKey + videoId + expires) in lowercase hex
+        var rawToHash = $"{tokenKey}{videoId}{expires}";
+        var hashBytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(rawToHash));
+        var token = Convert.ToHexString(hashBytes).ToLowerInvariant();
+
+        // Check if videoId is a local uploaded path or GUID
+        var isLocal = videoId.StartsWith("/uploads/") || videoId.StartsWith("uploads/");
+        if (isLocal)
+        {
+            var localPath = videoId.StartsWith("/") ? videoId : $"/{videoId}";
+            return new SignedVideoPlaybackDto
+            {
+                VideoId = videoId,
+                EmbedUrl = $"{localPath}?token={token}&expires={expires}",
+                HlsUrl = $"{localPath}?token={token}&expires={expires}",
+                DirectPlayUrl = $"{localPath}?token={token}&expires={expires}",
+                ExpiresAt = expires,
+                Token = token,
+                TtlSeconds = safeTtl
+            };
+        }
+
+        return new SignedVideoPlaybackDto
+        {
+            VideoId = videoId,
+            EmbedUrl = $"https://iframe.mediadelivery.net/embed/{config.LibraryId}/{videoId}?token={token}&expires={expires}",
+            HlsUrl = $"https://{cdnHost}/{videoId}/playlist.m3u8?token={token}&expires={expires}",
+            DirectPlayUrl = $"https://{cdnHost}/{videoId}/play_720p.mp4?token={token}&expires={expires}",
+            ExpiresAt = expires,
+            Token = token,
+            TtlSeconds = safeTtl
+        };
     }
 
     public async Task<(bool Success, string Message, int TotalVideos)> TestConnectionAsync()

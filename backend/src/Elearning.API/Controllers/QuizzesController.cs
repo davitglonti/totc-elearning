@@ -1,25 +1,21 @@
 using Elearning.Application.DTOs;
 using Elearning.Application.Interfaces;
-using Elearning.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Elearning.API.Controllers;
 
 /// <summary>
-/// Endpoints for interactive lesson quizzes and knowledge check assessments.
+/// Endpoints for interactive lesson quizzes and knowledge check assessments with anti-cheat cooldowns.
 /// </summary>
 [Authorize]
 public class QuizzesController : BaseApiController
 {
-    private readonly ElearningDbContext _context;
-    private readonly IEnrollmentService _enrollmentService;
+    private readonly IQuizService _quizService;
 
-    public QuizzesController(ElearningDbContext context, IEnrollmentService enrollmentService)
+    public QuizzesController(IQuizService quizService)
     {
-        _context = context;
-        _enrollmentService = enrollmentService;
+        _quizService = quizService;
     }
 
     /// <summary>
@@ -27,105 +23,64 @@ public class QuizzesController : BaseApiController
     /// </summary>
     [HttpGet("lesson/{lessonId:guid}")]
     [ProducesResponseType(typeof(QuizDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetQuizByLessonId(Guid lessonId)
     {
-        var quiz = await _context.Quizzes
-            .Include(q => q.Questions.OrderBy(qu => qu.OrderIndex))
-                .ThenInclude(qu => qu.Options)
-            .FirstOrDefaultAsync(q => q.LessonId == lessonId);
+        if (!CurrentUserId.HasValue) return Unauthorized();
 
-        if (quiz == null)
-            return NotFound(new { message = "No quiz configured for this lesson." });
-
-        var dto = new QuizDto
+        try
         {
-            Id = quiz.Id,
-            LessonId = quiz.LessonId,
-            Title = quiz.Title,
-            Description = quiz.Description,
-            PassingScorePercentage = quiz.PassingScorePercentage,
-            Questions = quiz.Questions.Select(qu => new QuizQuestionDto
-            {
-                Id = qu.Id,
-                QuestionText = qu.QuestionText,
-                OrderIndex = qu.OrderIndex,
-                Options = qu.Options.Select(o => new QuizOptionDto
-                {
-                    Id = o.Id,
-                    OptionText = o.OptionText
-                }).ToList()
-            }).ToList()
-        };
+            var quiz = await _quizService.GetQuizByLessonIdAsync(lessonId, CurrentUserId.Value);
+            if (quiz == null)
+                return NotFound(new { message = "No quiz configured for this lesson." });
 
-        return Ok(dto);
+            return Ok(quiz);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
     /// <summary>
-    /// Submit quiz answers for scoring and automatic lesson completion.
+    /// Submit quiz answers for scoring, attempt tracking, and automatic lecture completion.
+    /// Returns HTTP 429 Too Many Requests if student is locked under exam cooldown.
     /// </summary>
     [HttpPost("{quizId:guid}/submit")]
     [ProducesResponseType(typeof(QuizSubmitResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> SubmitQuiz(Guid quizId, [FromBody] QuizSubmitRequestDto dto)
     {
         if (!CurrentUserId.HasValue) return Unauthorized();
 
-        var quiz = await _context.Quizzes
-            .Include(q => q.Questions)
-                .ThenInclude(qu => qu.Options)
-            .FirstOrDefaultAsync(q => q.Id == quizId);
-
-        if (quiz == null)
-            return NotFound(new { message = "Quiz not found." });
-
-        var feedbacks = new List<QuestionFeedbackDto>();
-        int correctCount = 0;
-
-        foreach (var question in quiz.Questions)
+        try
         {
-            var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
-            dto.Answers.TryGetValue(question.Id, out var selectedOptionId);
-
-            bool isCorrect = correctOption != null && selectedOptionId == correctOption.Id;
-            if (isCorrect) correctCount++;
-
-            feedbacks.Add(new QuestionFeedbackDto
+            var result = await _quizService.SubmitQuizAsync(quizId, CurrentUserId.Value, dto);
+            return Ok(result);
+        }
+        catch (QuizCooldownException ex)
+        {
+            Response.Headers.Append("Retry-After", ex.RemainingCooldownSeconds.ToString());
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
             {
-                QuestionId = question.Id,
-                SelectedOptionId = selectedOptionId != Guid.Empty ? selectedOptionId : null,
-                CorrectOptionId = correctOption?.Id ?? Guid.Empty,
-                IsCorrect = isCorrect,
-                Explanation = question.Explanation
+                error = "CooldownActive",
+                message = ex.Message,
+                remainingSeconds = ex.RemainingCooldownSeconds,
+                retryAfter = ex.RemainingCooldownSeconds
             });
         }
-
-        int total = quiz.Questions.Count;
-        int scorePercentage = total > 0 ? (int)Math.Round((double)correctCount / total * 100) : 0;
-        bool passed = scorePercentage >= quiz.PassingScorePercentage;
-
-        // If the student passes the knowledge check, automatically complete the lesson in DB!
-        if (passed && quiz.LessonId.HasValue)
+        catch (UnauthorizedAccessException ex)
         {
-            await _enrollmentService.CompleteLessonAsync(quiz.LessonId.Value, CurrentUserId.Value, new CompleteLessonDto
-            {
-                MarkAsComplete = true,
-                LastWatchedPositionSeconds = 0
-            });
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
-
-        var result = new QuizSubmitResultDto
+        catch (KeyNotFoundException ex)
         {
-            TotalQuestions = total,
-            CorrectAnswersCount = correctCount,
-            ScorePercentage = scorePercentage,
-            Passed = passed,
-            FeedbackMessage = passed
-                ? $"🎉 Excellent work! You passed with {scorePercentage}% score and completed the lecture."
-                : $"You scored {scorePercentage}%. Minimum required is {quiz.PassingScorePercentage}%. Review the lecture and try again!",
-            QuestionFeedbacks = feedbacks
-        };
-
-        return Ok(result);
+            return NotFound(new { message = ex.Message });
+        }
     }
 }

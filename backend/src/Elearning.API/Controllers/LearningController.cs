@@ -52,6 +52,14 @@ public class LearningController : BaseApiController
             var result = await _enrollmentService.CompleteLessonAsync(lessonId, CurrentUserId.Value, dto);
             return Ok(new { success = result, message = "Lesson progress recorded successfully." });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
