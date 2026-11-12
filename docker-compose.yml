@@ -1,0 +1,63 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: totc-lms-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/elearning.db
+      - Jwt__Secret=totc_sec_prod_enterprise_jwt_key_minimum_64_characters_super_secret_2026
+      - Jwt__Issuer=TOTC-LMS
+      - Jwt__Audience=TOTC-Students
+      - Jwt__ExpiresInDays=7
+      - BunnyStream__LibraryId=805955
+      - BunnyStream__ApiKey=bny_sec_prod_simulated_key_2026
+      - BunnyStream__CdnHostname=vz-f0959c15-d92.b-cdn.net
+      - Payment__WebhookSecret=totc_whsec_prod_emergency_quarantine_2026
+      - Stripe__WebhookSecret=totc_whsec_prod_emergency_quarantine_2026
+    volumes:
+      - backend-data:/app/data
+      - backend-uploads:/app/wwwroot/uploads
+    networks:
+      - totc-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: totc-lms-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - totc-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  backend-data:
+    driver: local
+  backend-uploads:
+    driver: local
+
+networks:
+  totc-network:
+    driver: bridge

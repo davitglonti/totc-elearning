@@ -1,0 +1,56 @@
+name: Continuous Integration (CI)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test-and-scan:
+    name: Backend Build, Test & Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore NuGet Packages
+        run: dotnet restore backend/Elearning.sln
+
+      - name: Build Backend Solution (Release)
+        run: dotnet build backend/Elearning.sln --configuration Release --no-restore
+
+      - name: Run xUnit Test Suites
+        run: dotnet test backend/Elearning.sln --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+      - name: Vulnerable Package Audit
+        run: dotnet list backend/Elearning.sln package --vulnerable --include-transitive
+
+  frontend-build-and-audit:
+    name: Frontend Build & Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Verify Production Vite Build
+        run: npm run build
+
+      - name: Security Audit (NPM Audit)
+        run: npm audit --audit-level=high || true
