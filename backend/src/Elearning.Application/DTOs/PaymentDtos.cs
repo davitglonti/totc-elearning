@@ -29,6 +29,7 @@ public class SubscribeRequestDto
     public string Plan { get; set; } = "Pro"; // "Pro" or "Enterprise"
     public string BillingCycle { get; set; } = "monthly"; // "monthly" or "annual"
     public string? PaymentMethod { get; set; } = "card";
+    public string? PaymentSessionId { get; set; } // Verified paid checkout transaction ID
 }
 
 public class SubscribeResponseDto

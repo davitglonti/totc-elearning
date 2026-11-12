@@ -32,12 +32,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const [rejectDialogCourse, setRejectDialogCourse] = useState(null);
   const [rejectionFeedback, setRejectionFeedback] = useState('');
 
-  // Bunny Stream CDN settings
+  // Bunny Stream CDN settings (loaded securely from backend API)
   const [bunnyConfig, setBunnyConfig] = useState({
-    libraryId: '805955',
-    apiKey: 'be0cd974-98c2-41ce-8e4ba9b094b1-170d-4ae7',
-    cdnHostname: 'vz-f0959c15-d92.b-cdn.net',
-    pullZone: 'vz-f0959c15-d92'
+    libraryId: '',
+    apiKey: '',
+    cdnHostname: '',
+    pullZone: ''
   });
   const [showApiKey, setShowApiKey] = useState(false);
   const [testingBunny, setTestingBunny] = useState(false);
@@ -1188,7 +1188,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                     </div>
                     <input
                       type={showApiKey ? 'text' : 'password'}
-                      value={bunnyConfig.apiKey}
+                      value={bunnyConfig.apiKey || ''}
                       onChange={(e) => setBunnyConfig({ ...bunnyConfig, apiKey: e.target.value })}
                       placeholder="Paste API Key from dash.bunny.net"
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-mono text-totc-navy font-semibold"

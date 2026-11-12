@@ -1,6 +1,7 @@
 using Elearning.Application.DTOs;
 using Elearning.Application.Interfaces;
 using Elearning.Domain.Entities;
+using Elearning.Domain.Enums;
 using Elearning.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -245,13 +246,29 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<bool> EnrollUserAsync(Guid userId, Guid courseId)
     {
-        var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
-        if (!courseExists)
+        var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
+        if (course == null)
             throw new KeyNotFoundException("Course not found.");
 
         var alreadyEnrolled = await _context.Enrollments.AnyAsync(e => e.UserId == userId && e.CourseId == courseId);
         if (alreadyEnrolled)
             return true; // Already active
+
+        // If the course is paid (Price > 0), forbid direct enrollment unless user has active Pro subscription, is instructor/admin, or has a verified paid Order
+        if (course.Price > 0)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
+            var isInstructorOrAdmin = user != null && (user.Role == UserRole.Admin || course.InstructorId == user.Id);
+
+            var hasPaidOrder = _context.Orders.Local.Any(o => o.UserId == userId && o.CourseId == courseId && o.PaymentStatus == PaymentStatus.Paid)
+                || await _context.Orders.AnyAsync(o => o.UserId == userId && o.CourseId == courseId && o.PaymentStatus == PaymentStatus.Paid);
+
+            if (!isSubscribed && !isInstructorOrAdmin && !hasPaidOrder)
+            {
+                throw new UnauthorizedAccessException("This is a paid course. Enrollment requires an active Pro subscription or a completed paid order.");
+            }
+        }
 
         _context.Enrollments.Add(new Enrollment
         {

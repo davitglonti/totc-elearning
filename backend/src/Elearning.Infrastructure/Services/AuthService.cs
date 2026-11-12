@@ -120,6 +120,12 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Google authentication failed: Email address could not be verified from token payload.");
         }
 
+        // Enforce that the user's email is verified by Google to prevent unverified account takeover
+        if (!payload.EmailVerified)
+        {
+            throw new UnauthorizedAccessException("Google authentication failed: The email address is not verified by Google.");
+        }
+
         var verifiedEmail = payload.Email.Trim().ToLower();
         var verifiedFullName = !string.IsNullOrWhiteSpace(payload.Name) 
             ? payload.Name.Trim() 

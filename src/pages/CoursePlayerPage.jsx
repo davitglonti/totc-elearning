@@ -568,21 +568,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     }
   };
 
-  // Reset Cooldown for testing / instructor bypass
-  const handleResetCooldown = () => {
-    if (activeLesson) {
-      const cooldownKey = getCooldownStorageKey(activeLesson.id);
-      localStorage.removeItem(cooldownKey);
-    }
-    setCooldownRemainingSeconds(0);
-    setIsExamStarted(false);
-    setSelectedAnswers({});
-    setQuizResult(null);
-    setExamStrikes(0);
-    setExamTerminated(false);
-    setSuccessNotice('საგამოცდო ტაიმერი განულებულია.');
-    setTimeout(() => setSuccessNotice(''), 3000);
-  };
 
   // 1. Anti-Cheating: Tab Switching & Window Blur Monitoring
   useEffect(() => {
@@ -1296,15 +1281,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                           >
                             <BookOpen className="w-4 h-4" />
                             <span>📖 მასალების გადამეორება (Overview)</span>
-                          </button>
-
-                          <button
-                            onClick={handleResetCooldown}
-                            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5"
-                            title="ტესტირებისთვის ტაიმერის დაუყოვნებლივ განულება"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                            <span>⚡ ტაიმერის განულება (ტესტირებისთვის)</span>
                           </button>
                         </div>
                       </div>

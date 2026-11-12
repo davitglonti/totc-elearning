@@ -164,7 +164,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// 6. Global Exception Handler Middleware
+// 6. Global Exception Handler Middleware with RFC 7807 Problem Details and Stack Trace Masking
 app.Use(async (context, next) =>
 {
     try
@@ -173,11 +173,39 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[GLOBAL ERROR] {ex}");
-        context.Response.ContentType = "application/json";
+        var traceId = context.TraceIdentifier;
+        var logger = context.RequestServices.GetService<ILogger<Program>>();
+        logger?.LogError(ex, "[GLOBAL ERROR] An unhandled exception occurred. TraceId: {TraceId}", traceId);
+
+        context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        var errorResponse = new { error = ex.Message, details = ex.ToString() };
-        await context.Response.WriteAsJsonAsync(errorResponse);
+
+        if (app.Environment.IsDevelopment())
+        {
+            var devProblemDetails = new
+            {
+                type = "https://tools.ietf.org/html/rfc7807",
+                title = "An internal server error occurred.",
+                status = StatusCodes.Status500InternalServerError,
+                detail = ex.Message,
+                traceId = traceId,
+                exception = ex.GetType().Name,
+                stackTrace = ex.StackTrace
+            };
+            await context.Response.WriteAsJsonAsync(devProblemDetails);
+        }
+        else
+        {
+            var prodProblemDetails = new
+            {
+                type = "https://tools.ietf.org/html/rfc7807",
+                title = "An internal server error occurred.",
+                status = StatusCodes.Status500InternalServerError,
+                detail = "An unexpected error occurred while processing your request. Please contact support quoting your Trace ID.",
+                traceId = traceId
+            };
+            await context.Response.WriteAsJsonAsync(prodProblemDetails);
+        }
     }
 });
 

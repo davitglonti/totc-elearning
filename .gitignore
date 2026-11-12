@@ -32,13 +32,18 @@ backend/src/Elearning.API/wwwroot/uploads/*
 
 # Environment variables & local secrets
 .env
+.env.*
+*.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 appsettings.Local.json
+appsettings.*.Local.json
+appsettings.*.local.json
 backend/**/appsettings.Local.json
 backend/**/appsettings.*.local.json
+backend/**/appsettings.*.Local.json
 *.local.json
 
 # Logs

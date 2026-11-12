@@ -3,7 +3,7 @@
  * Connects the React frontend to the ASP.NET Core 9 Web API backend.
  */
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 /**
  * Generic request helper with automatic JWT Authorization header injection.
@@ -333,17 +333,6 @@ export const api = {
       return request('/payments/checkout', {
         method: 'POST',
         body: JSON.stringify({ courseId, couponCode }),
-      });
-    },
-
-    async simulateWebhookSuccess(transactionId) {
-      return request('/payments/webhook', {
-        method: 'POST',
-        body: JSON.stringify({
-          transactionId,
-          eventType: 'payment.succeeded',
-          status: 'Paid',
-        }),
       });
     },
   },

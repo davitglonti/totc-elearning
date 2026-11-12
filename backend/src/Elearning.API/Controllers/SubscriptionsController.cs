@@ -22,10 +22,15 @@ public class SubscriptionsController : BaseApiController
     }
 
     /// <summary>
-    /// Purchase/Activate a subscription (Pro / Enterprise) granting unlimited access to all courses.
+    /// Purchase/Activate a subscription (Pro / Enterprise).
+    /// Requires a verified paid checkout session. Direct unpaid activation is blocked.
     /// </summary>
     [HttpPost("subscribe")]
     [ProducesResponseType(typeof(SubscribeResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Subscribe([FromBody] SubscribeRequestDto dto)
     {
         if (!CurrentUserId.HasValue) return Unauthorized();
@@ -36,6 +41,52 @@ public class SubscriptionsController : BaseApiController
         var plan = string.IsNullOrWhiteSpace(dto.Plan) ? "Pro" : dto.Plan.Trim();
         var isAnnual = dto.BillingCycle?.Trim().ToLower() == "annual";
         var amount = isAnnual ? 190.00m : 19.00m;
+
+        // Block direct unpaid self-activation: mandate verified payment session
+        if (string.IsNullOrWhiteSpace(dto.PaymentSessionId))
+        {
+            var pendingTransactionId = $"sub_{Guid.NewGuid():N}";
+            var pendingOrder = new Order
+            {
+                UserId = user.Id,
+                CourseId = null,
+                OrderType = "Subscription",
+                Amount = amount,
+                Currency = "USD",
+                PaymentStatus = PaymentStatus.Pending,
+                TransactionId = pendingTransactionId,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Orders.Add(pendingOrder);
+            await _context.SaveChangesAsync();
+
+            return BadRequest(new
+            {
+                success = false,
+                requiresPayment = true,
+                orderId = pendingOrder.Id,
+                transactionId = pendingTransactionId,
+                amount = pendingOrder.Amount,
+                checkoutUrl = $"/checkout/session/{pendingTransactionId}",
+                message = "Direct subscription self-activation without payment is prohibited. Please complete payment via checkout session."
+            });
+        }
+
+        // Validate the payment session order
+        var paidOrder = await _context.Orders.FirstOrDefaultAsync(o => 
+            o.TransactionId == dto.PaymentSessionId && 
+            o.UserId == user.Id && 
+            o.OrderType == "Subscription");
+
+        if (paidOrder == null || paidOrder.PaymentStatus != PaymentStatus.Paid)
+        {
+            return StatusCode(StatusCodes.Status402PaymentRequired, new
+            {
+                success = false,
+                message = "Invalid or unpaid subscription payment session. Subscription activation requires a verified paid order."
+            });
+        }
+
         var expiresAt = DateTime.UtcNow.AddMonths(isAnnual ? 12 : 1);
 
         // 1. Update user subscription state
@@ -43,21 +94,7 @@ public class SubscriptionsController : BaseApiController
         user.SubscriptionPlan = plan;
         user.SubscriptionExpiresAt = expiresAt;
 
-        // 2. Record financial order
-        var order = new Order
-        {
-            UserId = user.Id,
-            CourseId = null,
-            OrderType = "Subscription",
-            Amount = amount,
-            Currency = "USD",
-            PaymentStatus = PaymentStatus.Paid,
-            TransactionId = $"sub_{Guid.NewGuid():N}",
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.Orders.Add(order);
-
-        // 3. Ensure user is enrolled into all published courses
+        // 2. Ensure user is enrolled into all published courses
         var publishedCourses = await _context.Courses
             .Where(c => c.IsPublished)
             .ToListAsync();
