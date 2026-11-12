@@ -448,7 +448,7 @@ public static class SeedData
             .Include(c => c.Sections)
                 .ThenInclude(s => s.Lessons)
                     .ThenInclude(l => l.Quiz)
-                        .ThenInclude(q => q.Questions)
+                        .ThenInclude(q => q!.Questions)
                             .ThenInclude(qu => qu.Options)
             .FirstOrDefaultAsync(c => c.Title.Contains("AWS Certified"));
 
