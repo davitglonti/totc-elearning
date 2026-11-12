@@ -1,12 +1,12 @@
+using Elearning.Domain.Common;
+
 namespace Elearning.Domain.Entities;
 
 /// <summary>
 /// Represents an interactive quiz or assessment associated with a lesson or curriculum section.
 /// </summary>
-public class Quiz
+public class Quiz : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    
     public Guid? LessonId { get; set; }
     public Lesson? Lesson { get; set; }
 
@@ -18,15 +18,14 @@ public class Quiz
     public int PassingScorePercentage { get; set; } = 70;
 
     public ICollection<QuizQuestion> Questions { get; set; } = new List<QuizQuestion>();
+    public ICollection<QuizAttempt> Attempts { get; set; } = new List<QuizAttempt>();
 }
 
 /// <summary>
 /// Represents a multiple-choice question within a quiz.
 /// </summary>
-public class QuizQuestion
+public class QuizQuestion : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-
     public Guid QuizId { get; set; }
     public Quiz? Quiz { get; set; }
 
@@ -40,10 +39,8 @@ public class QuizQuestion
 /// <summary>
 /// Represents a potential answer option for a multiple-choice quiz question.
 /// </summary>
-public class QuizOption
+public class QuizOption : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-
     public Guid QuizQuestionId { get; set; }
     public QuizQuestion? QuizQuestion { get; set; }
 

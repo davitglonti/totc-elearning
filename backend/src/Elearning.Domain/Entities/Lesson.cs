@@ -1,11 +1,12 @@
+using Elearning.Domain.Common;
+
 namespace Elearning.Domain.Entities;
 
 /// <summary>
 /// Individual lesson within a course section.
 /// </summary>
-public class Lesson
+public class Lesson : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public Guid SectionId { get; set; }
     public Section? Section { get; set; }
 

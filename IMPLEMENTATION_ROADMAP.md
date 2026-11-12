@@ -44,7 +44,7 @@ flowchart TD
 | Phase | Duration | Focus Area | Key Deliverable | Exit Criteria | Status |
 |---|:---:|---|---|---|:---:|
 | **Phase 0** | Days 1–2 | Emergency Quarantine & Secrets | Secret rotation, financial endpoint lockdown | Zero leaked keys in Git; $0 bypass closed. | **COMPLETED ✅** |
-| **Phase 1** | Days 3–6 | Database Foundation & EF Core | EF Migrations, Soft Delete, Domain Entities | Successful `MigrateAsync()` on SQL Server/Postgres. | Pending |
+| **Phase 1** | Days 3–6 | Database Foundation & EF Core | EF Migrations, Soft Delete, Domain Entities | Successful `MigrateAsync()` on SQL Server/Postgres. | **COMPLETED ✅** |
 | **Phase 2** | Days 7–12 | Backend Architecture & Logic | Stripe Webhooks, Video Tokens, Clean Arch | 100% controllers decoupled from DbContext. | Pending |
 | **Phase 3** | Days 13–18 | Frontend Player & Checkout Flow | Code Splitting, Real Checkout, DRM Player | Monolithic bundle eliminated; postMessage bridge OK. | Pending |
 | **Phase 4** | Days 19–22 | QA Testing & Verification Suite | Unit, Integration & Playwright E2E Tests | >= 80% Backend coverage; green E2E test runs. | Pending |
@@ -98,6 +98,21 @@ flowchart LR
 ---
 
 ### Phase 1: Database Foundation, Migrations & Domain Modeling (Days 3 – 6)
+> [!NOTE]
+> **PHASE 1 STATUS: COMPLETED & VERIFIED ✅ (November 12, 2026)**  
+> All Phase 1 database and domain modeling actions have been implemented and independently verified by **@qa_devops** (Board Post #29):
+> - `dotnet build backend/Elearning.sln` passed cleanly with 0 Errors, 0 Warnings.
+> - `npm run build` passed cleanly with 0 Errors.
+> - Missing core entities created: `Certificate.cs`, `PromoCode.cs`, `QuizAttempt.cs`, along with `BaseEntity.cs`, `ISoftDeletable.cs`, `IAuditableEntity.cs`.
+> - All entities now inherit `BaseEntity` with `ConcurrencyStamp`.
+> - Decommissioned `EnsureCreatedAsync` and raw SQLite `ALTER TABLE` hacks from `Program.cs`.
+> - Replaced with `await dbContext.Database.MigrateAsync()`.
+> - Scaffolded baseline EF Core migration `20261112065844_InitialCreate` and successfully applied to database (`__EFMigrationsHistory` active).
+> - Added unique indexes on `Order.TransactionId`, `Review(UserId, CourseId)`, `PromoCode.Code`, `Certificate.CertificateNumber`, `Certificate.VerificationHash`.
+> - Added composite performance indexes on `Course(IsPublished, ApprovalStatus, CreatedAt)`, `LessonProgress(UserId, IsCompleted)`, `QuizAttempt(UserId, QuizId, AttemptedAt)`.
+> - Dynamic global query filter `HasQueryFilter(e => !e.IsDeleted)` active for all soft-deletable entities.
+> - Runtime verified: application boots cleanly, migrations apply automatically, and initial data seeding completes without errors (`/api/courses` and `/api/categories` return HTTP 200).
+
 **Objective:** Establish a robust relational schema foundation, initialize EF Core migrations, eliminate cascading delete crashes, and create missing domain entities.
 
 ```mermaid
@@ -363,11 +378,11 @@ The following table provides the exhaustive engineering work breakdown structure
 | **TSK-003** | Phase 0 | Backend | Enforce price verification on `POST /api/courses/{id}/enroll` | P0 | @backend | None | 0.5 | **COMPLETED ✅** |
 | **TSK-004** | Phase 0 | Frontend | Delete client-side cooldown reset debug button in player | P0 | @frontend | None | 0.5 | **COMPLETED ✅** |
 | **TSK-005** | Phase 0 | Backend | Sanitize global error handler to suppress stack traces in production | P0 | @backend | None | 0.5 | **COMPLETED ✅** |
-| **TSK-006** | Phase 1 | Database | Remove `EnsureCreatedAsync` and raw SQLite `ALTER TABLE` hacks | P0 | @database | None | 0.5 | Pending |
-| **TSK-007** | Phase 1 | Database | Scaffold baseline EF Core migration (`InitialCreate`) | P0 | @database | TSK-006 | 1.0 | Pending |
-| **TSK-008** | Phase 1 | Domain | Create `Certificate`, `PromoCode`, `QuizAttempt` domain models | P1 | @backend | TSK-007 | 1.0 | Pending |
-| **TSK-009** | Phase 1 | Database | Implement `ISoftDeletable`, `IAuditableEntity` & EF interceptor | P1 | @database | TSK-007 | 1.0 | Pending |
-| **TSK-010** | Phase 1 | Database | Add unique index on `TransactionId` & composite performance indexes | P1 | @database | TSK-007 | 0.5 | Pending |
+| **TSK-006** | Phase 1 | Database | Remove `EnsureCreatedAsync` and raw SQLite `ALTER TABLE` hacks | P0 | @database | None | 0.5 | **COMPLETED ✅** |
+| **TSK-007** | Phase 1 | Database | Scaffold baseline EF Core migration (`InitialCreate`) | P0 | @database | TSK-006 | 1.0 | **COMPLETED ✅** |
+| **TSK-008** | Phase 1 | Domain | Create `Certificate`, `PromoCode`, `QuizAttempt` domain models | P1 | @backend | TSK-007 | 1.0 | **COMPLETED ✅** |
+| **TSK-009** | Phase 1 | Database | Implement `ISoftDeletable`, `IAuditableEntity` & EF interceptor | P1 | @database | TSK-007 | 1.0 | **COMPLETED ✅** |
+| **TSK-010** | Phase 1 | Database | Add unique index on `TransactionId` & composite performance indexes | P1 | @database | TSK-007 | 0.5 | **COMPLETED ✅** |
 | **TSK-011** | Phase 2 | Backend | Decouple `InstructorCoursesController` from DbContext | P1 | @backend | TSK-008 | 1.5 | Pending |
 | **TSK-012** | Phase 2 | Backend | Decouple `AdminController` & `SubscriptionsController` from DbContext | P1 | @backend | TSK-011 | 1.0 | Pending |
 | **TSK-013** | Phase 2 | Backend | Integrate Stripe Checkout sessions and HMAC webhook verification | P0 | @backend | TSK-003 | 2.0 | Pending |

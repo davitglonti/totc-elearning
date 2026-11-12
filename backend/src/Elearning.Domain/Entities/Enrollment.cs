@@ -1,11 +1,12 @@
+using Elearning.Domain.Common;
+
 namespace Elearning.Domain.Entities;
 
 /// <summary>
 /// Represents a student's enrollment in a course.
 /// </summary>
-public class Enrollment
+public class Enrollment : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
     public User? User { get; set; }
 

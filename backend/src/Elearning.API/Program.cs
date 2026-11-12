@@ -245,21 +245,16 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<ElearningDbContext>();
     try
     {
-        await dbContext.Database.EnsureCreatedAsync();
-
-        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Headline TEXT;"); } catch { }
-        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Education TEXT;"); } catch { }
-        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Experience TEXT;"); } catch { }
-        try { await dbContext.Database.ExecuteSqlRawAsync("ALTER TABLE Users ADD COLUMN Website TEXT;"); } catch { }
+        await dbContext.Database.MigrateAsync();
 
         await SeedData.InitializeAsync(dbContext);
         await SeedData.EnrichInstructorProfilesAsync(dbContext);
         await SeedData.EnrichModuleQuizzesAsync(dbContext);
-        Console.WriteLine("[TOTC LMS] Database initialized and seeded successfully.");
+        Console.WriteLine("[TOTC LMS] Database migrated and seeded successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[TOTC LMS] Error during database initialization: {ex.Message}");
+        Console.WriteLine($"[TOTC LMS] Error during database migration/initialization: {ex.Message}");
     }
 }
 

@@ -1,3 +1,4 @@
+using Elearning.Domain.Common;
 using Elearning.Domain.Enums;
 
 namespace Elearning.Domain.Entities;
@@ -5,9 +6,8 @@ namespace Elearning.Domain.Entities;
 /// <summary>
 /// Represents a user account (Student, Instructor, or Admin).
 /// </summary>
-public class User
+public class User : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
@@ -18,7 +18,6 @@ public class User
     public string? Education { get; set; }
     public string? Experience { get; set; }
     public string? Website { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Subscription & Pro Membership
     public bool IsSubscribed { get; set; } = false;
@@ -31,4 +30,6 @@ public class User
     public ICollection<LessonProgress> LessonProgresses { get; set; } = new List<LessonProgress>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Certificate> Certificates { get; set; } = new List<Certificate>();
+    public ICollection<QuizAttempt> QuizAttempts { get; set; } = new List<QuizAttempt>();
 }

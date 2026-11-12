@@ -1,11 +1,12 @@
+using Elearning.Domain.Common;
+
 namespace Elearning.Domain.Entities;
 
 /// <summary>
 /// Course curriculum module / section (e.g., Module 1, Module 2).
 /// </summary>
-public class Section
+public class Section : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public Guid CourseId { get; set; }
     public Course? Course { get; set; }
 
@@ -14,4 +15,5 @@ public class Section
 
     // Navigation properties
     public ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
+    public Quiz? Quiz { get; set; }
 }

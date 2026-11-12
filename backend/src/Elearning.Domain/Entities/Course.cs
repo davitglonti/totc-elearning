@@ -1,3 +1,4 @@
+using Elearning.Domain.Common;
 using Elearning.Domain.Enums;
 
 namespace Elearning.Domain.Entities;
@@ -5,16 +6,14 @@ namespace Elearning.Domain.Entities;
 /// <summary>
 /// Represents an online course created by an instructor.
 /// </summary>
-public class Course
+public class Course : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? ThumbnailUrl { get; set; }
     public decimal Price { get; set; }
     public CourseLevel Level { get; set; } = CourseLevel.Beginner;
     public bool IsPublished { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Moderation and Admin Approval Workflow
     public string ApprovalStatus { get; set; } = "Approved"; // "Approved", "PendingApproval", "Rejected"
@@ -33,4 +32,5 @@ public class Course
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+    public ICollection<Certificate> Certificates { get; set; } = new List<Certificate>();
 }

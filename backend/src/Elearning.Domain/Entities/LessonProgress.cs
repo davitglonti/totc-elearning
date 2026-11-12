@@ -1,11 +1,12 @@
+using Elearning.Domain.Common;
+
 namespace Elearning.Domain.Entities;
 
 /// <summary>
 /// Tracks an enrolled student's progress on an individual lesson.
 /// </summary>
-public class LessonProgress
+public class LessonProgress : BaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
     public User? User { get; set; }
 
