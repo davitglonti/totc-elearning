@@ -1,22 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
-import CoursesPage from './pages/CoursesPage';
-import CourseDetailPage from './pages/CourseDetailPage';
-import BlogPage from './pages/BlogPage';
-import BlogDetailPage from './pages/BlogDetailPage';
-import MembershipPage from './pages/MembershipPage';
-import CheckoutPage from './pages/CheckoutPage';
-import StudentDashboardPage from './pages/StudentDashboardPage';
-import CoursePlayerPage from './pages/CoursePlayerPage';
-import InstructorDashboardPage from './pages/InstructorDashboardPage';
-import CreateCoursePage from './pages/CreateCoursePage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AuthPage from './pages/AuthPage';
-import InstructorProfilePage from './pages/InstructorProfilePage';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import { AuthProvider } from './context/AuthContext';
 import { AuthModal, VideoModal, AssessmentModal } from './components/Modals';
 import { api } from './services/api';
+
+// Route-level code-splitting (TSK-017)
+const CoursesPage = lazy(() => import('./pages/CoursesPage'));
+const CourseDetailPage = lazy(() => import('./pages/CourseDetailPage'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const BlogDetailPage = lazy(() => import('./pages/BlogDetailPage'));
+const MembershipPage = lazy(() => import('./pages/MembershipPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const StudentDashboardPage = lazy(() => import('./pages/StudentDashboardPage'));
+const CoursePlayerPage = lazy(() => import('./pages/CoursePlayerPage'));
+const InstructorDashboardPage = lazy(() => import('./pages/InstructorDashboardPage'));
+const CreateCoursePage = lazy(() => import('./pages/CreateCoursePage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const InstructorProfilePage = lazy(() => import('./pages/InstructorProfilePage'));
+
+function PageLoadingFallback() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 space-y-4 font-poppins">
+      <div className="w-12 h-12 border-4 border-totc-teal border-t-transparent rounded-full animate-spin" />
+      <p className="text-xs font-semibold text-totc-gray tracking-wide uppercase">
+        Loading view...
+      </p>
+    </div>
+  );
+}
 
 /**
  * Generate clean, human-readable URL slugs for courses and articles with Unicode support
@@ -249,7 +264,7 @@ export default function App() {
 
     // Save relevant course payload if provided
     if (extraData) {
-      if (targetPage === 'course-detail') {
+      if (targetPage === 'course-detail' || targetPage === 'checkout') {
         setSelectedCourse(extraData);
       } else if (targetPage === 'course-player') {
         setActiveCourseToPlay(extraData);
@@ -359,150 +374,156 @@ export default function App() {
 
       {/* Main Page Content */}
       <main className="flex-1">
-        {activePage === 'home' && (
-          <LandingPage
-            openAuthModal={openAuthModal}
-            openVideoModal={() => setVideoModalOpen(true)}
-            openAssessmentModal={() => setAssessmentModalOpen(true)}
-            setActivePage={handleSafePageTransition}
-          />
-        )}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {activePage === 'home' && (
+            <LandingPage
+              openAuthModal={openAuthModal}
+              openVideoModal={() => setVideoModalOpen(true)}
+              openAssessmentModal={() => setAssessmentModalOpen(true)}
+              setActivePage={handleSafePageTransition}
+            />
+          )}
 
-        {/* Student Dashboard / My Courses (Protected) */}
-        {activePage === 'dashboard' && (
-          <StudentDashboardPage
-            currentUser={currentUser}
-            setActivePage={handleSafePageTransition}
-            onSelectCourseToPlay={(course) => {
-              setActiveCourseToPlay(course);
-              handleSafePageTransition('course-player', course);
-            }}
-          />
-        )}
+          {/* Student Dashboard / My Courses (Protected) */}
+          {activePage === 'dashboard' && (
+            <StudentDashboardPage
+              currentUser={currentUser}
+              setActivePage={handleSafePageTransition}
+              onSelectCourseToPlay={(course) => {
+                setActiveCourseToPlay(course);
+                handleSafePageTransition('course-player', course);
+              }}
+            />
+          )}
 
-        {/* Interactive Classroom Video Player (Protected) */}
-        {activePage === 'course-player' && (
-          <CoursePlayerPage
-            activeCourse={activeCourseToPlay}
-            setActivePage={handleSafePageTransition}
-            currentUser={currentUser}
-          />
-        )}
+          {/* Interactive Classroom Video Player (Protected) */}
+          {activePage === 'course-player' && (
+            <CoursePlayerPage
+              activeCourse={activeCourseToPlay}
+              setActivePage={handleSafePageTransition}
+              currentUser={currentUser}
+            />
+          )}
 
-        {/* Instructor Studio (Protected) */}
-        {activePage === 'instructor-dashboard' && (
-          <InstructorDashboardPage
-            currentUser={currentUser}
-            setActivePage={handleSafePageTransition}
-            onEditCourse={(course) => {
-              setCourseToEdit(course);
-              handleSafePageTransition('edit-course', course);
-            }}
-            setSelectedCourse={(course) => {
-              setSelectedCourse(course);
-              handleSafePageTransition('course-detail', course);
-            }}
-          />
-        )}
+          {/* Instructor Studio (Protected) */}
+          {activePage === 'instructor-dashboard' && (
+            <InstructorDashboardPage
+              currentUser={currentUser}
+              setActivePage={handleSafePageTransition}
+              onEditCourse={(course) => {
+                setCourseToEdit(course);
+                handleSafePageTransition('edit-course', course);
+              }}
+              setSelectedCourse={(course) => {
+                setSelectedCourse(course);
+                handleSafePageTransition('course-detail', course);
+              }}
+            />
+          )}
 
-        {/* Course Creation & Editing Studio (Protected) */}
-        {(activePage === 'create-course' || activePage === 'edit-course') && (
-          <CreateCoursePage
-            currentUser={currentUser}
-            courseToEdit={courseToEdit}
-            setActivePage={handleSafePageTransition}
-            setSelectedCourse={(course) => {
-              setSelectedCourse(course);
-              handleSafePageTransition('course-detail', course);
-            }}
-          />
-        )}
+          {/* Course Creation & Editing Studio (Protected) */}
+          {(activePage === 'create-course' || activePage === 'edit-course') && (
+            <CreateCoursePage
+              currentUser={currentUser}
+              courseToEdit={courseToEdit}
+              setActivePage={handleSafePageTransition}
+              setSelectedCourse={(course) => {
+                setSelectedCourse(course);
+                handleSafePageTransition('course-detail', course);
+              }}
+            />
+          )}
 
-        {/* Admin Console (Protected) */}
-        {activePage === 'admin-dashboard' && (
-          <AdminDashboardPage
-            currentUser={currentUser}
-            setActivePage={handleSafePageTransition}
-            setSelectedCourse={(course) => {
-              setSelectedCourse(course);
-              handleSafePageTransition('course-detail', course);
-            }}
-          />
-        )}
+          {/* Admin Console (Protected) */}
+          {activePage === 'admin-dashboard' && (
+            <AdminDashboardPage
+              currentUser={currentUser}
+              setActivePage={handleSafePageTransition}
+              setSelectedCourse={(course) => {
+                setSelectedCourse(course);
+                handleSafePageTransition('course-detail', course);
+              }}
+            />
+          )}
 
-        {/* Dedicated Login & Registration Pages */}
-        {activePage === 'login' && (
-          <AuthPage
-            initialMode="login"
-            setActivePage={handleSafePageTransition}
-            onAuthSuccess={handleAuthSuccess}
-          />
-        )}
+          {/* Dedicated Login & Registration Pages */}
+          {activePage === 'login' && (
+            <AuthPage
+              initialMode="login"
+              setActivePage={handleSafePageTransition}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
 
-        {activePage === 'register' && (
-          <AuthPage
-            initialMode="register"
-            setActivePage={handleSafePageTransition}
-            onAuthSuccess={handleAuthSuccess}
-          />
-        )}
+          {activePage === 'register' && (
+            <AuthPage
+              initialMode="register"
+              setActivePage={handleSafePageTransition}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
 
-        {/* Public Instructor Bio & Authored Courses */}
-        {activePage === 'instructor-profile' && (
-          <InstructorProfilePage
-            instructor={selectedInstructor}
-            currentUser={currentUser}
-            setActivePage={handleSafePageTransition}
-            setSelectedCourse={(course) => {
-              setSelectedCourse(course);
-              handleSafePageTransition('course-detail', course);
-            }}
-          />
-        )}
+          {/* Public Instructor Bio & Authored Courses */}
+          {activePage === 'instructor-profile' && (
+            <InstructorProfilePage
+              instructor={selectedInstructor}
+              currentUser={currentUser}
+              setActivePage={handleSafePageTransition}
+              setSelectedCourse={(course) => {
+                setSelectedCourse(course);
+                handleSafePageTransition('course-detail', course);
+              }}
+            />
+          )}
 
-        {activePage === 'courses' && (
-          <CoursesPage
-            setActivePage={handleSafePageTransition}
-            setSelectedCourse={(course) => {
-              setSelectedCourse(course);
-              handleSafePageTransition('course-detail', course);
-            }}
-          />
-        )}
+          {activePage === 'courses' && (
+            <CoursesPage
+              setActivePage={handleSafePageTransition}
+              setSelectedCourse={(course) => {
+                setSelectedCourse(course);
+                handleSafePageTransition('course-detail', course);
+              }}
+            />
+          )}
 
-        {activePage === 'course-detail' && (
-          <CourseDetailPage
-            selectedCourse={selectedCourse}
-            setActivePage={handleSafePageTransition}
-            openVideoModal={() => setVideoModalOpen(true)}
-            currentUser={currentUser}
-            onSelectCourseToPlay={(course) => {
-              setActiveCourseToPlay(course);
-              handleSafePageTransition('course-player', course);
-            }}
-          />
-        )}
+          {activePage === 'course-detail' && (
+            <CourseDetailPage
+              selectedCourse={selectedCourse}
+              setActivePage={handleSafePageTransition}
+              openVideoModal={() => setVideoModalOpen(true)}
+              currentUser={currentUser}
+              onSelectCourseToPlay={(course) => {
+                setActiveCourseToPlay(course);
+                handleSafePageTransition('course-player', course);
+              }}
+            />
+          )}
 
-        {activePage === 'blog' && (
-          <BlogPage setActivePage={handleSafePageTransition} />
-        )}
+          {activePage === 'blog' && (
+            <BlogPage setActivePage={handleSafePageTransition} />
+          )}
 
-        {activePage === 'blog-detail' && (
-          <BlogDetailPage setActivePage={handleSafePageTransition} />
-        )}
+          {activePage === 'blog-detail' && (
+            <BlogDetailPage setActivePage={handleSafePageTransition} />
+          )}
 
-        {activePage === 'membership' && (
-          <MembershipPage
-            setActivePage={handleSafePageTransition}
-            openAuthModal={openAuthModal}
-            currentUser={currentUser}
-            onSubscriptionUpdated={(updatedUser) => setCurrentUser(updatedUser)}
-          />
-        )}
+          {activePage === 'membership' && (
+            <MembershipPage
+              setActivePage={handleSafePageTransition}
+              openAuthModal={openAuthModal}
+              currentUser={currentUser}
+              onSubscriptionUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+            />
+          )}
 
-        {activePage === 'checkout' && (
-          <CheckoutPage setActivePage={handleSafePageTransition} />
-        )}
+          {activePage === 'checkout' && (
+            <CheckoutPage
+              setActivePage={handleSafePageTransition}
+              selectedCourse={selectedCourse}
+              currentUser={currentUser}
+            />
+          )}
+        </Suspense>
       </main>
 
       {/* Global Footer (hidden on course-player, login & register for distraction-free view) */}

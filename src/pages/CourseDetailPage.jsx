@@ -131,7 +131,7 @@ export default function CourseDetailPage({
   };
 
   const handleBuyNow = () => {
-    setActivePage('checkout');
+    setActivePage('checkout', courseData);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

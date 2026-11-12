@@ -337,6 +337,16 @@ export const api = {
     },
   },
 
+  // Promo Codes & Discounts (TSK-016)
+  promoCodes: {
+    async validate(code, amount = 0, courseId = null) {
+      return request('/promocodes/validate', {
+        method: 'POST',
+        body: JSON.stringify({ code, amount, courseId }),
+      });
+    },
+  },
+
   // Pro & Enterprise Subscriptions (All-Access Pass)
   subscriptions: {
     async subscribe(plan = 'Pro', billingCycle = 'monthly', paymentData = {}) {

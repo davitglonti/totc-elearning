@@ -351,6 +351,47 @@ export default function BunnyPlayer({
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
+  // Bunny Stream Iframe postMessage Event Bridge (TSK-019)
+  useEffect(() => {
+    const handleBunnyMessage = (event) => {
+      // Security check: strictly verify allowed origins
+      const allowedOrigins = [
+        'https://iframe.mediadelivery.net',
+        'https://video.bunnycdn.com',
+        window.location.origin
+      ];
+      const isAllowedOrigin = allowedOrigins.includes(event.origin) || (event.origin && event.origin.endsWith('.b-cdn.net'));
+      if (!isAllowedOrigin) return;
+
+      let payload = event.data;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          return;
+        }
+      }
+
+      if (!payload || typeof payload !== 'object') return;
+
+      const eventType = payload.event || payload.type || payload.name;
+      const eventTime = payload.currentTime ?? payload.time ?? payload.seconds;
+
+      if (eventType === 'bunny:timeupdate' || eventType === 'timeupdate') {
+        if (typeof eventTime === 'number' && onTimeUpdate) {
+          onTimeUpdate(Math.floor(eventTime));
+        }
+      } else if (eventType === 'bunny:ended' || eventType === 'ended') {
+        if (onEnded) {
+          onEnded();
+        }
+      }
+    };
+
+    window.addEventListener('message', handleBunnyMessage);
+    return () => window.removeEventListener('message', handleBunnyMessage);
+  }, [onTimeUpdate, onEnded]);
+
   const formatTime = (seconds) => {
     if (isNaN(seconds) || seconds < 0) return '00:00';
     const mins = Math.floor(seconds / 60);
@@ -390,6 +431,13 @@ export default function BunnyPlayer({
           allowFullScreen={true}
           title={title || 'Lecture Video Stream'}
         />
+
+        {/* Anti-Screen Recording Dynamic Forensic Watermark */}
+        {activeUser && (
+          <div className="absolute bottom-6 left-6 z-20 pointer-events-none select-none opacity-30 text-[11px] font-mono text-white tracking-widest bg-black/40 px-3 py-1 rounded-md backdrop-blur-sm border border-white/10">
+            {activeUser.email || activeUser.fullName}
+          </div>
+        )}
       </div>
     );
   }
@@ -439,12 +487,18 @@ export default function BunnyPlayer({
         }}
       />
 
-      {/* DRM Transparent Protection Shield Overlay */}
+      {/* DRM Transparent Protection Shield Overlay & Forensic Watermark */}
       <div 
         onContextMenu={handleContextMenu}
         onDragStart={(e) => { e.preventDefault(); return false; }}
         className="absolute inset-0 z-5 pointer-events-none"
-      />
+      >
+        {activeUser && (
+          <div className="absolute top-1/4 right-8 select-none opacity-20 text-[11px] font-mono text-white tracking-widest bg-black/30 px-3 py-1 rounded-md pointer-events-none">
+            {activeUser.email || activeUser.fullName}
+          </div>
+        )}
+      </div>
 
       {/* DRM Security Toast Notification */}
       {drmNotice && (

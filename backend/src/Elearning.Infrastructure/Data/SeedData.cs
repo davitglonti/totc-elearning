@@ -11,6 +11,8 @@ public static class SeedData
 {
     public static async Task InitializeAsync(ElearningDbContext context)
     {
+        await SeedPromoCodesAsync(context);
+
         if (await context.Categories.AnyAsync())
         {
             return; // Data already seeded
@@ -559,5 +561,68 @@ public static class SeedData
                 }
             }
         }
+    }
+
+    public static async Task SeedPromoCodesAsync(ElearningDbContext context)
+    {
+        if (await context.PromoCodes.AnyAsync())
+        {
+            return;
+        }
+
+        var promoCodes = new List<PromoCode>
+        {
+            new PromoCode
+            {
+                Id = Guid.Parse("70000000-0000-0000-0000-000000000001"),
+                Code = "TOTC",
+                DiscountPercentage = 20m,
+                MaxDiscountAmount = 100m,
+                ValidFrom = DateTime.UtcNow.AddDays(-30),
+                ValidUntil = DateTime.UtcNow.AddYears(2),
+                MaxUsageCount = 10000,
+                CurrentUsageCount = 0,
+                IsActive = true
+            },
+            new PromoCode
+            {
+                Id = Guid.Parse("70000000-0000-0000-0000-000000000002"),
+                Code = "TOTC2026",
+                DiscountPercentage = 25m,
+                MaxDiscountAmount = 150m,
+                ValidFrom = DateTime.UtcNow.AddDays(-30),
+                ValidUntil = DateTime.UtcNow.AddYears(2),
+                MaxUsageCount = 5000,
+                CurrentUsageCount = 0,
+                IsActive = true
+            },
+            new PromoCode
+            {
+                Id = Guid.Parse("70000000-0000-0000-0000-000000000003"),
+                Code = "WELCOME50",
+                DiscountPercentage = 50m,
+                MaxDiscountAmount = 50m,
+                ValidFrom = DateTime.UtcNow.AddDays(-30),
+                ValidUntil = DateTime.UtcNow.AddYears(1),
+                MaxUsageCount = 2000,
+                CurrentUsageCount = 0,
+                IsActive = true
+            },
+            new PromoCode
+            {
+                Id = Guid.Parse("70000000-0000-0000-0000-000000000004"),
+                Code = "STUDENT10",
+                DiscountPercentage = 10m,
+                MaxDiscountAmount = null,
+                ValidFrom = DateTime.UtcNow.AddDays(-30),
+                ValidUntil = DateTime.UtcNow.AddYears(2),
+                MaxUsageCount = 20000,
+                CurrentUsageCount = 0,
+                IsActive = true
+            }
+        };
+
+        context.PromoCodes.AddRange(promoCodes);
+        await context.SaveChangesAsync();
     }
 }

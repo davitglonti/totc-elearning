@@ -7,9 +7,27 @@ export default defineConfig({
     port: 5173,
     open: false,
     proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
       '/uploads': {
         target: 'http://localhost:5000',
         changeOrigin: true
+      }
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'ui';
+          }
+        }
       }
     }
   }

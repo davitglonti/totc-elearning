@@ -63,6 +63,7 @@ builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 // 2. Validate and Register Bunny Stream Service
 var bunnyApiKey = builder.Configuration["BunnyStream:ApiKey"];
 var bunnyLibId = builder.Configuration["BunnyStream:LibraryId"];
@@ -308,6 +309,7 @@ using (var scope = app.Services.CreateScope())
         await SeedData.InitializeAsync(dbContext);
         await SeedData.EnrichInstructorProfilesAsync(dbContext);
         await SeedData.EnrichModuleQuizzesAsync(dbContext);
+        await SeedData.SeedPromoCodesAsync(dbContext);
         Console.WriteLine("[TOTC LMS] Database migrated and seeded successfully.");
     }
     catch (Exception ex)

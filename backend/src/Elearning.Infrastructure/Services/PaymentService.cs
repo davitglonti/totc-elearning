@@ -14,11 +14,16 @@ public class PaymentService : IPaymentService
 {
     private readonly ElearningDbContext _context;
     private readonly IEnrollmentService _enrollmentService;
+    private readonly IPromoCodeService _promoCodeService;
 
-    public PaymentService(ElearningDbContext context, IEnrollmentService enrollmentService)
+    public PaymentService(
+        ElearningDbContext context,
+        IEnrollmentService enrollmentService,
+        IPromoCodeService promoCodeService)
     {
         _context = context;
         _enrollmentService = enrollmentService;
+        _promoCodeService = promoCodeService;
     }
 
     public async Task<CheckoutResponseDto> CreateCheckoutSessionAsync(Guid userId, CheckoutRequestDto dto)
@@ -33,11 +38,27 @@ public class PaymentService : IPaymentService
 
         var amount = course.Price;
 
-        // Apply promo code discount (e.g. 20% off for TOTC)
-        if (!string.IsNullOrWhiteSpace(dto.CouponCode) &&
-            (dto.CouponCode.Trim().ToLower() == "totc" || dto.CouponCode.Trim().ToLower() == "totc2026"))
+        // Apply promo code discount via IPromoCodeService
+        if (!string.IsNullOrWhiteSpace(dto.CouponCode))
         {
-            amount = Math.Max(0, amount - (amount * 0.20m));
+            var promoResult = await _promoCodeService.ValidatePromoCodeAsync(new ValidatePromoCodeRequestDto
+            {
+                Code = dto.CouponCode,
+                Amount = amount,
+                CourseId = dto.CourseId
+            });
+
+            if (promoResult.Valid)
+            {
+                amount = promoResult.FinalAmount;
+
+                // Track usage count in DB if registered entity exists
+                var promoEntity = await _context.PromoCodes.FirstOrDefaultAsync(p => p.Code.ToLower() == promoResult.Code.ToLower());
+                if (promoEntity != null)
+                {
+                    promoEntity.CurrentUsageCount++;
+                }
+            }
         }
 
         var transactionId = $"txn_{Guid.NewGuid():N}";
