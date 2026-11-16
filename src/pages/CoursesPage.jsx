@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, Clock, Users, ArrowRight, Filter, Sparkles, TrendingUp } from 'lucide-react';
+import { Search, Star, Clock, Users, ArrowRight, Filter, Sparkles, TrendingUp, Play, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function CoursesPage({ setActivePage, setSelectedCourse }) {
+export default function CoursesPage({ setActivePage, setSelectedCourse, currentUser, enrolledCourseIds }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [categories, setCategories] = useState(['All', 'Design', 'Development', 'Business', 'Marketing', 'Photography']);
@@ -273,20 +273,50 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
               </div>
 
               {/* Card Footer */}
-              <div className="p-6 pt-0 border-t border-gray-100 mt-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-poppins font-bold text-2xl text-totc-purple">
-                    {c.price}
-                  </span>
-                  <span className="text-sm text-gray-400 line-through">
-                    {c.oldPrice}
-                  </span>
-                </div>
+              {(() => {
+                const isSubscribed = Boolean(currentUser?.isSubscribed);
+                const isEnrolled = Boolean(
+                  c.isEnrolled ||
+                  (enrolledCourseIds && enrolledCourseIds.has(String(c.id).toLowerCase()))
+                );
+                const hasAccess = isSubscribed || isEnrolled;
 
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-totc-teal group-hover:translate-x-1 transition-transform">
-                  კურსის ნახვა <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
+                return (
+                  <div className="p-6 pt-0 border-t border-gray-100 mt-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {hasAccess ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{isSubscribed ? 'Pro წვდომა' : 'შეძენილია'}</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-poppins font-bold text-2xl text-totc-purple">
+                            {c.price}
+                          </span>
+                          <span className="text-sm text-gray-400 line-through">
+                            {c.oldPrice}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-totc-teal group-hover:translate-x-1 transition-transform">
+                      {hasAccess ? (
+                        <>
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>სასწავლო ოთახი</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>კურსის ნახვა</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>

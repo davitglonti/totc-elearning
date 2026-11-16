@@ -131,6 +131,13 @@ export default function CourseDetailPage({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Auto-redirect enrolled or subscribed students directly to the course classroom player
+  useEffect(() => {
+    if (isEnrolled && (courseData.id || selectedCourse?.id || selectedCourse?.courseId)) {
+      handleStartClassroom();
+    }
+  }, [isEnrolled, courseData.id, selectedCourse]);
+
   const handleBuyNow = () => {
     setActivePage('checkout', courseData);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -157,6 +164,20 @@ export default function CourseDetailPage({
   ];
 
   const hasRealSections = courseData.sections && courseData.sections.length > 0;
+
+  // If user has subscription, has purchased the course, or is enrolled, do NOT show the sales/overview page!
+  // Instead, render smooth direct transition into the learning environment
+  if (isEnrolled) {
+    return (
+      <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center text-white p-6">
+        <div className="w-14 h-14 rounded-2xl bg-teal-500/20 text-totc-teal border border-teal-500/30 flex items-center justify-center animate-pulse mb-4 shadow-lg shadow-teal-500/10">
+          <Play className="w-7 h-7 fill-current" />
+        </div>
+        <p className="font-bold text-xl text-slate-100">გადამისამართება სასწავლო გარემოში...</p>
+        <p className="text-xs text-slate-400 mt-2">თქვენ გაქვთ სრული წვდომა ამ კურსზე. იხსნება სასწავლო ოთახი.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-32 pb-24 bg-[#F8FAFC]">

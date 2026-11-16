@@ -109,12 +109,31 @@ export default function App() {
   const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
   const [securityNotice, setSecurityNotice] = useState('');
 
   // Modals state
   const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
+
+  // Synchronize enrolled courses set for direct classroom routing
+  useEffect(() => {
+    const user = currentUser || api.auth.getCurrentUser();
+    if (!user) {
+      setEnrolledCourseIds(new Set());
+      return;
+    }
+
+    api.enrollments.getMyCourses()
+      .then(courses => {
+        if (Array.isArray(courses)) {
+          const ids = new Set(courses.map(c => String(c.id || c.courseId).toLowerCase()));
+          setEnrolledCourseIds(ids);
+        }
+      })
+      .catch(err => console.warn('Could not sync enrolled course IDs:', err.message));
+  }, [currentUser]);
 
   useEffect(() => {
     // 1. Check local storage for existing session
@@ -160,6 +179,12 @@ export default function App() {
             ) || allAvailableCourses[0];
             if (matched) {
               setSelectedCourse(matched);
+              setActiveCourseToPlay(matched);
+            }
+            const activeUser = api.auth.getCurrentUser();
+            if (activeUser && (activeUser.isSubscribed || activeUser.role === 'Admin')) {
+              setActivePage('course-player');
+              return;
             }
             setActivePage('course-detail');
             return;
@@ -262,15 +287,39 @@ export default function App() {
         : 'dashboard';
     }
 
+    // Direct Learning Classroom Routing:
+    // If user has active subscription, is enrolled in this course, is author, or admin,
+    // skip the sales/overview landing page and launch the classroom player directly!
+    if (targetPage === 'course-detail' && effectiveUser) {
+      const isSubscribed = Boolean(effectiveUser.isSubscribed);
+      const courseIdStr = String(extraData?.id || extraData?.courseId || selectedCourse?.id || selectedCourse?.courseId || '').toLowerCase();
+      const isEnrolled = Boolean(
+        extraData?.isEnrolled || 
+        (courseIdStr && enrolledCourseIds.has(courseIdStr))
+      );
+      const isAdmin = effectiveUser.role === 'Admin';
+      const isAuthor = Boolean(
+        (extraData?.instructorId && String(extraData.instructorId) === String(effectiveUser.id)) ||
+        (extraData?.instructorEmail && effectiveUser.email && extraData.instructorEmail.toLowerCase() === effectiveUser.email.toLowerCase())
+      );
+
+      if (isSubscribed || isEnrolled || isAuthor || isAdmin) {
+        targetPage = 'course-player';
+      }
+    }
+
     // Save relevant course payload if provided
     if (extraData) {
       if (targetPage === 'course-detail' || targetPage === 'checkout') {
         setSelectedCourse(extraData);
       } else if (targetPage === 'course-player') {
         setActiveCourseToPlay(extraData);
+        setSelectedCourse(extraData);
       } else if (targetPage === 'instructor-profile') {
         setSelectedInstructor(extraData);
       }
+    } else if (targetPage === 'course-player' && selectedCourse && !activeCourseToPlay) {
+      setActiveCourseToPlay(selectedCourse);
     }
 
     // Guard: Student Dashboard & Course Player require authentication
@@ -478,6 +527,8 @@ export default function App() {
 
           {activePage === 'courses' && (
             <CoursesPage
+              currentUser={currentUser}
+              enrolledCourseIds={enrolledCourseIds}
               setActivePage={handleSafePageTransition}
               setSelectedCourse={(course) => {
                 setSelectedCourse(course);

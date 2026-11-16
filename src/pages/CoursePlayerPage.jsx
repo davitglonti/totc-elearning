@@ -1354,11 +1354,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         <div className="flex items-center gap-4">
           <button
             onClick={() => {
-              if (window.history.length > 1) {
-                window.history.back();
-              } else {
-                setActivePage('courses');
-              }
+              setActivePage('courses');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex items-center gap-2 text-sm text-slate-300 hover:text-totc-teal font-medium transition-colors"
