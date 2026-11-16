@@ -5,7 +5,7 @@ import {
   Search, Filter, Trash2, RefreshCw, AlertCircle, Eye, EyeOff, 
   Check, X, ArrowUpRight, GraduationCap, UserCheck, Layers, Clock,
   Bell, CheckSquare, XCircle, FileText, Video, Plus, Edit3, Image,
-  Settings as SettingsIcon, Globe, Mail, Phone, Tag, Star
+  Settings as SettingsIcon, Globe, Mail, Phone, Tag, Star, Save
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
