@@ -15,6 +15,30 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load .env file into environment variables if present (workspace root or parent dirs)
+var currentDirectory = Directory.GetCurrentDirectory();
+var envCandidates = new[] { currentDirectory, Path.Combine(currentDirectory, ".."), Path.Combine(currentDirectory, "..", "..") };
+foreach (var dir in envCandidates)
+{
+    var envFilePath = Path.Combine(dir, ".env");
+    if (File.Exists(envFilePath))
+    {
+        foreach (var rawLine in File.ReadAllLines(envFilePath))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+            var splitIndex = line.IndexOf('=');
+            if (splitIndex > 0)
+            {
+                var envKey = line.Substring(0, splitIndex).Trim();
+                var envVal = line.Substring(splitIndex + 1).Trim().Trim('"').Trim('\'');
+                Environment.SetEnvironmentVariable(envKey, envVal);
+            }
+        }
+        break;
+    }
+}
+
 // Load optional local configuration, environment variables, and command-line arguments
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 builder.Configuration.AddEnvironmentVariables();
