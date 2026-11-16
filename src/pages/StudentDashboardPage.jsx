@@ -146,8 +146,12 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
+          <div 
+            onClick={() => setActiveTab('completed')}
+            className="bg-white p-6 rounded-[22px] border border-gray-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-totc-teal/40 transition-all hover:shadow group"
+            title="დააწკაპუნეთ დასრულებული კურსებისა და სერტიფიკატების სანახავად"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 group-hover:bg-purple-100 flex items-center justify-center text-purple-500 shrink-0 transition-colors">
               <Award className="w-6 h-6" />
             </div>
             <div>
@@ -315,14 +319,40 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <button
-                    onClick={() => handleStartLearning(course)}
-                    className="w-full py-3 rounded-full font-semibold text-sm bg-totc-teal-light text-totc-teal hover:bg-totc-teal hover:text-white transition-all flex items-center justify-center gap-2 group/btn"
-                  >
-                    <Play className="w-4 h-4 fill-current ml-0.5" />
-                    <span>{course.progressPercentage === 100 ? 'კურსის გადახედვა' : 'სწავლის გაგრძელება'}</span>
-                  </button>
+                  {/* Action Buttons */}
+                  {course.progressPercentage === 100 ? (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => handleStartLearning(course)}
+                        className="py-2.5 px-3 rounded-full font-semibold text-xs bg-slate-100 text-totc-navy hover:bg-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="კურსის მასალების გადახედვა"
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        <span>გადახედვა</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleStartLearning(course);
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('totc-open-certificate'));
+                          }, 250);
+                        }}
+                        className="py-2.5 px-3 rounded-full font-extrabold text-xs bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="აკრედიტებული სერტიფიკატის ნახვა"
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        <span>სერტიფიკატი</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleStartLearning(course)}
+                      className="w-full py-3 rounded-full font-semibold text-sm bg-totc-teal-light text-totc-teal hover:bg-totc-teal hover:text-white transition-all flex items-center justify-center gap-2 group/btn cursor-pointer"
+                    >
+                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                      <span>სწავლის გაგრძელება</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

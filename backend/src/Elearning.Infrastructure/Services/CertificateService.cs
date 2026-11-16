@@ -44,6 +44,31 @@ public class CertificateService : ICertificateService
         return certificate != null ? MapToDto(certificate) : null;
     }
 
+    public async Task<CertificateDto?> GetCertificateByCourseIdAsync(Guid userId, Guid courseId)
+    {
+        var certificate = await _context.Certificates
+            .AsNoTracking()
+            .Include(c => c.Course).ThenInclude(c => c!.Instructor)
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.CourseId == courseId);
+
+        return certificate != null ? MapToDto(certificate) : null;
+    }
+
+    public async Task<CertificateDto?> GetCertificateByNumberAsync(string certificateNumber)
+    {
+        if (string.IsNullOrWhiteSpace(certificateNumber)) return null;
+        var clean = certificateNumber.Trim().ToLowerInvariant();
+
+        var certificate = await _context.Certificates
+            .AsNoTracking()
+            .Include(c => c.Course).ThenInclude(c => c!.Instructor)
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.CertificateNumber.ToLower() == clean || c.VerificationHash.ToLower() == clean);
+
+        return certificate != null ? MapToDto(certificate) : null;
+    }
+
     public async Task<CertificateVerificationDto> VerifyCertificateAsync(string verificationHash)
     {
         if (string.IsNullOrWhiteSpace(verificationHash))

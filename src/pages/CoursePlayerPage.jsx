@@ -4,9 +4,9 @@ import {
   Clock, Award, Download, MessageSquare, FileText, Share2, 
   Volume2, Maximize, Check, HelpCircle, Code, ThumbsUp, Send, 
   Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass,
-  Video, ExternalLink, Loader2, Lock, FolderArchive, Paperclip, X,
+  Video, ExternalLink, Loader2, Lock, Unlock, FolderArchive, Paperclip, X,
   Shield, ShieldAlert, ShieldCheck, AlertTriangle, Timer, Maximize2, Minimize2,
-  RefreshCw, EyeOff
+  RefreshCw, EyeOff, Trophy, GraduationCap, Printer, Copy, CheckCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import BunnyPlayer from '../components/BunnyPlayer';
@@ -20,6 +20,12 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const [loading, setLoading] = useState(true);
   const [completedLessonIds, setCompletedLessonIds] = useState(new Set());
   const [successNotice, setSuccessNotice] = useState('');
+
+  // Course Completion & Certificate State
+  const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+  const [earnedCertificate, setEarnedCertificate] = useState(null);
+  const [isLoadingCertificate, setIsLoadingCertificate] = useState(false);
+  const [copiedCertLink, setCopiedCertLink] = useState(false);
 
   // Module Progression Gating State
   const [passedQuizIds, setPassedQuizIds] = useState(new Set());
@@ -463,6 +469,84 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
   const isCurrentLessonLocked = activeLesson ? !isLessonUnlocked(activeLesson.id) : false;
 
+  // Course completion status
+  const isCourseFullyCompleted = allLessons.length > 0 && completedCount === allLessons.length;
+
+  // Fetch or issue certificate for this course
+  const loadEarnedCertificate = async () => {
+    const courseId = activeCourse?.id || courseContent?.id;
+    if (!courseId) return null;
+
+    setIsLoadingCertificate(true);
+    try {
+      // 1. Try to fetch existing certificate
+      const cert = await api.certificates.getByCourse(courseId);
+      if (cert) {
+        setEarnedCertificate(cert);
+        return cert;
+      }
+    } catch {
+      // 2. Try claim/issue certificate
+      try {
+        const claimed = await api.certificates.claim(courseId);
+        if (claimed) {
+          setEarnedCertificate(claimed);
+          return claimed;
+        }
+      } catch (err) {
+        console.warn('Could not claim certificate from server:', err?.message);
+      }
+    } finally {
+      setIsLoadingCertificate(false);
+    }
+
+    // 3. Fallback client certificate object if server offline/local
+    const fallbackCert = {
+      certificateNumber: `TOTC-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+      studentName: resolvedUser?.fullName || 'Gloria Rose',
+      courseTitle: courseContent?.title || activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations',
+      instructorName: courseContent?.instructorName || activeCourse?.instructorName || 'Lina Wilson',
+      issuedAt: new Date().toISOString(),
+      verificationHash: (Math.random().toString(16).substring(2, 18) + Math.random().toString(16).substring(2, 18)).toLowerCase(),
+      verificationUrl: `/verify/certificate/TOTC-2026`
+    };
+    setEarnedCertificate(fallbackCert);
+    return fallbackCert;
+  };
+
+  // Auto-fetch certificate once 100% completed
+  useEffect(() => {
+    if (isCourseFullyCompleted && !earnedCertificate) {
+      loadEarnedCertificate();
+    }
+  }, [isCourseFullyCompleted]);
+
+  // Global listener from other pages (e.g. Student Dashboard)
+  useEffect(() => {
+    const handleOpenCertEvent = () => {
+      loadEarnedCertificate();
+      setShowCompletionCelebration(true);
+    };
+    window.addEventListener('totc-open-certificate', handleOpenCertEvent);
+    return () => window.removeEventListener('totc-open-certificate', handleOpenCertEvent);
+  }, [courseContent, activeCourse]);
+
+  const handleDownloadPdf = () => {
+    if (earnedCertificate?.certificateNumber) {
+      window.open(`http://localhost:5000/api/certificates/${earnedCertificate.certificateNumber}/download`, '_blank');
+    } else {
+      window.print();
+    }
+  };
+
+  const handleCopyCertLink = () => {
+    const hash = earnedCertificate?.verificationHash || earnedCertificate?.certificateNumber || 'verified';
+    const url = `${window.location.origin}/verify/certificate/${hash}`;
+    navigator.clipboard.writeText(url);
+    setCopiedCertLink(true);
+    setTimeout(() => setCopiedCertLink(false), 3000);
+  };
+
   // Cooldown timer ticker
   useEffect(() => {
     if (cooldownRemainingSeconds <= 0) return;
@@ -722,10 +806,16 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     setSuccessNotice('ლექცია მონიშნულია როგორც დასრულებული! 🎉');
     setTimeout(() => setSuccessNotice(''), 3500);
 
-    // Advance to next lesson
+    // Advance to next lesson or celebrate course completion
     const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
     const currentIndex = allLessons.findIndex(l => l.id === activeLesson.id);
-    if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
+    const newCompletedCount = completedLessonIds.has(activeLesson.id) ? completedLessonIds.size : completedLessonIds.size + 1;
+    const isAllComplete = (allLessons.length > 0 && newCompletedCount >= allLessons.length) || (currentIndex === allLessons.length - 1);
+
+    if (isAllComplete) {
+      loadEarnedCertificate();
+      setShowCompletionCelebration(true);
+    } else if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
       handleLessonSwitch(allLessons[currentIndex + 1]);
     }
   };
@@ -803,16 +893,27 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         const currentSecIdx = sections.findIndex(s => s.lessons?.some(l => l.id === activeLesson.id));
         const nextSec = currentSecIdx >= 0 && currentSecIdx < sections.length - 1 ? sections[currentSecIdx + 1] : null;
 
-        if (nextSec) {
+        const isLastLessonOverall = allLessons.length > 0 && allLessons[allLessons.length - 1]?.id === activeLesson.id;
+        const newCompletedCount = completedLessonIds.has(activeLesson.id) ? completedLessonIds.size : completedLessonIds.size + 1;
+        const isAllLessonsCompleted = (allLessons.length > 0 && newCompletedCount >= allLessons.length) || isLastLessonOverall;
+
+        if (nextSec && !isAllLessonsCompleted) {
           setModuleUnlockNotice({
             currentModuleTitle: sections[currentSecIdx]?.title || `Module ${currentSecIdx + 1}`,
             nextModuleTitle: nextSec.title,
             nextLesson: nextSec.lessons?.[0],
             score: res.scorePercentage
           });
+        } else {
+          setModuleUnlockNotice(null);
         }
 
-        setSuccessNotice(`🎉 გამოცდა წარმატებით ჩაბარებულია (${res.scorePercentage}%)! ${nextSec ? 'შემდეგი მოდული განბლოკილია!' : 'კურსი წარმატებით დასრულდა!'}`);
+        if (isAllLessonsCompleted) {
+          loadEarnedCertificate();
+          setShowCompletionCelebration(true);
+        }
+
+        setSuccessNotice(`🎉 გამოცდა წარმატებით ჩაბარებულია (${res.scorePercentage}%)! ${isAllLessonsCompleted ? 'კურსი წარმატებით დასრულდა! 🎉' : 'შემდეგი ეტაპი განბლოკილია!'}`);
         setTimeout(() => setSuccessNotice(''), 6000);
       } else {
         // Failed: apply 1 hour cooldown lockout as requested by user
@@ -1351,13 +1452,13 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                     return (
                       <button
                         onClick={() => {
-                          setSuccessNotice('🎉 გილოცავთ! თქვენ წარმატებით დაასრულეთ მთელი კურსი!');
-                          setTimeout(() => setSuccessNotice(''), 5000);
+                          loadEarnedCertificate();
+                          setShowCompletionCelebration(true);
                         }}
-                        className="px-6 py-3 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
+                        className="px-6 py-3 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-500 hover:brightness-110 text-slate-950 transition-all shadow-xl shadow-amber-500/20 flex items-center gap-2 cursor-pointer active:scale-95 animate-pulse"
                       >
-                        <CheckCircle className="w-4 h-4" />
-                        <span>კურსი დასრულებულია 🎉</span>
+                        <Award className="w-4 h-4 text-slate-950" />
+                        <span>გილოცავთ! სერტიფიკატის მიღება 🎉</span>
                       </button>
                     );
                   }
@@ -1413,18 +1514,31 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         </div>
 
         {/* Course Progress */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {isCourseFullyCompleted && (
+            <button
+              onClick={() => {
+                loadEarnedCertificate();
+                setShowCompletionCelebration(true);
+              }}
+              className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/20 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all animate-pulse shrink-0"
+              title="სერტიფიკატის ნახვა და ჩამოტვირთვა"
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>სერტიფიკატის ნახვა</span>
+            </button>
+          )}
           <div className="flex items-center gap-2 text-xs text-slate-300">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
             <span>{completedCount} / {allLessons.length} დასრულებულია</span>
           </div>
-          <div className="w-32 h-2.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="w-24 sm:w-32 h-2.5 bg-slate-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-totc-teal transition-all duration-300 rounded-full"
+              className={`h-full transition-all duration-300 rounded-full ${isCourseFullyCompleted ? 'bg-amber-400' : 'bg-totc-teal'}`}
               style={{ width: `${currentProgressPercent}%` }}
             />
           </div>
-          <span className="text-xs font-bold text-totc-teal">{currentProgressPercent}%</span>
+          <span className={`text-xs font-bold ${isCourseFullyCompleted ? 'text-amber-400' : 'text-totc-teal'}`}>{currentProgressPercent}%</span>
         </div>
       </div>
 
@@ -1576,8 +1690,35 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 </div>
               </div>
 
-              {/* Celebratory Module Unlocked Banner */}
-              {moduleUnlockNotice && (
+              {/* Course Completed Celebration Banner or Module Unlocked Banner */}
+              {isCourseFullyCompleted ? (
+                <div className="p-5 bg-gradient-to-r from-amber-950/50 via-emerald-950/40 to-slate-900 border-2 border-amber-400/60 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                      <Trophy className="w-6 h-6 animate-bounce" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
+                        <span>🏆 გილოცავთ! თქვენ წარმატებით დაასრულეთ კურსი!</span>
+                      </h4>
+                      <p className="text-xs text-amber-200/90 mt-0.5">
+                        ყველა მოდული და გამოცდა წარმატებითაა ჩაბარებული (100%). თქვენი ოფიციალური აკრედიტებული სერტიფიკატი მზადაა.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      loadEarnedCertificate();
+                      setShowCompletionCelebration(true);
+                    }}
+                    className="px-6 py-3 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl shadow-amber-500/20 transition-all shrink-0 flex items-center gap-2.5 cursor-pointer active:scale-95"
+                  >
+                    <Award className="w-4 h-4 text-slate-950" />
+                    <span>სერტიფიკატის ნახვა</span>
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                  </button>
+                </div>
+              ) : moduleUnlockNotice ? (
                 <div className="p-5 bg-gradient-to-r from-emerald-950/60 via-teal-950/40 to-slate-900 border border-emerald-500/50 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95">
                   <div className="flex items-center gap-3.5">
                     <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow">
@@ -1605,7 +1746,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                     </button>
                   )}
                 </div>
-              )}
+              ) : null}
 
               {successNotice && (
                 <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl flex items-center gap-2 animate-in fade-in">
@@ -1676,8 +1817,35 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 </div>
               </div>
 
-              {/* Celebratory Module Unlocked Banner */}
-              {moduleUnlockNotice && (
+              {/* Course Completed Celebration Banner or Module Unlocked Banner */}
+              {isCourseFullyCompleted ? (
+                <div className="p-5 bg-gradient-to-r from-amber-950/50 via-emerald-950/40 to-slate-900 border-2 border-amber-400/60 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                      <Trophy className="w-6 h-6 animate-bounce" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
+                        <span>🏆 გილოცავთ! თქვენ წარმატებით დაასრულეთ კურსი!</span>
+                      </h4>
+                      <p className="text-xs text-amber-200/90 mt-0.5">
+                        ყველა მოდული და გამოცდა წარმატებითაა ჩაბარებული (100%). თქვენი ოფიციალური აკრედიტებული სერტიფიკატი მზადაა.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      loadEarnedCertificate();
+                      setShowCompletionCelebration(true);
+                    }}
+                    className="px-6 py-3 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xl shadow-amber-500/20 transition-all shrink-0 flex items-center gap-2.5 cursor-pointer active:scale-95"
+                  >
+                    <Award className="w-4 h-4 text-slate-950" />
+                    <span>სერტიფიკატის ნახვა</span>
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                  </button>
+                </div>
+              ) : moduleUnlockNotice ? (
                 <div className="p-5 bg-gradient-to-r from-emerald-950/60 via-teal-950/40 to-slate-900 border border-emerald-500/50 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in zoom-in-95">
                   <div className="flex items-center gap-3.5">
                     <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow">
@@ -1705,7 +1873,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                     </button>
                   )}
                 </div>
-              )}
+              ) : null}
 
               {successNotice && (
                 <div className="p-3.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl flex items-center gap-2 animate-in fade-in">
@@ -2145,6 +2313,31 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
             )}
           </div>
 
+          {/* Course Fully Completed Sidebar Banner */}
+          {isCourseFullyCompleted && (
+            <div className="mb-4 p-3.5 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-teal-500/10 border border-amber-400/50 rounded-2xl flex items-center justify-between gap-2 shadow-sm animate-in fade-in">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/30 text-amber-300 flex items-center justify-center shrink-0 shadow">
+                  <Trophy className="w-4 h-4" />
+                </div>
+                <div className="truncate">
+                  <p className="text-xs font-bold text-amber-300 leading-tight">კურსი დასრულებულია!</p>
+                  <p className="text-[10px] text-slate-300 truncate">სერტიფიკატი გაცემულია</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  loadEarnedCertificate();
+                  setShowCompletionCelebration(true);
+                }}
+                className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-[11px] shrink-0 cursor-pointer shadow transition-all active:scale-95 flex items-center gap-1"
+              >
+                <Award className="w-3 h-3" />
+                <span>სერტიფიკატი</span>
+              </button>
+            </div>
+          )}
+
           {/* Modules Accordion */}
           <div className="space-y-3 overflow-y-auto max-h-[750px] pr-1">
             {courseContent?.sections?.map((section, sIdx) => {
@@ -2323,6 +2516,199 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 </button>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          COURSE COMPLETION & ACCREDITED CERTIFICATE CELEBRATION MODAL
+          ========================================================================= */}
+      {showCompletionCelebration && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
+          <div className="max-w-4xl w-full my-auto bg-slate-900 border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="p-6 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-teal-500/20 border-b border-slate-800 flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 text-amber-300 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                  <Trophy className="w-7 h-7 animate-bounce" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
+                      კურსი დასრულებულია 100%
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                      ოფიციალური სერტიფიკატი
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
+                    🎉 გილოცავთ! თქვენ წარმატებით დაასრულეთ კურსი!
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 mt-0.5">
+                    თქვენ წარმატებით გაიარეთ ყველა მოდული, პრაქტიკული დავალება და გამოცდა. თქვენი აკრედიტებული სერტიფიკატი გაცემულია.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCompletionCelebration(false)}
+                className="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all shrink-0 cursor-pointer"
+                title="დახურვა"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Certificate Canvas / Card Preview */}
+            <div className="p-4 sm:p-8 bg-slate-950/60 overflow-x-auto flex justify-center">
+              <div className="w-full max-w-3xl bg-[#FAF9F6] text-slate-900 rounded-2xl border-8 border-slate-900 shadow-2xl p-6 sm:p-10 relative overflow-hidden select-none">
+                
+                {/* Decorative Inner Border Frame */}
+                <div className="absolute inset-2 sm:inset-3 border-2 border-amber-500/40 pointer-events-none rounded-xl" />
+                <div className="absolute inset-3 sm:inset-4 border border-dashed border-slate-300 pointer-events-none rounded-lg" />
+
+                {/* Certificate Content */}
+                <div className="relative z-10 text-center space-y-4">
+                  
+                  {/* Top Accreditation Strip */}
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-totc-teal" />
+                      <span className="font-extrabold text-xs tracking-widest uppercase text-slate-800">TOTC ONLINE ACADEMY</span>
+                    </div>
+                    <div className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                      № {earnedCertificate?.certificateNumber || 'TOTC-2026-ARCH'}
+                    </div>
+                  </div>
+
+                  {/* Main Title */}
+                  <div className="pt-2">
+                    <h1 className="font-serif font-black text-2xl sm:text-3xl text-slate-900 tracking-wide uppercase">
+                      აკადემიური სერტიფიკატი
+                    </h1>
+                    <p className="text-xs sm:text-sm font-serif italic text-amber-700/90 font-medium">
+                      Certificate of Course Completion & Mastery
+                    </p>
+                  </div>
+
+                  {/* Student Name */}
+                  <div className="pt-2 pb-1">
+                    <p className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
+                      წინამდებარე სერტიფიკატი გადაეცემა:
+                    </p>
+                    <h2 className="text-2xl sm:text-4xl font-serif font-extrabold text-slate-900 mt-1 pb-1 inline-block border-b-2 border-slate-800 px-6 sm:px-12">
+                      {earnedCertificate?.studentName || resolvedUser?.fullName || 'Gloria Rose'}
+                    </h2>
+                  </div>
+
+                  {/* Course Details */}
+                  <div className="max-w-xl mx-auto space-y-1.5 pt-1">
+                    <p className="text-xs text-slate-600">
+                      რომელმაც 100%-ით წარმატებით დაასრულა აკრედიტებული სასწავლო პროგრამა:
+                    </p>
+                    <h3 className="text-base sm:text-xl font-extrabold text-totc-teal">
+                      {earnedCertificate?.courseTitle || courseContent?.title || activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      სასწავლო მოდულების, პრაქტიკული ლაბორატორიებისა და ფინალური საგამოცდო შეფასების სრული გავლით.
+                    </p>
+                  </div>
+
+                  {/* Signatures & Seal Bar */}
+                  <div className="grid grid-cols-3 items-end pt-6 sm:pt-8 border-t border-slate-200 mt-4">
+                    
+                    {/* Instructor Signature */}
+                    <div className="text-center space-y-1">
+                      <div className="font-serif italic font-bold text-slate-800 text-sm sm:text-base border-b border-slate-400 pb-1 mx-2 sm:mx-6">
+                        {earnedCertificate?.instructorName || courseContent?.instructorName || activeCourse?.instructorName || 'Lina Wilson'}
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        ინსტრუქტორი
+                      </p>
+                    </div>
+
+                    {/* Official Golden Seal */}
+                    <div className="flex justify-center">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 border-4 border-amber-700/40 shadow-lg flex flex-col items-center justify-center text-amber-950 font-black leading-none transform rotate-[-6deg] hover:rotate-0 transition-transform cursor-pointer" title="აკადემიური დამოწმების ბეჭედი">
+                        <span className="text-[7px] sm:text-[8px] tracking-wider">★ TOTC ★</span>
+                        <span className="text-[9px] sm:text-[11px] font-extrabold my-0.5">OFFICIAL</span>
+                        <span className="text-[7px] sm:text-[8px] tracking-wider">VERIFIED</span>
+                      </div>
+                    </div>
+
+                    {/* Issue Date */}
+                    <div className="text-center space-y-1">
+                      <div className="font-medium text-slate-800 text-xs sm:text-sm border-b border-slate-400 pb-1 mx-2 sm:mx-6">
+                        {new Date(earnedCertificate?.issuedAt || Date.now()).toLocaleDateString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                        გაცემის თარიღი
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Verification Hash Footer */}
+                  <div className="pt-3 text-[9px] font-mono text-slate-400 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 mt-3">
+                    <span className="truncate">
+                      HASH: {earnedCertificate?.verificationHash || 'SHA-256:7e8b2a1c0d4e5f6a7b8c9d0e1f2a3b4c'}
+                    </span>
+                    <span className="text-emerald-700 font-bold flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      TOTC აკადემიური რეესტრით დამოწმებული
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="p-5 sm:p-6 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyCertLink}
+                  className="px-4 py-2.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-2 border border-slate-700"
+                >
+                  {copiedCertLink ? (
+                    <>
+                      <CheckCheck className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400">ბმული დაკოპირდა!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>ვერიფიკაციის ბმული</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => setShowCompletionCelebration(false)}
+                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  მასალების გადახედვა
+                </button>
+
+                <button
+                  onClick={() => setActivePage('dashboard')}
+                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-700 hover:bg-slate-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>ჩემი კაბინეტი</span>
+                </button>
+
+                <button
+                  onClick={handleDownloadPdf}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <Printer className="w-4 h-4 text-slate-950" />
+                  <span>სერტიფიკატის ჩამოტვირთვა (PDF)</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

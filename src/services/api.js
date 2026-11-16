@@ -338,6 +338,27 @@ export const api = {
     },
   },
 
+  // Accredited Certificates
+  certificates: {
+    async getMyCertificates() {
+      return request('/certificates/my');
+    },
+
+    async getByCourse(courseId) {
+      return request(`/certificates/courses/${courseId}`);
+    },
+
+    async claim(courseId) {
+      return request(`/certificates/courses/${courseId}/claim`, {
+        method: 'POST',
+      });
+    },
+
+    async verify(hash) {
+      return request(`/certificates/verify/${hash}`);
+    },
+  },
+
   learning: {
     async getContent(courseId) {
       return request(`/courses/${courseId}/learn`);
