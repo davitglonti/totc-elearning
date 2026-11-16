@@ -57,8 +57,21 @@ public class PaymentsController : BaseApiController
     {
         // 1. Enforce Webhook Signature / Secret Verification Header
         var configuredSecret = _configuration["Payment:WebhookSecret"] 
-            ?? _configuration["Stripe:WebhookSecret"] 
-            ?? "totc_whsec_prod_emergency_quarantine_2026";
+            ?? _configuration["Stripe:WebhookSecret"];
+
+        if (string.IsNullOrWhiteSpace(configuredSecret))
+        {
+            var isProduction = _configuration["ASPNETCORE_ENVIRONMENT"]?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false;
+            if (isProduction)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    error = "ConfigurationError",
+                    message = "Payment gateway webhook secret is not configured on the server."
+                });
+            }
+            configuredSecret = "dev_webhook_secret_not_for_prod";
+        }
 
         var signatureHeader = Request.Headers["Stripe-Signature"].FirstOrDefault()
             ?? Request.Headers["X-Webhook-Signature"].FirstOrDefault()

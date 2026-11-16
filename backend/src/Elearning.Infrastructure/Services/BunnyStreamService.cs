@@ -37,9 +37,14 @@ public class BunnyStreamService : IBunnyStreamService
 
         if (string.IsNullOrWhiteSpace(_activeConfig.ApiKey) || string.IsNullOrWhiteSpace(_activeConfig.LibraryId))
         {
-            throw new InvalidOperationException(
-                "FATAL SECURITY CONFIGURATION ERROR: BunnyStream credentials are not configured. " +
-                "Configure 'BunnyStream:ApiKey' and 'BunnyStream:LibraryId' via environment variables, user-secrets, or appsettings.Local.json.");
+            var isProduction = _configuration["ASPNETCORE_ENVIRONMENT"]?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false;
+            if (isProduction)
+            {
+                throw new InvalidOperationException(
+                    "FATAL SECURITY CONFIGURATION ERROR: BunnyStream credentials are not configured. " +
+                    "Configure 'BunnyStream:ApiKey' and 'BunnyStream:LibraryId' via environment variables, user-secrets, or appsettings.Local.json.");
+            }
+            Console.WriteLine("[BunnyStreamService] WARNING: BunnyStream:ApiKey or BunnyStream:LibraryId is not configured. Local fallback storage will be used.");
         }
 
         _localUploadRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "videos");
@@ -84,7 +89,19 @@ public class BunnyStreamService : IBunnyStreamService
             
         var tokenKey = !string.IsNullOrWhiteSpace(config.TokenSecurityKey)
             ? config.TokenSecurityKey
-            : (!string.IsNullOrWhiteSpace(config.ApiKey) ? config.ApiKey : "totc_bunny_drm_token_sec_2026");
+            : (!string.IsNullOrWhiteSpace(config.ApiKey) 
+                ? config.ApiKey 
+                : (_configuration["BunnyStream:TokenSecurityKey"] ?? _configuration["BunnyStream:ApiKey"]));
+
+        if (string.IsNullOrWhiteSpace(tokenKey))
+        {
+            var isProduction = _configuration["ASPNETCORE_ENVIRONMENT"]?.Equals("Production", StringComparison.OrdinalIgnoreCase) ?? false;
+            if (isProduction)
+            {
+                throw new InvalidOperationException("Bunny Stream token signing key is not configured. Configure 'BunnyStream:TokenSecurityKey' or 'BunnyStream:ApiKey' in configuration.");
+            }
+            tokenKey = "dev_temporary_local_signing_key_not_for_prod";
+        }
 
         var safeTtl = Math.Max(60, ttlSeconds);
         var expires = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + safeTtl;

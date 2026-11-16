@@ -16,6 +16,9 @@ RUN npm ci
 # Copy source code and build config
 COPY . .
 
+# Configure production API base URL for Nginx proxy routing
+ENV VITE_API_BASE_URL=/api
+
 # Build production bundle with Vite
 RUN npm run build
 

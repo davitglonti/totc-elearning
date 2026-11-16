@@ -29,7 +29,7 @@ Each item is categorized by severity:
 | **ISS-004** | **HIGH** | Infrastructure / Storage | Local Filesystem Media Storage vs Cloud Object Store | `Elearning.Infrastructure/Services/LocalMediaService.cs` | Pre-Production |
 | **ISS-005** | **HIGH** | Quality Assurance | Total Line Code Coverage Gap (12.5% vs 70% Target) | `backend/tests/` & `frontend/` | Staging Phase |
 | **ISS-006** | **MEDIUM** | Architecture | Direct DbContext Injection in API Controllers | `InstructorCoursesController`, `VideosController` | Phase 6 |
-| **ISS-007** | **MEDIUM** | Persistence / Scale | SQLite Single-Writer Lock vs Horizontal Pod Scaling | `appsettings.json`, `Program.cs` | Pre-Production |
+| **ISS-007** | **RESOLVED** | Persistence / Scale | PostgreSQL 17 Migration (`InitialPostgres` & `Npgsql`) | `appsettings.json`, `Program.cs`, `docker-compose.yml` | Pre-Launch Sprint ✅ |
 | **ISS-008** | **MEDIUM** | Data Integrity | Manual DTO Validation vs Declarative FluentValidation | `Elearning.Application/DTOs/` | Phase 6 |
 | **ISS-009** | **MEDIUM** | Quality Assurance | Lack of Frontend Component & Integration Test Suite | `frontend/src/` | Phase 6 |
 | **ISS-010** | **MEDIUM** | Security / UX | Missing Refresh Token Rotation for Extended Sessions | `TokenService.cs`, `AuthController.cs` | Phase 6 |
@@ -131,15 +131,14 @@ Each item is categorized by severity:
 
 ---
 
-#### ISS-007: SQLite Single-Writer Lock vs Horizontal Pod Scaling
-- **Severity**: **MEDIUM**
-- **Affected Files**: `appsettings.json`, `Elearning.Infrastructure/Data/ElearningDbContext.cs`
-- **Root Cause**: The default database configuration uses SQLite (`Data Source=elearning.db`). SQLite uses database-level write locks.
-- **Business Impact**: In a multi-replica container environment, multiple pods attempting to write to a shared SQLite database file will experience `database is locked` (`busy_timeout`) errors, causing HTTP 500 errors during traffic spikes.
-- **Recommended Remediation**:
-  1. Update `Program.cs` to support PostgreSQL via `Npgsql.EntityFrameworkCore.PostgreSQL`.
-  2. Configure `UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))` when running in Staging and Production environments.
-  3. Retain SQLite for local development and in-memory unit testing.
+#### ISS-007: PostgreSQL 17 Migration & Multi-Pod Scaling (RESOLVED)
+- **Status**: **RESOLVED** (Completed in Pre-Launch Sprint)
+- **Affected Files**: `appsettings.json`, `Program.cs`, `Elearning.Infrastructure.csproj`, `docker-compose.yml`
+- **Resolution**:
+  1. Integrated `Npgsql.EntityFrameworkCore.PostgreSQL` 9.0.2 into `Elearning.Infrastructure`.
+  2. Updated `Program.cs` to configure `options.UseNpgsql(connectionString)`.
+  3. Pruned historical SQLite migrations and scaffolded `20261116064726_InitialPostgres.cs`.
+  4. Added containerized `postgres:17-alpine` service with persistent `pgdata` volume and health checks to `docker-compose.yml`.
 
 ---
 

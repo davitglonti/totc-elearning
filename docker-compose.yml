@@ -1,4 +1,24 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: totc-lms-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-elearning}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - totc-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-elearning}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -7,22 +27,17 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
-      - ConnectionStrings__DefaultConnection=Data Source=/app/data/elearning.db
-      - Jwt__Secret=totc_sec_prod_enterprise_jwt_key_minimum_64_characters_super_secret_2026
-      - Jwt__Issuer=TOTC-LMS
-      - Jwt__Audience=TOTC-Students
-      - Jwt__ExpiresInDays=7
-      - BunnyStream__LibraryId=805955
-      - BunnyStream__ApiKey=bny_sec_prod_simulated_key_2026
-      - BunnyStream__CdnHostname=vz-f0959c15-d92.b-cdn.net
-      - Payment__WebhookSecret=totc_whsec_prod_emergency_quarantine_2026
-      - Stripe__WebhookSecret=totc_whsec_prod_emergency_quarantine_2026
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-elearning};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - backend-data:/app/data
       - backend-uploads:/app/wwwroot/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - totc-network
     healthcheck:
@@ -53,7 +68,7 @@ services:
       start_period: 5s
 
 volumes:
-  backend-data:
+  pgdata:
     driver: local
   backend-uploads:
     driver: local

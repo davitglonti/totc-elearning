@@ -35,7 +35,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 });
 
 // 1. Configure Database Connection
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=elearning.db";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Host=localhost;Port=5432;Database=elearning;Username=postgres;Password=postgres";
 var useSqlServer = connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase);
 
 builder.Services.AddDbContext<ElearningDbContext>(options =>
@@ -46,7 +47,7 @@ builder.Services.AddDbContext<ElearningDbContext>(options =>
     }
     else
     {
-        options.UseSqlite(connectionString);
+        options.UseNpgsql(connectionString);
     }
 });
 
@@ -119,15 +120,34 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // 4. Configure CORS
+var defaultOrigins = new List<string>
+{
+    "http://localhost",
+    "http://localhost:80",
+    "https://localhost",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000"
+};
+
+var configuredOrigins = builder.Configuration["Cors:AllowedOrigins"];
+if (!string.IsNullOrWhiteSpace(configuredOrigins))
+{
+    var extraOrigins = configuredOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    foreach (var origin in extraOrigins)
+    {
+        if (!defaultOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+        {
+            defaultOrigins.Add(origin);
+        }
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:3000"
-            )
+        policy.WithOrigins(defaultOrigins.ToArray())
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

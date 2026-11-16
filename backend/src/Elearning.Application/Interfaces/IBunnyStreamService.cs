@@ -26,7 +26,7 @@ public class SignedVideoPlaybackDto
 
 public class BunnyConfigDto
 {
-    public string LibraryId { get; set; } = "805955";
+    public string LibraryId { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string CdnHostname { get; set; } = "vz-f0959c15-d92.b-cdn.net";
     public string TokenSecurityKey { get; set; } = string.Empty;
