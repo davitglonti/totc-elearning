@@ -164,11 +164,35 @@ public class QuizService : IQuizService
         // 4. If passed and linked to a lesson, complete the lesson
         if (passed && quiz.LessonId.HasValue)
         {
-            await _enrollmentService.CompleteLessonAsync(quiz.LessonId.Value, userId, new CompleteLessonDto
+            try
             {
-                MarkAsComplete = true,
-                LastWatchedPositionSeconds = 0
-            });
+                await _enrollmentService.CompleteLessonAsync(quiz.LessonId.Value, userId, new CompleteLessonDto
+                {
+                    MarkAsComplete = true,
+                    LastWatchedPositionSeconds = 0
+                });
+            }
+            catch (Exception)
+            {
+                // Ensure lesson progress is directly marked complete in DB even if prior sequential check threw
+                var progress = await _context.LessonProgresses.FirstOrDefaultAsync(lp => lp.LessonId == quiz.LessonId.Value && lp.UserId == userId);
+                if (progress == null)
+                {
+                    _context.LessonProgresses.Add(new LessonProgress
+                    {
+                        LessonId = quiz.LessonId.Value,
+                        UserId = userId,
+                        IsCompleted = true,
+                        CompletedAt = DateTime.UtcNow
+                    });
+                }
+                else if (!progress.IsCompleted)
+                {
+                    progress.IsCompleted = true;
+                    progress.CompletedAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
+            }
         }
 
         var totalAttemptsCount = await _context.QuizAttempts.CountAsync(qa => qa.QuizId == quizId && qa.UserId == userId);

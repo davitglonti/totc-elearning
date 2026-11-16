@@ -12,22 +12,32 @@ export default function StudentDashboardPage({ currentUser, setActivePage, onSel
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'in-progress', 'completed'
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    async function loadMyCourses() {
-      setLoading(true);
-      setError('');
-      try {
-        const myCourses = await api.enrollments.getMyCourses();
-        setCourses(myCourses || []);
-      } catch (err) {
-        console.warn('Could not load enrolled courses from API:', err.message);
-        setError('სერვერთან დაკავშირება ვერ მოხერხდა. ნაჩვენებია ოფლაინ მონაცემები.');
-      } finally {
-        setLoading(false);
-      }
+  const loadMyCourses = async () => {
+    try {
+      const myCourses = await api.enrollments.getMyCourses();
+      setCourses(myCourses || []);
+    } catch (err) {
+      console.warn('Could not load enrolled courses from API:', err.message);
+      setError('სერვერთან დაკავშირება ვერ მოხერხდა. ნაჩვენებია ოფლაინ მონაცემები.');
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadMyCourses();
+
+    const handleProgressUpdate = () => {
+      loadMyCourses();
+    };
+
+    window.addEventListener('totc-lesson-completed', handleProgressUpdate);
+    window.addEventListener('focus', handleProgressUpdate);
+
+    return () => {
+      window.removeEventListener('totc-lesson-completed', handleProgressUpdate);
+      window.removeEventListener('focus', handleProgressUpdate);
+    };
   }, []);
 
   // Filter courses based on tab and search

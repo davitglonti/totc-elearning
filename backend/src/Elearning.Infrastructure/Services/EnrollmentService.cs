@@ -215,7 +215,9 @@ public class EnrollmentService : IEnrollmentService
         }
 
         // Enforce Sequential Lesson Progression: all prior lessons in curriculum order must be completed first
-        if (dto.MarkAsComplete)
+        // (Bypassed if course author enabled IsOpenAccess)
+        var course = await _context.Courses.FindAsync(courseId);
+        if (dto.MarkAsComplete && (course == null || !course.IsOpenAccess))
         {
             var courseLessons = await _context.Lessons
                 .Where(l => l.Section!.CourseId == courseId)

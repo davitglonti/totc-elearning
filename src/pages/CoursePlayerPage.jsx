@@ -718,7 +718,8 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     }
 
     setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
-    setSuccessNotice('Lecture marked as complete! 🎉');
+    window.dispatchEvent(new CustomEvent('totc-lesson-completed', { detail: { lessonId: activeLesson.id } }));
+    setSuccessNotice('ლექცია მონიშნულია როგორც დასრულებული! 🎉');
     setTimeout(() => setSuccessNotice(''), 3500);
 
     // Advance to next lesson
@@ -784,6 +785,12 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
       if (res && res.passed) {
         setPassedQuizIds(prev => new Set(prev).add(activeLesson.id));
         setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
+        window.dispatchEvent(new CustomEvent('totc-lesson-completed', { detail: { lessonId: activeLesson.id } }));
+        try {
+          await api.learning.completeLesson(activeLesson.id, 0, true);
+        } catch (e) {
+          console.warn('Completed quiz lesson:', e.message);
+        }
 
         // Clear any previous cooldown
         if (activeLesson) {
