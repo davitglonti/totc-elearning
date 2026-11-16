@@ -116,6 +116,32 @@ public class CertificatesController : BaseApiController
     }
 
     /// <summary>
+    /// Retrieve certificate details publicly for sharing and verification by serial number or hash.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("public/{identifier}")]
+    [ProducesResponseType(typeof(CertificateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPublicCertificate(string identifier)
+    {
+        if (string.IsNullOrWhiteSpace(identifier)) return BadRequest();
+
+        var cert = await _certificateService.GetCertificateByNumberAsync(identifier);
+        if (cert != null) return Ok(cert);
+
+        if (Guid.TryParse(identifier, out var courseId))
+        {
+            if (CurrentUserId.HasValue)
+            {
+                var userCert = await _certificateService.GetCertificateByCourseIdAsync(CurrentUserId.Value, courseId);
+                if (userCert != null) return Ok(userCert);
+            }
+        }
+
+        return NotFound(new { message = "Certificate not found." });
+    }
+
+    /// <summary>
     /// Publicly verify the authenticity of a certificate using its verification hash or certificate number.
     /// </summary>
     [AllowAnonymous]

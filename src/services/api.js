@@ -357,6 +357,10 @@ export const api = {
     async verify(hash) {
       return request(`/certificates/verify/${hash}`);
     },
+
+    async getPublic(identifier) {
+      return request(`/certificates/public/${identifier}`);
+    },
   },
 
   learning: {

@@ -540,8 +540,8 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   };
 
   const handleCopyCertLink = () => {
-    const hash = earnedCertificate?.verificationHash || earnedCertificate?.certificateNumber || 'verified';
-    const url = `${window.location.origin}/verify/certificate/${hash}`;
+    const num = earnedCertificate?.certificateNumber || earnedCertificate?.verificationHash || 'TOTC-2026-ARCH';
+    const url = `${window.location.origin}/certificates/${num}`;
     navigator.clipboard.writeText(url);
     setCopiedCertLink(true);
     setTimeout(() => setCopiedCertLink(false), 3000);
@@ -2689,6 +2689,18 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                   className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-all cursor-pointer"
                 >
                   მასალების გადახედვა
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowCompletionCelebration(false);
+                    setActivePage('certificate-detail', earnedCertificate);
+                  }}
+                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  title="გადადით სერტიფიკატის ოფიციალურ ცალკე გვერდზე"
+                >
+                  <Award className="w-4 h-4 text-slate-950" />
+                  <span>სერტიფიკატის გვერდი</span>
                 </button>
 
                 <button

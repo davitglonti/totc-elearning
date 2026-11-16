@@ -21,6 +21,7 @@ const CreateCoursePage = lazy(() => import('./pages/CreateCoursePage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const InstructorProfilePage = lazy(() => import('./pages/InstructorProfilePage'));
+const CertificateDetailPage = lazy(() => import('./pages/CertificateDetailPage'));
 
 function PageLoadingFallback() {
   return (
@@ -96,6 +97,11 @@ const getPathForPage = (page, course, playCourse, instructor) => {
       return '/blog/edtech-trends-2026';
     case 'checkout':
       return '/checkout';
+    case 'certificate-detail': {
+      const activeCert = course || playCourse;
+      const certNum = activeCert?.certificateNumber || activeCert?.verificationHash || activeCert?.id || 'TOTC-2026-ARCH';
+      return `/certificates/${certNum}`;
+    }
     default:
       return '/';
   }
@@ -108,6 +114,7 @@ export default function App() {
   const [activeCourseToPlay, setActiveCourseToPlay] = useState(null);
   const [selectedInstructor, setSelectedInstructor] = useState(null);
   const [courseToEdit, setCourseToEdit] = useState(null);
+  const [selectedCertificateData, setSelectedCertificateData] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
   const [securityNotice, setSecurityNotice] = useState('');
@@ -237,6 +244,20 @@ export default function App() {
         setActivePage('blog');
       } else if (path === '/checkout') {
         setActivePage('checkout');
+      } else if (path.startsWith('/certificates/') || path.startsWith('/verify/certificate/') || path.startsWith('/certificate/')) {
+        const parts = path.split('/').filter(Boolean);
+        const rawId = decodeURIComponent(parts[parts.length - 1]);
+        const certNum = rawId.toUpperCase().startsWith('TOTC') ? rawId.toUpperCase() : rawId;
+        const user = api.auth.getCurrentUser();
+        setSelectedCertificateData({
+          certificateNumber: certNum.startsWith('TOTC') ? certNum : 'TOTC-2026-ARCH',
+          verificationHash: rawId,
+          courseTitle: 'AWS Certified Solutions Architect & Cloud Operations',
+          studentName: user?.fullName || 'Gloria Rose',
+          instructorName: 'Lina Wilson',
+          issuedAt: new Date().toISOString()
+        });
+        setActivePage('certificate-detail');
       } else {
         setActivePage('home');
       }
@@ -317,6 +338,8 @@ export default function App() {
         setSelectedCourse(extraData);
       } else if (targetPage === 'instructor-profile') {
         setSelectedInstructor(extraData);
+      } else if (targetPage === 'certificate-detail') {
+        setSelectedCertificateData(extraData);
       }
     } else if (targetPage === 'course-player' && selectedCourse && !activeCourseToPlay) {
       setActiveCourseToPlay(selectedCourse);
@@ -571,6 +594,14 @@ export default function App() {
             <CheckoutPage
               setActivePage={handleSafePageTransition}
               selectedCourse={selectedCourse}
+              currentUser={currentUser}
+            />
+          )}
+
+          {activePage === 'certificate-detail' && (
+            <CertificateDetailPage
+              certificateData={selectedCertificateData}
+              setActivePage={handleSafePageTransition}
               currentUser={currentUser}
             />
           )}
