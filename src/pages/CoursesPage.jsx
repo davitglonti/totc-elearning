@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Search, Star, Clock, Users, ArrowRight, Filter, Sparkles, TrendingUp, Play, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
 
+// Instant in-memory cache for course catalog and categories
+let cachedCatalogCourses = null;
+let cachedCatalogCategories = null;
+
 export default function CoursesPage({ setActivePage, setSelectedCourse, currentUser, enrolledCourseIds }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
-  const [categories, setCategories] = useState(['All', 'Design', 'Development', 'Business', 'Marketing', 'Photography']);
+  const [categories, setCategories] = useState(cachedCatalogCategories || ['All', 'Design', 'Development', 'Business', 'Marketing', 'Photography']);
   const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'newest' | 'rating' | 'price_asc' | 'price_desc'
-  const [coursesList, setCoursesList] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [coursesList, setCoursesList] = useState(cachedCatalogCourses || []);
+  const [loading, setLoading] = useState(!cachedCatalogCourses);
 
   // Initial fallback list matching TOTC platform
   const initialCourses = [
@@ -65,7 +69,9 @@ export default function CoursesPage({ setActivePage, setSelectedCourse, currentU
       try {
         const cats = await api.categories.getAll();
         if (cats && cats.length > 0) {
-          setCategories(['All', ...cats.map(c => c.name)]);
+          const list = ['All', ...cats.map(c => c.name)];
+          cachedCatalogCategories = list;
+          setCategories(list);
         }
       } catch (e) {
         console.warn('Using local categories:', e.message);
@@ -77,8 +83,11 @@ export default function CoursesPage({ setActivePage, setSelectedCourse, currentU
   // Fetch live courses from backend API with popularity priority
   useEffect(() => {
     let isMounted = true;
+
     async function loadCourses() {
-      setLoading(true);
+      if (coursesList.length === 0) {
+        setLoading(true);
+      }
       try {
         const res = await api.courses.getAll({
           search: searchTerm,
@@ -103,26 +112,30 @@ export default function CoursesPage({ setActivePage, setSelectedCourse, currentU
             isPopular: Boolean(c.isPopular),
             badge: c.isPopular ? '⭐ პოპულარული' : (c.price > 400 ? 'ბესტსელერი' : 'რჩეული')
           }));
+          cachedCatalogCourses = mapped;
           setCoursesList(mapped);
         } else if (isMounted) {
           setCoursesList(initialCourses);
         }
       } catch (err) {
         console.warn('Falling back to local course list:', err.message);
-        if (isMounted) setCoursesList(initialCourses);
+        if (isMounted && coursesList.length === 0) setCoursesList(initialCourses);
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
-    const timer = setTimeout(() => {
+    // Only debounce if the user is typing in the search box; otherwise fetch immediately!
+    if (searchTerm) {
+      const timer = setTimeout(loadCourses, 250);
+      return () => {
+        isMounted = false;
+        clearTimeout(timer);
+      };
+    } else {
       loadCourses();
-    }, 200);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
+      return () => { isMounted = false; };
+    }
   }, [searchTerm, activeCategory, sortBy]);
 
   const filteredCourses = coursesList.filter((c) => {
@@ -208,9 +221,45 @@ export default function CoursesPage({ setActivePage, setSelectedCourse, currentU
           </div>
         </div>
 
-        {/* Course Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredCourses.map((c) => (
+        {/* Course Cards Grid or Skeleton Loader */}
+        {loading && filteredCourses.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((sk) => (
+              <div
+                key={sk}
+                className="bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-xs animate-pulse flex flex-col justify-between"
+              >
+                <div>
+                  <div className="h-56 bg-slate-200/80" />
+                  <div className="p-6 space-y-4">
+                    <div className="h-4 bg-slate-200/80 rounded-md w-1/3" />
+                    <div className="h-6 bg-slate-200/80 rounded-md w-4/5" />
+                    <div className="flex items-center gap-3 pt-2">
+                      <div className="w-9 h-9 rounded-full bg-slate-200/80 shrink-0" />
+                      <div className="h-4 bg-slate-200/80 rounded-md w-1/2" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 pt-0 border-t border-gray-100 mt-4 flex items-center justify-between">
+                  <div className="h-6 bg-slate-200/80 rounded-md w-20" />
+                  <div className="h-4 bg-slate-200/80 rounded-md w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="py-20 text-center space-y-3 bg-white rounded-3xl border border-gray-100 p-8">
+            <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 mx-auto flex items-center justify-center font-bold">
+              🔍
+            </div>
+            <h4 className="font-bold text-lg text-totc-navy">კურსები ვერ მოიძებნა</h4>
+            <p className="text-xs text-gray-500 max-w-sm mx-auto">
+              მითითებული ფილტრით ან საძიებო სიტყვით კურსები არ არსებობს. სცადეთ სხვა კატეგორია.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCourses.map((c) => (
             <div
               key={c.id}
               onClick={() => handleCourseClick(c)}
@@ -320,6 +369,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse, currentU
             </div>
           ))}
         </div>
+        )}
 
       </div>
     </div>

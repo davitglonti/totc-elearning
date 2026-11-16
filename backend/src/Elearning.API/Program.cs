@@ -76,6 +76,7 @@ builder.Services.AddDbContext<ElearningDbContext>(options =>
 });
 
 // 2. Register Application and Infrastructure Services
+builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("BunnyClient", client =>
 {
     client.Timeout = TimeSpan.FromMinutes(30);

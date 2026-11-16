@@ -3,6 +3,7 @@ using Elearning.Application.Interfaces;
 using Elearning.Domain.Entities;
 using Elearning.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Elearning.Infrastructure.Services;
 
@@ -12,83 +13,108 @@ namespace Elearning.Infrastructure.Services;
 public class CourseService : ICourseService
 {
     private readonly ElearningDbContext _context;
+    private readonly IMemoryCache? _cache;
 
-    public CourseService(ElearningDbContext context)
+    public CourseService(ElearningDbContext context, IMemoryCache? cache = null)
     {
         _context = context;
+        _cache = cache;
     }
 
     public async Task<PagedResult<CourseDto>> GetCoursesAsync(CourseFilterParams filter)
     {
-        var query = _context.Courses
+        var cacheKey = $"catalog_{filter.Category}_{filter.Level}_{filter.SortBy}_{filter.Page}_{filter.PageSize}_{filter.Search}";
+        if (_cache != null && _cache.TryGetValue(cacheKey, out PagedResult<CourseDto>? cached) && cached != null)
+        {
+            return cached;
+        }
+
+        var baseQuery = _context.Courses
             .AsNoTracking()
-            .AsSplitQuery()
-            .Include(c => c.Category)
-            .Include(c => c.Instructor)
-            .Include(c => c.Sections).ThenInclude(s => s.Lessons)
-            .Include(c => c.Reviews)
-            .Include(c => c.Enrollments)
-            .Where(c => c.IsPublished && c.ApprovalStatus == "Approved")
-            .AsQueryable();
+            .Where(c => c.IsPublished && c.ApprovalStatus == "Approved");
 
         // Search text in Title, Description, or Instructor
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var search = filter.Search.Trim().ToLower();
-            query = query.Where(c => c.Title.ToLower().Contains(search) ||
-                                     c.Description.ToLower().Contains(search) ||
-                                     (c.Instructor != null && c.Instructor.FullName.ToLower().Contains(search)));
+            baseQuery = baseQuery.Where(c => c.Title.ToLower().Contains(search) ||
+                                             c.Description.ToLower().Contains(search) ||
+                                             (c.Instructor != null && c.Instructor.FullName.ToLower().Contains(search)));
         }
 
         // Category filter (slug or name)
         if (!string.IsNullOrWhiteSpace(filter.Category) && filter.Category != "All")
         {
             var cat = filter.Category.Trim().ToLower();
-            query = query.Where(c => c.Category != null && (c.Category.Slug.ToLower() == cat || c.Category.Name.ToLower() == cat));
+            baseQuery = baseQuery.Where(c => c.Category != null && (c.Category.Slug.ToLower() == cat || c.Category.Name.ToLower() == cat));
         }
 
         // Level filter
         if (filter.Level.HasValue)
         {
-            query = query.Where(c => c.Level == filter.Level.Value);
+            baseQuery = baseQuery.Where(c => c.Level == filter.Level.Value);
         }
 
         // Price range
         if (filter.MinPrice.HasValue)
-            query = query.Where(c => c.Price >= filter.MinPrice.Value);
+            baseQuery = baseQuery.Where(c => c.Price >= filter.MinPrice.Value);
         if (filter.MaxPrice.HasValue)
-            query = query.Where(c => c.Price <= filter.MaxPrice.Value);
+            baseQuery = baseQuery.Where(c => c.Price <= filter.MaxPrice.Value);
 
-        // Sorting
-        query = filter.SortBy?.ToLower() switch
-        {
-            "newest" => query.OrderByDescending(c => c.CreatedAt),
-            "price_asc" => query.OrderBy(c => c.Price),
-            "price_desc" => query.OrderByDescending(c => c.Price),
-            "rating" => query.OrderByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0).ThenByDescending(c => c.Enrollments.Count),
-            _ => query.OrderByDescending(c => c.IsPopular)
-                      .ThenByDescending(c => c.Enrollments.Count)
-                      .ThenByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0)
-                      .ThenByDescending(c => c.CreatedAt) // default "popular"
-        };
-
-        var totalCount = await query.CountAsync();
+        var totalCount = await baseQuery.CountAsync();
         var page = Math.Max(1, filter.Page);
         var pageSize = Math.Clamp(filter.PageSize, 1, 50);
 
-        var items = await query
+        // Sorting
+        var sortedQuery = filter.SortBy?.ToLower() switch
+        {
+            "newest" => baseQuery.OrderByDescending(c => c.CreatedAt),
+            "price_asc" => baseQuery.OrderBy(c => c.Price),
+            "price_desc" => baseQuery.OrderByDescending(c => c.Price),
+            "rating" => baseQuery.OrderByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0).ThenByDescending(c => c.Enrollments.Count),
+            _ => baseQuery.OrderByDescending(c => c.IsPopular)
+                          .ThenByDescending(c => c.Enrollments.Count)
+                          .ThenByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0)
+                          .ThenByDescending(c => c.CreatedAt) // default "popular"
+        };
+
+        var items = await sortedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => MapToDto(c))
+            .Select(c => new CourseDto
+            {
+                Id = c.Id,
+                Title = c.Title,
+                Description = c.Description,
+                ThumbnailUrl = c.ThumbnailUrl,
+                Price = c.Price,
+                Level = c.Level.ToString(),
+                CategoryName = c.Category != null ? c.Category.Name : string.Empty,
+                CategoryId = c.CategoryId,
+                InstructorName = c.Instructor != null ? c.Instructor.FullName : string.Empty,
+                InstructorAvatar = c.Instructor != null ? c.Instructor.AvatarUrl : null,
+                InstructorId = c.InstructorId,
+                InstructorEmail = c.Instructor != null ? c.Instructor.Email : string.Empty,
+                AverageRating = c.Reviews.Any() ? Math.Round(c.Reviews.Average(r => r.Rating), 1) : 5.0,
+                ReviewsCount = c.Reviews.Count,
+                TotalDurationMinutes = c.Sections.SelectMany(s => s.Lessons).Sum(l => (int?)l.DurationMinutes) ?? 0,
+                StudentsCount = c.Enrollments.Count,
+                IsPopular = c.IsPopular,
+                IsOpenAccess = c.IsOpenAccess,
+                CreatedAt = c.CreatedAt
+            })
             .ToListAsync();
 
-        return new PagedResult<CourseDto>
+        var result = new PagedResult<CourseDto>
         {
             Items = items,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
         };
+
+        _cache?.Set(cacheKey, result, TimeSpan.FromSeconds(60));
+        return result;
     }
 
     public async Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId, string? currentUserEmail = null)
