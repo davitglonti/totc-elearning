@@ -16,6 +16,12 @@ public class Course : BaseEntity
     public bool IsPublished { get; set; } = true;
     public bool IsPopular { get; set; } = false;
 
+    /// <summary>
+    /// When true, enrolled students have open access to all lessons and modules in any order (non-linear).
+    /// When false (default), lessons and modules unlock sequentially based on progress.
+    /// </summary>
+    public bool IsOpenAccess { get; set; } = false;
+
     // Moderation and Admin Approval Workflow
     public string ApprovalStatus { get; set; } = "Approved"; // "Approved", "PendingApproval", "Rejected"
     public string? RejectionReason { get; set; }

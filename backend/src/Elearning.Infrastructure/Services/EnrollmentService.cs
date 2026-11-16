@@ -137,6 +137,7 @@ public class EnrollmentService : IEnrollmentService
             Title = course.Title,
             Description = course.Description,
             ProgressPercentage = progressPercent,
+            IsOpenAccess = course.IsOpenAccess,
             Sections = course.Sections.Select(s => new SectionLearnDto
             {
                 Id = s.Id,

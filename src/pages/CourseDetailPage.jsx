@@ -120,7 +120,8 @@ export default function CourseDetailPage({
       id: courseId,
       title: courseData.title,
       instructorName: courseData.instructor || courseData.instructorName,
-      targetLessonId: targetLesson?.id
+      targetLessonId: targetLesson?.id,
+      isOpenAccess: courseData?.isOpenAccess
     };
 
     if (onSelectCourseToPlay) {

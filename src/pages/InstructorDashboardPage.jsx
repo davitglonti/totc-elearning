@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, DollarSign, Star, Plus, Video, 
   CheckCircle, Trash2, Sparkles, Eye, EyeOff, Layers, 
-  Clock, AlertCircle, RefreshCw, ArrowUpRight, Edit3
+  Clock, AlertCircle, RefreshCw, ArrowUpRight, Edit3, Lock, Unlock
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -223,8 +223,18 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
                           className="w-12 h-9 rounded-lg object-cover shrink-0 border border-gray-200"
                         />
                         <div className="min-w-0 max-w-xs">
-                          <p className="font-bold text-totc-navy truncate">{c.title}</p>
-                          <p className="text-[10px] text-totc-gray truncate">{c.description}</p>
+                          <p className="font-bold text-totc-navy truncate flex items-center gap-1.5">
+                            <span className="truncate">{c.title}</span>
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${
+                              c.isOpenAccess ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {c.isOpenAccess ? <Unlock className="w-2.5 h-2.5" /> : <Lock className="w-2.5 h-2.5" />}
+                              <span>{c.isOpenAccess ? 'ღია წვდომა' : 'ეტაპობრივი'}</span>
+                            </span>
+                            <span className="text-[10px] text-totc-gray truncate">{c.description}</span>
+                          </div>
                         </div>
                       </div>
                     </td>

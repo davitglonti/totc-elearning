@@ -411,9 +411,16 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const isAdmin = resolvedUser?.role === 'Admin';
   const isAuthorOrAdmin = isCourseAuthor || isAdmin;
 
+  // Determine if course has open access (non-linear viewing) enabled by author
+  const isOpenAccessCourse = Boolean(
+    courseContent?.isOpenAccess ?? 
+    activeCourse?.isOpenAccess ?? 
+    false
+  );
+
   // Check if an entire module/section is unlocked for the student
   const isSectionUnlocked = (sectionIndex) => {
-    if (isAuthorOrAdmin) return true; // Instructors & Admins preview all modules
+    if (isAuthorOrAdmin || isOpenAccessCourse) return true; // Instructors, Admins & Open-Access courses have all modules unlocked
     if (sectionIndex <= 0) return true; // First module is always open
 
     const sections = courseContent?.sections || [];
@@ -438,7 +445,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
   // Check if a specific lesson is unlocked for the current student
   const isLessonUnlocked = (lessonId) => {
-    if (isAuthorOrAdmin) return true; // Instructors & Admins have full author preview access
+    if (isAuthorOrAdmin || isOpenAccessCourse) return true; // Instructors, Admins & Open-Access courses allow direct access to any lecture
     const sections = courseContent?.sections || [];
     const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lessonId));
 
@@ -2078,11 +2085,24 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
 
         {/* Right Column: Course Content / Syllabus (4 Cols) */}
         <div className="lg:col-span-4 bg-[#1E293B] border-t lg:border-t-0 lg:border-l border-slate-700/80 p-6 flex flex-col">
-          <div className="mb-4">
-            <h3 className="font-bold text-lg text-white">კურსის შინაარსი</h3>
-            <p className="text-xs text-slate-400">
-              {courseContent?.sections?.length || 2} მოდული • {allLessons.length} ლექცია
-            </p>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div>
+              <h3 className="font-bold text-lg text-white">კურსის შინაარსი</h3>
+              <p className="text-xs text-slate-400">
+                {courseContent?.sections?.length || 2} მოდული • {allLessons.length} ლექცია
+              </p>
+            </div>
+            {isOpenAccessCourse ? (
+              <span className="px-2.5 py-1 rounded-full bg-teal-500/15 text-teal-400 border border-teal-500/30 text-[10px] font-bold flex items-center gap-1 shrink-0" title="ავტორის მიერ დაშვებულია ნებისმიერ ლექციაზე თავისუფალი გადასვლა">
+                <Unlock className="w-3 h-3" />
+                <span>ღია წვდომა</span>
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1 shrink-0" title="მასალები იხსნება ეტაპობრივად, წინამორბედი ლექციის გავლის მიხედვით">
+                <Lock className="w-3 h-3" />
+                <span>ეტაპობრივი</span>
+              </span>
+            )}
           </div>
 
           {/* Modules Accordion */}

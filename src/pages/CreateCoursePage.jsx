@@ -4,7 +4,7 @@ import {
   HelpCircle, Clock, Sparkles, BookOpen, Layers, DollarSign, 
   Image as ImageIcon, Globe, Eye, EyeOff, Save, AlertCircle, RefreshCw,
   UploadCloud, Check, Loader2, Play, Paperclip, FileCode, FolderArchive,
-  Download, ChevronDown, ChevronUp, CheckSquare, X
+  Download, ChevronDown, ChevronUp, CheckSquare, X, Lock, Unlock
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -36,6 +36,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   const [isPublished, setIsPublished] = useState(courseToEdit?.isPublished ?? true);
   const [approvalStatus, setApprovalStatus] = useState(courseToEdit?.approvalStatus || 'Approved');
   const [rejectionReason, setRejectionReason] = useState(courseToEdit?.rejectionReason || null);
+  const [isOpenAccess, setIsOpenAccess] = useState(courseToEdit?.isOpenAccess ?? false);
 
   // Curriculum Builder (Modules & Lectures)
   const [sections, setSections] = useState([
@@ -107,6 +108,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         setIsPublished(data.isPublished);
         setApprovalStatus(data.approvalStatus || 'Approved');
         setRejectionReason(data.rejectionReason || null);
+        setIsOpenAccess(!!data.isOpenAccess);
 
         if (data.sections && data.sections.length > 0) {
           setSections(data.sections.map(s => ({
@@ -544,6 +546,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         categoryId: categoryId || (categories[0]?.id) || '10000000-0000-0000-0000-000000000001',
         thumbnailUrl: thumbnailUrl.trim() || '/assets/explore_row_1.png',
         isPublished: publishImmediately,
+        isOpenAccess: Boolean(isOpenAccess),
         resubmitForReview: true,
         sections: sections.map((s, sIdx) => ({
           id: s.id && !String(s.id).startsWith('sec-') ? s.id : null,
@@ -833,6 +836,83 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
                       onChange={(e) => setPrice(e.target.value)}
                       className="w-full pl-8 pr-3 py-3 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-bold text-totc-navy transition-all"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Course Access Mode (Sequential / Gated vs Fully Open Access) */}
+              <div className="pt-3 border-t border-gray-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-totc-navy uppercase tracking-wider flex items-center gap-1.5">
+                    {isOpenAccess ? (
+                      <Unlock className="w-3.5 h-3.5 text-totc-teal" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-amber-500" />
+                    )}
+                    <span>მასალებზე წვდომის რეჟიმი</span>
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${
+                    isOpenAccess 
+                      ? 'bg-teal-50 text-totc-teal border border-teal-200' 
+                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  }`}>
+                    {isOpenAccess ? 'სრულად ღია' : 'თანმიმდევრული'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2">
+                  {/* Sequential / Gated option */}
+                  <div
+                    onClick={() => setIsOpenAccess(false)}
+                    className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start gap-3 text-left ${
+                      !isOpenAccess 
+                        ? 'bg-amber-50/60 border-amber-300 ring-2 ring-amber-400/20 shadow-xs' 
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="courseAccessMode"
+                      checked={!isOpenAccess}
+                      onChange={() => setIsOpenAccess(false)}
+                      className="mt-0.5 text-amber-500 focus:ring-amber-400 cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-totc-navy">
+                        <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>🔒 ეტაპობრივი გავლა (გავლის მიხედვით)</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                        ლექციები და ტესტები იხსნება თანმიმდევრულად — წინა მასალის ნახვისა და გამოცდის ჩაბარების შემდეგ.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Open Access non-linear option */}
+                  <div
+                    onClick={() => setIsOpenAccess(true)}
+                    className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start gap-3 text-left ${
+                      isOpenAccess 
+                        ? 'bg-teal-50/60 border-teal-400 ring-2 ring-teal-500/20 shadow-xs' 
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="courseAccessMode"
+                      checked={isOpenAccess}
+                      onChange={() => setIsOpenAccess(true)}
+                      className="mt-0.5 text-totc-teal focus:ring-totc-teal cursor-pointer"
+                    />
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-totc-navy">
+                        <Unlock className="w-3.5 h-3.5 text-totc-teal shrink-0" />
+                        <span>🔓 სრულად ღია კურსი (თავისუფალი წვდომა)</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                        შეძენისთანავე სტუდენტს შეუძლია ნებისმიერი ლექციის (მაგ. მე-6 ლექციის) პირდაპირ ნახვა წინების გავლის გარეშე.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

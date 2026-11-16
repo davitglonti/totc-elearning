@@ -20,6 +20,7 @@ public class CourseLearnDto
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int ProgressPercentage { get; set; }
+    public bool IsOpenAccess { get; set; }
     public List<SectionLearnDto> Sections { get; set; } = new();
 }
 

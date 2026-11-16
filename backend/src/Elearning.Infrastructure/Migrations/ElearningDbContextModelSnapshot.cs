@@ -162,6 +162,11 @@ namespace Elearning.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsOpenAccess")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsPopular")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")

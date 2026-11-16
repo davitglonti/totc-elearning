@@ -139,6 +139,7 @@ public class CourseService : ICourseService
             TotalDurationMinutes = course.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes),
             StudentsCount = course.Enrollments.Count,
             IsPopular = course.IsPopular,
+            IsOpenAccess = course.IsOpenAccess,
             CreatedAt = course.CreatedAt,
             IsEnrolled = isEnrolled,
             Sections = course.Sections.Select(s => new SectionDto
@@ -301,7 +302,8 @@ public class CourseService : ICourseService
             CategoryId = dto.CategoryId,
             InstructorId = instructorId,
             ApprovalStatus = "PendingApproval",
-            IsPublished = false
+            IsPublished = false,
+            IsOpenAccess = dto.IsOpenAccess
         };
 
         _context.Courses.Add(course);
@@ -333,6 +335,7 @@ public class CourseService : ICourseService
         if (dto.Level.HasValue) course.Level = dto.Level.Value;
         if (dto.CategoryId.HasValue) course.CategoryId = dto.CategoryId.Value;
         if (dto.IsPublished.HasValue) course.IsPublished = dto.IsPublished.Value;
+        if (dto.IsOpenAccess.HasValue) course.IsOpenAccess = dto.IsOpenAccess.Value;
 
         await _context.SaveChangesAsync();
         return MapToDto(course);
@@ -422,6 +425,7 @@ public class CourseService : ICourseService
             TotalDurationMinutes = c.Sections != null ? c.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes) : 0,
             StudentsCount = c.Enrollments?.Count ?? 0,
             IsPopular = c.IsPopular,
+            IsOpenAccess = c.IsOpenAccess,
             CreatedAt = c.CreatedAt
         };
     }

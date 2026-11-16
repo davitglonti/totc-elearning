@@ -72,6 +72,7 @@ public class ElearningDbContext : DbContext
             entity.Property(c => c.Price).HasPrecision(18, 2);
             entity.Property(c => c.ConcurrencyStamp).IsConcurrencyToken().HasMaxLength(64);
             entity.Property(c => c.IsPopular).HasDefaultValue(false);
+            entity.Property(c => c.IsOpenAccess).HasDefaultValue(false);
 
             entity.HasIndex(c => new { c.IsPublished, c.ApprovalStatus, c.CreatedAt });
             entity.HasIndex(c => c.IsPopular);

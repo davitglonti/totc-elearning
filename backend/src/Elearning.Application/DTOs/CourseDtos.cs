@@ -44,6 +44,7 @@ public class CourseDto
     public int TotalDurationMinutes { get; set; }
     public int StudentsCount { get; set; }
     public bool IsPopular { get; set; }
+    public bool IsOpenAccess { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -62,6 +63,7 @@ public class CreateCourseDto
     public decimal Price { get; set; }
     public CourseLevel Level { get; set; } = CourseLevel.Beginner;
     public Guid CategoryId { get; set; }
+    public bool IsOpenAccess { get; set; } = false;
 }
 
 public class UpdateCourseDto
@@ -73,6 +75,7 @@ public class UpdateCourseDto
     public CourseLevel? Level { get; set; }
     public Guid? CategoryId { get; set; }
     public bool? IsPublished { get; set; }
+    public bool? IsOpenAccess { get; set; }
 }
 
 public class CourseFilterParams

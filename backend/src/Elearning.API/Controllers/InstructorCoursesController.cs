@@ -181,6 +181,7 @@ public class InstructorCoursesController : BaseApiController
             InstructorId = instructor.Id,
             ApprovalStatus = approvalStatus,
             IsPublished = isPublished,
+            IsOpenAccess = dto.IsOpenAccess,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -296,6 +297,7 @@ public class InstructorCoursesController : BaseApiController
             CategoryName = category.Name,
             CategoryId = category.Id,
             IsPublished = course.IsPublished,
+            IsOpenAccess = course.IsOpenAccess,
             ApprovalStatus = course.ApprovalStatus,
             RejectionReason = course.RejectionReason,
             SectionsCount = course.Sections.Count,
@@ -495,6 +497,7 @@ public class InstructorCoursesController : BaseApiController
             CategoryId = course.CategoryId,
             CategoryName = course.Category?.Name ?? "General",
             IsPublished = course.IsPublished,
+            IsOpenAccess = course.IsOpenAccess,
             ApprovalStatus = course.ApprovalStatus,
             RejectionReason = course.RejectionReason,
             Sections = course.Sections.Select(s => new CreateFullSectionDto
@@ -607,6 +610,7 @@ public class InstructorCoursesController : BaseApiController
             course.ThumbnailUrl = dto.ThumbnailUrl.Trim();
         course.Price = dto.Price >= 0 ? dto.Price : 0m;
         course.Level = dto.Level;
+        course.IsOpenAccess = dto.IsOpenAccess;
 
         // If previously rejected or resubmit requested, put back in PendingApproval queue
         if (!isUserAdmin)

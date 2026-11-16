@@ -26,6 +26,7 @@ public class InstructorCourseItemDto
     public string InstructorName { get; set; } = string.Empty;
     public string InstructorEmail { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
+    public bool IsOpenAccess { get; set; }
     public string ApprovalStatus { get; set; } = "Approved";
     public string? RejectionReason { get; set; }
     public int SectionsCount { get; set; }
@@ -45,6 +46,7 @@ public class CreateFullCourseDto
     public CourseLevel Level { get; set; } = CourseLevel.Beginner;
     public Guid CategoryId { get; set; }
     public bool IsPublished { get; set; } = true;
+    public bool IsOpenAccess { get; set; } = false;
     public List<CreateFullSectionDto> Sections { get; set; } = new();
 }
 
@@ -120,6 +122,7 @@ public class InstructorCourseEditDto
     public Guid CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
+    public bool IsOpenAccess { get; set; }
     public string ApprovalStatus { get; set; } = "Approved";
     public string? RejectionReason { get; set; }
     public List<CreateFullSectionDto> Sections { get; set; } = new();
