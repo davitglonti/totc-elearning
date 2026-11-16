@@ -17,6 +17,7 @@ public class SettingsService : ISettingsService
     private const string KeyContactEmail = "SiteSetting:ContactEmail";
     private const string KeyContactPhone = "SiteSetting:ContactPhone";
     private const string KeyFooterText = "SiteSetting:FooterText";
+    private const string KeyHomeContent = "SiteSetting:HomeContent";
 
     public SettingsService(ElearningDbContext context)
     {
@@ -39,7 +40,8 @@ public class SettingsService : ISettingsService
             HeroSubtitle = dict.GetValueOrDefault(KeyHeroSubtitle, "თანამედროვე საგანმანათლებლო პლატფორმა პროფესიონალური კურსებით, სერტიფიკატებითა და ინტერაქტიული ლექციებით."),
             ContactEmail = dict.GetValueOrDefault(KeyContactEmail, "support@totc.edu.ge"),
             ContactPhone = dict.GetValueOrDefault(KeyContactPhone, "+995 32 200 00 00"),
-            FooterText = dict.GetValueOrDefault(KeyFooterText, "ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა")
+            FooterText = dict.GetValueOrDefault(KeyFooterText, "ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა"),
+            HomeContentJson = dict.GetValueOrDefault(KeyHomeContent, string.Empty)
         };
     }
 
@@ -73,6 +75,7 @@ public class SettingsService : ISettingsService
         Upsert(KeyContactEmail, dto.ContactEmail);
         Upsert(KeyContactPhone, dto.ContactPhone);
         Upsert(KeyFooterText, dto.FooterText);
+        Upsert(KeyHomeContent, dto.HomeContentJson);
 
         await _context.SaveChangesAsync();
 

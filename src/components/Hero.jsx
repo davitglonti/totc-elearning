@@ -1,7 +1,11 @@
 import React from 'react';
 import { Play } from 'lucide-react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function Hero({ openAuthModal, openVideoModal }) {
+  const { settings } = useSettings();
+  const hero = settings?.homeContent?.hero || defaultHomeContent.hero;
+
   return (
     <section className="relative w-full overflow-hidden bg-totc-teal rounded-b-[40px] md:rounded-b-[80px] lg:rounded-b-[120px] pt-32 md:pt-40 pb-16 md:pb-28">
       {/* Decorative background blurs and ambient glow */}
@@ -14,12 +18,12 @@ export default function Hero({ openAuthModal, openVideoModal }) {
           {/* Left Content Column */}
           <div className="lg:col-span-6 z-10 text-center lg:text-left space-y-6 md:space-y-8">
             <h1 className="font-poppins font-extrabold text-4xl sm:text-5xl md:text-6xl leading-[1.15] tracking-tight">
-              <span className="text-totc-orange">ონლაინ სწავლა</span>{' '}
-              <span className="text-totc-purple">ახლა ბევრად მარტივია</span>
+              <span className="text-totc-orange">{hero.titlePart1 || 'ონლაინ სწავლა'}</span>{' '}
+              <span className="text-totc-purple">{hero.titlePart2 || 'ახლა ბევრად მარტივია'}</span>
             </h1>
 
             <p className="font-poppins font-normal text-white text-lg sm:text-xl md:text-2xl leading-relaxed max-w-xl mx-auto lg:mx-0">
-              TOTC არის თანამედროვე საგანმანათლებლო პლატფორმა, რომელიც გასწავლით ინტერაქტიული და პრაქტიკული მეთოდებით
+              {hero.description || 'TOTC არის თანამედროვე საგანმანათლებლო პლატფორმა, რომელიც გასწავლით ინტერაქტიული და პრაქტიკული მეთოდებით'}
             </p>
 
             {/* Buttons Row */}
@@ -28,7 +32,7 @@ export default function Hero({ openAuthModal, openVideoModal }) {
                 onClick={() => openAuthModal('register')}
                 className="px-8 py-4 rounded-full font-semibold text-lg text-white bg-white/30 hover:bg-white/40 active:scale-95 backdrop-blur-md transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                შეუერთდი უფასოდ
+                {hero.button1Text || 'შეუერთდი უფასოდ'}
               </button>
 
               <button
@@ -39,7 +43,7 @@ export default function Hero({ openAuthModal, openVideoModal }) {
                   <Play className="w-5 h-5 md:w-6 md:h-6 text-totc-cyan fill-totc-cyan ml-0.5" />
                 </div>
                 <span className="font-poppins font-normal text-totc-navy text-base md:text-xl group-hover:text-totc-purple transition-colors">
-                  ნახე როგორ მუშაობს
+                  {hero.button2Text || 'ნახე როგორ მუშაობს'}
                 </span>
               </button>
             </div>
@@ -53,7 +57,7 @@ export default function Hero({ openAuthModal, openVideoModal }) {
             {/* The high-res composite student with floating cards */}
             <div className="relative w-full max-w-[560px] lg:max-w-[620px] transition-transform duration-500 hover:scale-[1.02]">
               <img
-                src="/assets/hero_student_cards.png"
+                src={hero.imageUrl || '/assets/hero_student_cards.png'}
                 alt="Student learning with TOTC interactive online platform"
                 className="w-full h-auto drop-shadow-2xl select-none pointer-events-none"
                 loading="eager"

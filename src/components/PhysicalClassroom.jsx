@@ -1,7 +1,11 @@
 import React from 'react';
 import { Play } from 'lucide-react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function PhysicalClassroom({ openVideoModal }) {
+  const { settings } = useSettings();
+  const classroom = settings?.homeContent?.classroom || defaultHomeContent.classroom;
+
   return (
     <section className="py-20 md:py-28 bg-white overflow-hidden">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
@@ -14,14 +18,12 @@ export default function PhysicalClassroom({ openVideoModal }) {
               <div className="absolute -top-4 -left-6 w-16 h-16 rounded-full bg-totc-mint/20 -z-10 blur-md" />
               
               <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple leading-[1.25] tracking-tight">
-                ყველაფერი, რაც{' '}
-                <span className="text-totc-mint">ფიზიკურ აუდიტორიაშია შესაძლებელი,</span>{' '}
-                <span className="text-totc-mint">ხელმისაწვდომია TOTC-ში</span>
+                {classroom.title || 'ყველაფერი, რაც ფიზიკურ აუდიტორიაშია შესაძლებელი, ხელმისაწვდომია TOTC-ში'}
               </h2>
             </div>
 
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed">
-              TOTC-ის სასწავლო მართვის სისტემა ეხმარება ტრადიციულ და ონლაინ სკოლებს მართონ განრიგი, დასწრება, გადახდები და ვირტუალური გაკვეთილები ერთ დაცულ ღრუბლოვან სისტემაში.
+              {classroom.description || 'TOTC-ის სასწავლო მართვის სისტემა ეხმარება ტრადიციულ და ონლაინ სკოლებს მართონ განრიგი, დასწრება, გადახდები და ვირტუალური გაკვეთილები ერთ დაცულ ღრუბლოვან სისტემაში.'}
             </p>
 
             <div className="pt-2">
@@ -29,7 +31,7 @@ export default function PhysicalClassroom({ openVideoModal }) {
                 onClick={openVideoModal}
                 className="inline-flex items-center text-totc-gray font-normal text-lg sm:text-xl underline underline-offset-8 decoration-totc-mint hover:text-totc-purple transition-colors"
               >
-                გაიგეთ მეტი
+                {classroom.buttonText || 'გაიგეთ მეტი'}
               </button>
             </div>
           </div>
@@ -41,10 +43,12 @@ export default function PhysicalClassroom({ openVideoModal }) {
             <div className="absolute -bottom-5 -right-5 w-52 h-52 rounded-3xl bg-totc-mint/20 -z-10" />
 
             {/* Video Preview Card */}
-            <div className="relative rounded-[24px] overflow-hidden shadow-2xl border-4 border-white bg-white group cursor-pointer max-w-2xl w-full"
-                 onClick={openVideoModal}>
+            <div 
+              className="relative rounded-[24px] overflow-hidden shadow-2xl border-4 border-white bg-white group cursor-pointer max-w-2xl w-full"
+              onClick={openVideoModal}
+            >
               <img
-                src="/assets/classroom_feature.png"
+                src={classroom.image || '/assets/classroom_feature.png'}
                 alt="Physical classroom features in TOTC"
                 className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
               />

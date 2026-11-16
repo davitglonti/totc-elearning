@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { LayoutGrid, Users, Eye, CheckCircle2 } from 'lucide-react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function Features({ openAuthModal }) {
   const [quizAnswer, setQuizAnswer] = useState(null);
   const [showQuizSuccess, setShowQuizSuccess] = useState(false);
+  const { settings } = useSettings();
+  const feat = settings?.homeContent?.features || defaultHomeContent.features;
+  const bullets = feat.feature1Bullets && feat.feature1Bullets.length >= 3 ? feat.feature1Bullets : defaultHomeContent.features.feature1Bullets;
 
   const handleQuizAnswer = (ans) => {
     setQuizAnswer(ans);
@@ -20,10 +24,10 @@ export default function Features({ openAuthModal }) {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-20 md:mb-32">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            ჩვენი <span className="text-totc-mint">შესაძლებლობები</span>
+            {feat.title || 'ჩვენი შესაძლებლობები'}
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-            უნიკალური ფუნქციონალი, რომელიც სასწავლო პროცესს ბევრად უფრო ეფექტურს ხდის
+            {feat.description || 'უნიკალური ფუნქციონალი, რომელიც სასწავლო პროცესს ბევრად უფრო ეფექტურს ხდის'}
           </p>
         </div>
 
@@ -43,7 +47,7 @@ export default function Features({ openAuthModal }) {
           {/* Text Right */}
           <div className="lg:col-span-5 space-y-8">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              საკლასო ოთახზე მორგებული <span className="text-totc-mint">ინტერფეისი</span>
+              {feat.feature1Title || 'საკლასო ოთახზე მორგებული ინტერფეისი'}
             </h3>
 
             <div className="space-y-6">
@@ -52,7 +56,7 @@ export default function Features({ openAuthModal }) {
                   <LayoutGrid className="w-5 h-5 text-totc-purple" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  ლექტორებს აქვთ გამოყოფილი პოდიუმის სივრცე და მარტივი ნავიგაცია.
+                  {bullets[0]}
                 </p>
               </div>
 
@@ -61,7 +65,7 @@ export default function Features({ openAuthModal }) {
                   <Users className="w-5 h-5 text-totc-orange" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  ასისტენტებსა და პრეზენტატორებს მარტივად შეუძლიათ აუდიტორიის წინ გამოსვლა.
+                  {bullets[1]}
                 </p>
               </div>
 
@@ -70,7 +74,7 @@ export default function Features({ openAuthModal }) {
                   <Eye className="w-5 h-5 text-totc-cyan" />
                 </div>
                 <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed pt-2">
-                  ინსტრუქტორებს შეუძლიათ ერთდროულად აკონტროლონ ყველა სტუდენტი და პროგრესი.
+                  {bullets[2]}
                 </p>
               </div>
             </div>
@@ -82,10 +86,10 @@ export default function Features({ openAuthModal }) {
           {/* Text Left */}
           <div className="lg:col-span-6 lg:order-1 order-2 space-y-6">
             <h3 className="font-poppins font-bold text-3xl sm:text-4xl text-totc-purple leading-snug">
-              <span className="text-totc-mint">ინსტრუმენტები</span> ლექტორებისა და სტუდენტებისთვის
+              {feat.feature2Title || 'ინსტრუმენტები ლექტორებისა და სტუდენტებისთვის'}
             </h3>
             <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-              სისტემა გთავაზობთ სასწავლო ინსტრუმენტების დინამიურ ნაკრებს. ინსტრუქტორებს შეუძლიათ რეალურ დროში გასცენ დავალებები სტუდენტებისთვის შესასრულებლად.
+              {feat.feature2Description || 'სისტემა გთავაზობთ სასწავლო ინსტრუმენტების დინამიურ ნაკრებს. ინსტრუქტორებს შეუძლიათ რეალურ დროში გასცენ დავალებები სტუდენტებისთვის შესასრულებლად.'}
             </p>
           </div>
 

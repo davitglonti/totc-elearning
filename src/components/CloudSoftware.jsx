@@ -1,26 +1,10 @@
 import React from 'react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function CloudSoftware() {
-  const cards = [
-    {
-      icon: '/assets/all_in_one_billing.png',
-      title: 'ონლაინ გადახდები, ინვოისები და კონტრაქტები',
-      desc: 'თქვენი ორგანიზაციის ფინანსური და იურიდიული ოპერაციების მარტივი და უსაფრთხო კონტროლი. გააგზავნეთ ინვოისები მომენტალურად',
-      accent: '#5B72EE',
-    },
-    {
-      icon: '/assets/all_in_one_schedule.png',
-      title: 'მარტივი განრიგი და დასწრების აღრიცხვა',
-      desc: 'დაგეგმეთ გაკვეთილები და დაჯავშნეთ ვირტუალური აუდიტორიები. აწარმოეთ სტუდენტების დასწრების დეტალური სტატისტიკა',
-      accent: '#00CBB8',
-    },
-    {
-      icon: '/assets/all_in_one_tracking.png',
-      title: 'სტუდენტებთან კომუნიკაცია',
-      desc: 'ავტომატიზებული შეტყობინებები და ელ-ფოსტის მართვა ჯგუფებისა და ინდივიდუალური მსმენელებისთვის ერთ სივრცეში',
-      accent: '#29B9E7',
-    },
-  ];
+  const { settings } = useSettings();
+  const cloud = settings?.homeContent?.cloudSoftware || defaultHomeContent.cloudSoftware;
+  const cards = cloud.cards && cloud.cards.length > 0 ? cloud.cards : defaultHomeContent.cloudSoftware.cards;
 
   return (
     <section className="py-20 md:py-28 bg-white">
@@ -29,10 +13,11 @@ export default function CloudSoftware() {
         {/* Section Heading */}
         <div className="max-w-3xl mx-auto space-y-4 mb-20 md:mb-28">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            ყველაფერი ერთ <span className="text-totc-mint">ღრუბლოვან სისტემაში</span>
+            {cloud.titlePart1 || 'ყველაფერი ერთ'}{' '}
+            <span className="text-totc-mint">{cloud.titlePart2 || 'ღრუბლოვან სისტემაში'}</span>
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed max-w-2xl mx-auto">
-            TOTC არის მძლავრი ონლაინ პლატფორმა, რომელიც აერთიანებს ყველა ინსტრუმენტს წარმატებული სწავლებისა და ადმინისტრირებისთვის.
+            {cloud.description || 'TOTC არის მძლავრი ონლაინ პლატფორმა, რომელიც აერთიანებს ყველა ინსტრუმენტს წარმატებული სწავლებისა და ადმინისტრირებისთვის.'}
           </p>
         </div>
 
@@ -46,7 +31,7 @@ export default function CloudSoftware() {
               {/* Floating circular icon badge elevated at top */}
               <div className="absolute -top-12 w-24 h-24 rounded-full flex items-center justify-center bg-white shadow-lg transition-transform duration-300 group-hover:scale-110">
                 <img
-                  src={card.icon}
+                  src={card.icon || '/assets/all_in_one_billing.png'}
                   alt={card.title}
                   className="w-16 h-16 object-contain"
                 />

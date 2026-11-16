@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { ArrowRight, ChevronRight, ChevronLeft, Star } from 'lucide-react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function Testimonials({ openAssessmentModal }) {
+  const { settings } = useSettings();
+  const t = settings?.homeContent?.testimonials || defaultHomeContent.testimonials;
+
   const testimonials = [
     {
       quote: "დიდი მადლობა დახმარებისთვის. ზუსტად ის არის, რასაც ვეძებდი. საოცრად ზოგავს დროსა და ძალისხმევას. TOTC იდეალურად მოერგო ჩვენს სასწავლო პროცესს.",
@@ -48,23 +52,17 @@ export default function Testimonials({ openAssessmentModal }) {
             <div className="flex items-center justify-center lg:justify-start gap-4">
               <span className="w-16 h-0.5 bg-totc-purple inline-block" />
               <span className="font-poppins font-medium text-totc-purple text-base sm:text-lg tracking-widest uppercase">
-                შეფასებები
+                {t.badge || 'შეფასებები'}
               </span>
             </div>
 
             <h2 className="font-poppins font-bold text-4xl sm:text-5xl text-totc-purple leading-tight tracking-tight">
-              რას ამბობენ ჩვენზე?
+              {t.title || 'რას ამბობენ ჩვენზე?'}
             </h2>
 
             <div className="space-y-4 text-totc-gray text-base sm:text-lg leading-relaxed max-w-lg mx-auto lg:mx-0">
               <p>
-                TOTC-ს უკვე 100,000-ზე მეტი დადებითი შეფასება აქვს მთელი მსოფლიოდან.
-              </p>
-              <p>
-                ათასობით სტუდენტმა და ლექტორმა გააუმჯობესა სასწავლო გამოცდილება ჩვენი პლატფორმით.
-              </p>
-              <p>
-                გაგვიზიარეთ თქვენი შთაბეჭდილებაც!
+                {t.description || 'TOTC-ს უკვე 100,000-ზე მეტი დადებითი შეფასება აქვს მთელი მსოფლიოდან. ათასობით სტუდენტმა და ლექტორმა გააუმჯობესა სასწავლო გამოცდილება ჩვენი პლატფორმით.'}
               </p>
             </div>
 
@@ -73,7 +71,7 @@ export default function Testimonials({ openAssessmentModal }) {
                 onClick={openAssessmentModal}
                 className="group inline-flex items-center gap-4 px-8 py-4 rounded-full border border-totc-teal text-totc-teal hover:bg-totc-teal hover:text-white transition-all duration-300 font-medium text-base sm:text-lg shadow-sm hover:shadow-md"
               >
-                <span>დაწერეთ შეფასება</span>
+                <span>{t.buttonText || 'დაწერეთ შეფასება'}</span>
                 <div className="w-8 h-8 rounded-full border border-totc-teal flex items-center justify-center group-hover:border-white transition-colors">
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </div>

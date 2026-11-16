@@ -1,13 +1,10 @@
 import React from 'react';
+import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 export default function SuccessStats() {
-  const stats = [
-    { number: '15K+', label: 'აქტიური სტუდენტი' },
-    { number: '75%', label: 'წარმატების მაჩვენებელი' },
-    { number: '35+', label: 'პრაქტიკული კურსი' },
-    { number: '26', label: 'წამყვანი ექსპერტი' },
-    { number: '16', label: 'წლიანი გამოცდილება' },
-  ];
+  const { settings } = useSettings();
+  const statsContent = settings?.homeContent?.stats || defaultHomeContent.stats;
+  const items = statsContent.items && statsContent.items.length > 0 ? statsContent.items : defaultHomeContent.stats.items;
 
   return (
     <section className="py-20 md:py-28 bg-white">
@@ -16,16 +13,16 @@ export default function SuccessStats() {
         {/* Section Header */}
         <div className="max-w-3xl mx-auto space-y-4 mb-16 md:mb-20">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-dark tracking-tight">
-            ჩვენი წარმატება
+            {statsContent.title || 'ჩვენი წარმატება'}
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-            ათასობით სტუდენტმა უკვე გაიუმჯობესა კარიერა TOTC-ის პრაქტიკული კურსებითა და ოფიციალური სერტიფიკატებით.
+            {statsContent.description || 'ათასობით სტუდენტმა უკვე გაიუმჯობესა კარიერა TOTC-ის პრაქტიკული კურსებითა და ოფიციალური სერტიფიკატებით.'}
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-10">
-          {stats.map((stat, idx) => (
+          {items.map((stat, idx) => (
             <div
               key={idx}
               className="flex flex-col items-center justify-center p-4 transition-all duration-300 hover:-translate-y-1 group"

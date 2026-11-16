@@ -1,6 +1,13 @@
 import React from 'react';
+import { useSettings } from '../context/SettingsContext';
 
 export default function LatestNews({ setActivePage }) {
+  const { settings } = useSettings();
+  const newsContent = settings?.homeContent?.news || {
+    title: 'ბოლო სიახლეები და რესურსები',
+    description: 'გაეცანით TOTC-ის განვითარებას და სიახლეებს საგანმანათლებლო ტექნოლოგიებში',
+  };
+
   const handleArticleClick = () => {
     setActivePage('blog-detail');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -37,10 +44,10 @@ export default function LatestNews({ setActivePage }) {
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16 md:mb-20">
           <h2 className="font-poppins font-bold text-3xl sm:text-4xl md:text-5xl text-totc-purple tracking-tight">
-            ბოლო სიახლეები და რესურსები
+            {newsContent.title || 'ბოლო სიახლეები და რესურსები'}
           </h2>
           <p className="font-poppins font-normal text-totc-gray text-base sm:text-xl leading-relaxed">
-            გაეცანით TOTC-ის განვითარებას და სიახლეებს საგანმანათლებლო ტექნოლოგიებში
+            {newsContent.description || 'გაეცანით TOTC-ის განვითარებას და სიახლეებს საგანმანათლებლო ტექნოლოგიებში'}
           </p>
         </div>
 
