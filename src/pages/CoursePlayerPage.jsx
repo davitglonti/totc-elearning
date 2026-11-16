@@ -1020,7 +1020,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 <span>ოფიციალური შემაჯამებელი ტესტირება</span>
               </div>
               <h3 className="text-xl md:text-2xl font-black text-white">
-                {quizData?.title || `Knowledge Check: ${activeLesson?.title || 'Lecture Assessment'}`}
+                {quizData?.title || `ცოდნის შემოწმება: ${activeLesson?.title || 'ლექციის ტესტი'}`}
               </h3>
               <p className="text-xs md:text-sm text-slate-400 max-w-2xl leading-relaxed">
                 {quizData?.description || 'შეაფასეთ თქვენი ცოდნა და მიიღეთ შემდეგ მოდულზე გადასვლის უფლება.'}
@@ -1191,16 +1191,16 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
           <div>
             <h3 className="font-bold text-lg text-white">
-              {quizData?.title || `Knowledge Check: ${activeLesson?.title || 'Lecture Assessment'}`}
+              {quizData?.title || `ცოდნის შემოწმება: ${activeLesson?.title || 'ლექციის ტესტი'}`}
             </h3>
             <p className="text-xs text-slate-400">
-              {quizData?.description || 'Answer the questions below to test your understanding of this lecture.'}
+              {quizData?.description || 'უპასუხეთ ქვემოთ მოცემულ შეკითხვებს მასალის ასათვისებლად.'}
             </p>
           </div>
 
           {quizData && (
             <div className="px-3 py-1 rounded-full bg-totc-teal/15 text-totc-teal text-xs font-bold shrink-0">
-              Passing: {quizData.passingScorePercentage || 70}%
+              გამსვლელი: {quizData.passingScorePercentage || 70}%
             </div>
           )}
         </div>
@@ -1288,7 +1288,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                       : 'bg-red-500/10 text-red-300 border border-red-500/20'
                   }`}>
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span><strong>Explanation:</strong> {feedback.explanation}</span>
+                    <span><strong>ახსნა-განმარტება:</strong> {feedback.explanation}</span>
                   </div>
                 )}
               </div>
@@ -1300,44 +1300,81 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-700">
           {quizResult ? (
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                quizResult.passed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-md ${
+                quizResult.passed ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-red-500 text-white shadow-red-500/20'
               }`}>
                 {quizResult.scorePercentage}%
               </div>
               <div>
                 <p className={`font-bold text-sm ${quizResult.passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {quizResult.passed ? 'Assessment Passed! 🎉' : 'Assessment Failed'}
+                  {quizResult.passed ? 'ტესტი წარმატებით ჩაბარებულია! 🎉' : 'ტესტი ვერ ჩაბარდა'}
                 </p>
-                <p className="text-xs text-slate-400">{quizResult.feedbackMessage}</p>
+                <p className="text-xs text-slate-300">
+                  {quizResult.passed
+                    ? `🎉 შესანიშნავი შედეგია! თქვენ წარმატებით ჩააბარეთ ტესტი ${quizResult.scorePercentage}% ქულით და ლექცია დასრულებულია.`
+                    : (quizResult.feedbackMessage || `თქვენი შედეგია ${quizResult.scorePercentage}%. გამსვლელი ბარიერია ${quizData?.passingScorePercentage || 70}%. გაიმეორეთ მასალა და სცადეთ ხელახლა!`)}
+                </p>
               </div>
             </div>
           ) : (
             <p className="text-xs text-slate-400">
-              Answer all questions to submit for grading.
+              შეავსეთ ყველა შეკითხვა და დააჭირეთ პასუხების შემოწმებას.
             </p>
           )}
 
           <div className="flex items-center gap-3">
             {quizResult ? (
-              <button
-                onClick={handleRetakeQuiz}
-                className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-1.5"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Retake Quiz (ხელახლა ცდა)</span>
-              </button>
+              quizResult.passed ? (
+                (() => {
+                  const allLessonsList = courseContent?.sections?.flatMap(s => s.lessons) || [];
+                  const currentIdx = allLessonsList.findIndex(l => l.id === activeLesson?.id);
+                  const nextLessonObj = currentIdx >= 0 && currentIdx < allLessonsList.length - 1 ? allLessonsList[currentIdx + 1] : null;
+
+                  if (nextLessonObj) {
+                    return (
+                      <button
+                        onClick={() => handleLessonSwitch(nextLessonObj)}
+                        className="px-6 py-3 rounded-full text-xs font-bold bg-totc-teal hover:bg-totc-teal-dark text-white transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2 group cursor-pointer active:scale-98"
+                      >
+                        <span>შემდეგ ლექციაზე გადასვლა</span>
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    );
+                  } else {
+                    return (
+                      <button
+                        onClick={() => {
+                          setSuccessNotice('🎉 გილოცავთ! თქვენ წარმატებით დაასრულეთ მთელი კურსი!');
+                          setTimeout(() => setSuccessNotice(''), 5000);
+                        }}
+                        className="px-6 py-3 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span>კურსი დასრულებულია 🎉</span>
+                      </button>
+                    );
+                  }
+                })()
+              ) : (
+                <button
+                  onClick={handleRetakeQuiz}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>ხელახლა ცდა</span>
+                </button>
+              )
             ) : (
               <button
                 onClick={handleSubmitQuiz}
                 disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1) || examTerminated}
                 className={`px-8 py-3 rounded-full font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
                   Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1) && !examTerminated
-                    ? 'bg-totc-teal text-white hover:bg-totc-teal-dark'
+                    ? 'bg-totc-teal text-white hover:bg-totc-teal-dark cursor-pointer'
                     : 'bg-slate-700 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                {isSubmittingQuiz ? 'Grading...' : 'Check My Answers'}
+                {isSubmittingQuiz ? 'მოწმდება...' : 'პასუხების შემოწმება'}
               </button>
             )}
           </div>

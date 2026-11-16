@@ -183,8 +183,8 @@ public class QuizService : IQuizService
             IsInCooldown = false,
             RemainingCooldownSeconds = 0,
             FeedbackMessage = passed
-                ? $"🎉 Excellent work! You passed with {scorePercentage}% score and completed the lecture."
-                : $"You scored {scorePercentage}%. Minimum required is {quiz.PassingScorePercentage}%. Review the lecture and try again!",
+                ? $"🎉 შესანიშნავი შედეგია! თქვენ წარმატებით ჩააბარეთ ტესტი {scorePercentage}% ქულით და ლექცია დასრულებულია."
+                : $"თქვენი შედეგია {scorePercentage}%. მინიმალური გამსვლელი ქულაა {quiz.PassingScorePercentage}%. გაიმეორეთ მასალა და სცადეთ ხელახლა!",
             QuestionFeedbacks = feedbacks
         };
     }
