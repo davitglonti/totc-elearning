@@ -11,6 +11,20 @@ public class CategoryDto
     public int CoursesCount { get; set; }
 }
 
+public class CreateCategoryDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Slug { get; set; }
+    public string? IconUrl { get; set; }
+}
+
+public class UpdateCategoryDto
+{
+    public string? Name { get; set; }
+    public string? Slug { get; set; }
+    public string? IconUrl { get; set; }
+}
+
 public class CourseDto
 {
     public Guid Id { get; set; }
@@ -29,6 +43,7 @@ public class CourseDto
     public int ReviewsCount { get; set; }
     public int TotalDurationMinutes { get; set; }
     public int StudentsCount { get; set; }
+    public bool IsPopular { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 

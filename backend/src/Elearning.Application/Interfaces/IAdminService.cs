@@ -16,6 +16,7 @@ public interface IAdminService
     Task<bool> ApproveCourseAsync(Guid courseId);
     Task<bool> RejectCourseAsync(Guid courseId, string reason);
     Task<bool> ToggleCoursePublishAsync(Guid courseId);
+    Task<bool> ToggleCoursePopularAsync(Guid courseId);
     Task<bool> DeleteCourseAsync(Guid courseId);
     Task<List<AdminOrderListItemDto>> GetOrdersAsync();
 }

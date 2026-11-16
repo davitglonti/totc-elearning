@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, Clock, Users, ArrowRight, Filter } from 'lucide-react';
+import { Search, Star, Clock, Users, ArrowRight, Filter, Sparkles, TrendingUp } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function CoursesPage({ setActivePage, setSelectedCourse }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [categories, setCategories] = useState(['All', 'Design', 'Development', 'Business', 'Marketing', 'Photography']);
+  const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'newest' | 'rating' | 'price_asc' | 'price_desc'
   const [coursesList, setCoursesList] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -62,7 +63,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
   useEffect(() => {
     async function loadCategories() {
       try {
-        const cats = await api.courses.getCategories();
+        const cats = await api.categories.getAll();
         if (cats && cats.length > 0) {
           setCategories(['All', ...cats.map(c => c.name)]);
         }
@@ -73,7 +74,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
     loadCategories();
   }, []);
 
-  // Fetch live courses from backend API
+  // Fetch live courses from backend API with popularity priority
   useEffect(() => {
     let isMounted = true;
     async function loadCourses() {
@@ -81,7 +82,8 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
       try {
         const res = await api.courses.getAll({
           search: searchTerm,
-          category: activeCategory
+          category: activeCategory,
+          sortBy: sortBy
         });
 
         if (isMounted && res && res.items && res.items.length > 0) {
@@ -98,7 +100,8 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
             price: `₾${c.price}`,
             oldPrice: `₾${Math.round(c.price * 1.3)}`,
             image: c.thumbnailUrl || '/assets/explore_row_1.png',
-            badge: c.price > 400 ? 'ბესტსელერი' : 'რჩეული'
+            isPopular: Boolean(c.isPopular),
+            badge: c.isPopular ? '⭐ პოპულარული' : (c.price > 400 ? 'ბესტსელერი' : 'რჩეული')
           }));
           setCoursesList(mapped);
         } else if (isMounted) {
@@ -120,7 +123,7 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, sortBy]);
 
   const filteredCourses = coursesList.filter((c) => {
     const matchesCategory = activeCategory === 'All' || c.category === activeCategory;
@@ -168,21 +171,41 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
           <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex flex-wrap items-center gap-3 mb-12">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
-                activeCategory === cat
-                  ? 'bg-totc-teal text-white shadow-md'
-                  : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-100 border border-gray-200'
-              }`}
+        {/* Filter & Sorting Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-10 pb-4 border-b border-gray-200">
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-5 py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                  activeCategory === cat
+                    ? 'bg-totc-teal text-white shadow-md'
+                    : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {cat === 'All' ? 'ყველა' : cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Selector Dropdown */}
+          <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+            <TrendingUp className="w-4 h-4 text-totc-teal" />
+            <span className="text-totc-gray font-medium text-xs">დალაგება:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent font-semibold text-totc-navy focus:outline-none cursor-pointer text-xs sm:text-sm"
             >
-              {cat === 'All' ? 'ყველა' : cat}
-            </button>
-          ))}
+              <option value="popular">⭐ პოპულარობით (სათავეში)</option>
+              <option value="newest">🆕 უახლესი</option>
+              <option value="rating">🏆 მაღალი რეიტინგით</option>
+              <option value="price_asc">💲 ფასი: დაბლიდან</option>
+              <option value="price_desc">💎 ფასი: მაღლიდან</option>
+            </select>
+          </div>
         </div>
 
         {/* Course Cards Grid */}
@@ -191,7 +214,9 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
             <div
               key={c.id}
               onClick={() => handleCourseClick(c)}
-              className="bg-white rounded-[24px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between group"
+              className={`bg-white rounded-[24px] overflow-hidden border shadow-sm hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer flex flex-col justify-between group ${
+                c.isPopular ? 'border-amber-300 ring-2 ring-amber-400/20' : 'border-gray-100'
+              }`}
             >
               <div>
                 {/* Thumbnail */}
@@ -207,7 +232,12 @@ export default function CoursesPage({ setActivePage, setSelectedCourse }) {
                     </span>
                   </div>
                   <div className="absolute top-4 right-4">
-                    <span className="px-3 py-1 rounded-full bg-totc-orange text-white text-xs font-semibold shadow-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1 ${
+                      c.isPopular 
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/30' 
+                        : 'bg-totc-orange text-white'
+                    }`}>
+                      {c.isPopular && <Sparkles className="w-3 h-3 fill-current" />}
                       {c.badge}
                     </span>
                   </div>

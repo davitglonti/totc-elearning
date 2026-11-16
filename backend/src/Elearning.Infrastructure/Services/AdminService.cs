@@ -135,6 +135,7 @@ public class AdminService : IAdminService
                 SectionsCount = c.Sections.Count,
                 LessonsCount = c.Sections.Sum(s => s.Lessons.Count),
                 StudentsCount = c.Enrollments.Count,
+                IsPopular = c.IsPopular,
                 ThumbnailUrl = c.ThumbnailUrl,
                 CreatedAt = c.CreatedAt
             })
@@ -170,6 +171,7 @@ public class AdminService : IAdminService
             SectionsCount = course.Sections.Count,
             LessonsCount = course.Sections.Sum(s => s.Lessons.Count),
             StudentsCount = course.Enrollments.Count,
+            IsPopular = course.IsPopular,
             ThumbnailUrl = course.ThumbnailUrl,
             CreatedAt = course.CreatedAt,
             Sections = course.Sections.Select(s => new SectionDto
@@ -228,6 +230,17 @@ public class AdminService : IAdminService
         course.IsPublished = !course.IsPublished;
         await _context.SaveChangesAsync();
         return course.IsPublished;
+    }
+
+    public async Task<bool> ToggleCoursePopularAsync(Guid courseId)
+    {
+        var course = await _context.Courses.FindAsync(courseId);
+        if (course == null) throw new KeyNotFoundException("Course not found.");
+
+        course.IsPopular = !course.IsPopular;
+        course.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return course.IsPopular;
     }
 
     public async Task<bool> DeleteCourseAsync(Guid courseId)

@@ -55,6 +55,7 @@ public class AdminCourseListItemDto
     public int SectionsCount { get; set; }
     public int LessonsCount { get; set; }
     public int StudentsCount { get; set; }
+    public bool IsPopular { get; set; }
     public string? ThumbnailUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }

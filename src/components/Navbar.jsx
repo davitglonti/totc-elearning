@@ -3,6 +3,7 @@ import {
   Menu, X, ChevronDown, BookOpen, User, CreditCard, 
   LogOut, LayoutDashboard, Shield, Sparkles 
 } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Navbar({ 
   activePage, 
@@ -15,6 +16,7 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const { settings } = useSettings();
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -77,23 +79,31 @@ export default function Navbar({
           onClick={() => handleNavClick('home')}
           className="flex items-center gap-3 group focus:outline-none"
         >
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            {/* Diamond emblem matching Figma Polygon 2 */}
-            <div
-              className={`w-8 h-8 rounded-lg transform rotate-45 transition-transform duration-300 group-hover:rotate-90 shadow-md ${
-                isLightNav ? 'bg-totc-teal' : 'bg-totc-teal border-2 border-white/40'
-              }`}
+          {settings?.logoUrl ? (
+            <img 
+              src={settings.logoUrl} 
+              alt={settings.siteName || "TOTC"} 
+              className="h-10 max-w-[160px] object-contain rounded-md" 
             />
-            <span className="absolute font-poppins font-black text-white text-xs tracking-wider">
-              T
-            </span>
-          </div>
+          ) : (
+            <div className="relative w-10 h-10 flex items-center justify-center">
+              {/* Diamond emblem matching Figma Polygon 2 */}
+              <div
+                className={`w-8 h-8 rounded-lg transform rotate-45 transition-transform duration-300 group-hover:rotate-90 shadow-md ${
+                  isLightNav ? 'bg-totc-teal' : 'bg-totc-teal border-2 border-white/40'
+                }`}
+              />
+              <span className="absolute font-poppins font-black text-white text-xs tracking-wider">
+                {(settings?.siteName || 'T').charAt(0)}
+              </span>
+            </div>
+          )}
           <span
             className={`font-poppins font-bold text-2xl tracking-wider ${
               isLightNav ? 'text-totc-navy' : 'text-white'
             }`}
           >
-            TOTC
+            {settings?.siteName || 'TOTC'}
           </span>
         </button>
 

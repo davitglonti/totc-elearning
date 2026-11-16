@@ -10,6 +10,10 @@ public interface ICourseService
     Task<PagedResult<CourseDto>> GetCoursesAsync(CourseFilterParams filterParams);
     Task<CourseDetailDto?> GetCourseByIdAsync(Guid courseId, Guid? currentUserId, string? currentUserEmail = null);
     Task<List<CategoryDto>> GetCategoriesAsync();
+    Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto);
+    Task<CategoryDto> UpdateCategoryAsync(Guid id, UpdateCategoryDto dto);
+    Task<bool> DeleteCategoryAsync(Guid id);
+    Task<bool> ToggleCoursePopularAsync(Guid courseId);
     
     // Instructor / Admin management
     Task<CourseDto> CreateCourseAsync(Guid instructorId, CreateCourseDto dto);

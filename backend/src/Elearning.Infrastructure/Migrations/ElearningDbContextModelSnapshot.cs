@@ -157,6 +157,11 @@ namespace Elearning.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsPopular")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsPublished")
                         .HasColumnType("INTEGER");
 
@@ -186,6 +191,8 @@ namespace Elearning.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("InstructorId");
+
+                    b.HasIndex("IsPopular");
 
                     b.HasIndex("IsPublished", "ApprovalStatus", "CreatedAt");
 
@@ -732,6 +739,45 @@ namespace Elearning.Infrastructure.Migrations
                     b.HasIndex("CourseId");
 
                     b.ToTable("Sections");
+                });
+
+            modelBuilder.Entity("Elearning.Domain.Entities.SiteSetting", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("SiteSettings");
                 });
 
             modelBuilder.Entity("Elearning.Domain.Entities.User", b =>

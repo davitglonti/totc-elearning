@@ -67,6 +67,7 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 // Health Checks & Observability
 builder.Services.AddHealthChecks()

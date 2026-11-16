@@ -189,6 +189,25 @@ public class AdminController : BaseApiController
     }
 
     /// <summary>
+    /// Toggle course popular / pinned-to-top priority in the public catalog.
+    /// </summary>
+    [HttpPut("courses/{id:guid}/toggle-popular")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleCoursePopular(Guid id)
+    {
+        try
+        {
+            var isPopular = await _adminService.ToggleCoursePopularAsync(id);
+            return Ok(new { message = $"Course popular priority is now {(isPopular ? "Enabled (Pinned to Catalog Top)" : "Standard")}.", courseId = id, isPopular });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Soft delete course from catalog.
     /// </summary>
     [HttpDelete("courses/{id:guid}")]

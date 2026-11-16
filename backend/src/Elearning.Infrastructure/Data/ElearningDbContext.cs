@@ -29,6 +29,7 @@ public class ElearningDbContext : DbContext
     public DbSet<Certificate> Certificates => Set<Certificate>();
     public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,8 +71,10 @@ public class ElearningDbContext : DbContext
             entity.Property(c => c.Title).IsRequired().HasMaxLength(250);
             entity.Property(c => c.Price).HasPrecision(18, 2);
             entity.Property(c => c.ConcurrencyStamp).IsConcurrencyToken().HasMaxLength(64);
+            entity.Property(c => c.IsPopular).HasDefaultValue(false);
 
             entity.HasIndex(c => new { c.IsPublished, c.ApprovalStatus, c.CreatedAt });
+            entity.HasIndex(c => c.IsPopular);
 
             entity.HasOne(c => c.Category)
                   .WithMany(cat => cat.Courses)
@@ -252,6 +255,14 @@ public class ElearningDbContext : DbContext
                   .WithMany(u => u.QuizAttempts)
                   .HasForeignKey(qa => qa.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // SiteSetting entity configuration
+        modelBuilder.Entity<SiteSetting>(entity =>
+        {
+            entity.Property(s => s.Key).IsRequired().HasMaxLength(100);
+            entity.Property(s => s.Value).IsRequired();
+            entity.HasIndex(s => s.Key).IsUnique();
         });
     }
 

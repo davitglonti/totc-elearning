@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Footer({ setActivePage }) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const { settings } = useSettings();
 
   const handleSubscribe = (e) => {
     e.preventDefault();
@@ -21,18 +23,28 @@ export default function Footer({ setActivePage }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10 pb-16 border-b border-white/10 text-center sm:text-left">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-totc-teal transform rotate-45 flex items-center justify-center shadow-lg">
-              <span className="font-poppins font-black text-white text-xs -rotate-45">T</span>
-            </div>
+            {settings?.logoUrl ? (
+              <img 
+                src={settings.logoUrl} 
+                alt={settings.siteName || "TOTC"} 
+                className="h-10 max-w-[160px] object-contain rounded-md" 
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-totc-teal transform rotate-45 flex items-center justify-center shadow-lg">
+                <span className="font-poppins font-black text-white text-xs -rotate-45">
+                  {(settings?.siteName || 'T').charAt(0)}
+                </span>
+              </div>
+            )}
             <span className="font-poppins font-bold text-3xl tracking-wider text-white">
-              TOTC
+              {settings?.siteName || 'TOTC'}
             </span>
           </div>
 
           <div className="hidden sm:block w-px h-10 bg-white/20" />
 
           <p className="font-poppins font-semibold text-lg text-white/90 tracking-wide">
-            ვირტუალური საკლასო ოთახი
+            {settings?.footerText || 'ვირტუალური საკლასო ოთახი'}
           </p>
         </div>
 

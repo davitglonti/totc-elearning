@@ -14,6 +14,7 @@ public class Course : BaseEntity
     public decimal Price { get; set; }
     public CourseLevel Level { get; set; } = CourseLevel.Beginner;
     public bool IsPublished { get; set; } = true;
+    public bool IsPopular { get; set; } = false;
 
     // Moderation and Admin Approval Workflow
     public string ApprovalStatus { get; set; } = "Approved"; // "Approved", "PendingApproval", "Rejected"

@@ -65,8 +65,11 @@ public class CourseService : ICourseService
             "newest" => query.OrderByDescending(c => c.CreatedAt),
             "price_asc" => query.OrderBy(c => c.Price),
             "price_desc" => query.OrderByDescending(c => c.Price),
-            "rating" => query.OrderByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0),
-            _ => query.OrderByDescending(c => c.Enrollments.Count) // default "popular"
+            "rating" => query.OrderByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0).ThenByDescending(c => c.Enrollments.Count),
+            _ => query.OrderByDescending(c => c.IsPopular)
+                      .ThenByDescending(c => c.Enrollments.Count)
+                      .ThenByDescending(c => c.Reviews.Any() ? c.Reviews.Average(r => r.Rating) : 0)
+                      .ThenByDescending(c => c.CreatedAt) // default "popular"
         };
 
         var totalCount = await query.CountAsync();
@@ -135,6 +138,7 @@ public class CourseService : ICourseService
             ReviewsCount = course.Reviews.Count,
             TotalDurationMinutes = course.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes),
             StudentsCount = course.Enrollments.Count,
+            IsPopular = course.IsPopular,
             CreatedAt = course.CreatedAt,
             IsEnrolled = isEnrolled,
             Sections = course.Sections.Select(s => new SectionDto
@@ -181,6 +185,108 @@ public class CourseService : ICourseService
                 CoursesCount = c.Courses.Count(course => course.IsPublished)
             })
             .ToListAsync();
+    }
+
+    public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Category name is required.");
+
+        var slug = string.IsNullOrWhiteSpace(dto.Slug)
+            ? dto.Name.Trim().ToLower().Replace(" ", "-").Replace("/", "-")
+            : dto.Slug.Trim().ToLower();
+
+        var existingSlug = await _context.Categories.AnyAsync(c => c.Slug == slug);
+        if (existingSlug)
+        {
+            slug = $"{slug}-{Guid.NewGuid().ToString("N")[..4]}";
+        }
+
+        var category = new Category
+        {
+            Name = dto.Name.Trim(),
+            Slug = slug,
+            IconUrl = dto.IconUrl?.Trim()
+        };
+
+        _context.Categories.Add(category);
+        await _context.SaveChangesAsync();
+
+        return new CategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Slug = category.Slug,
+            IconUrl = category.IconUrl,
+            CoursesCount = 0
+        };
+    }
+
+    public async Task<CategoryDto> UpdateCategoryAsync(Guid id, UpdateCategoryDto dto)
+    {
+        var category = await _context.Categories
+            .Include(c => c.Courses)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (category == null)
+            throw new KeyNotFoundException("Category not found.");
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+            category.Name = dto.Name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(dto.Slug))
+        {
+            var slug = dto.Slug.Trim().ToLower();
+            var slugInUse = await _context.Categories.AnyAsync(c => c.Id != id && c.Slug == slug);
+            if (slugInUse)
+                throw new InvalidOperationException($"Slug '{slug}' is already in use by another category.");
+            category.Slug = slug;
+        }
+
+        if (dto.IconUrl != null)
+            category.IconUrl = dto.IconUrl.Trim();
+
+        category.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return new CategoryDto
+        {
+            Id = category.Id,
+            Name = category.Name,
+            Slug = category.Slug,
+            IconUrl = category.IconUrl,
+            CoursesCount = category.Courses.Count(c => c.IsPublished)
+        };
+    }
+
+    public async Task<bool> DeleteCategoryAsync(Guid id)
+    {
+        var category = await _context.Categories
+            .Include(c => c.Courses)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (category == null)
+            throw new KeyNotFoundException("Category not found.");
+
+        if (category.Courses.Any(c => !c.IsDeleted))
+            throw new InvalidOperationException($"Cannot delete category '{category.Name}' because {category.Courses.Count(c => !c.IsDeleted)} course(s) are assigned to it.");
+
+        _context.Categories.Remove(category);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ToggleCoursePopularAsync(Guid courseId)
+    {
+        var course = await _context.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
+        if (course == null)
+            throw new KeyNotFoundException("Course not found.");
+
+        course.IsPopular = !course.IsPopular;
+        course.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return course.IsPopular;
     }
 
     public async Task<CourseDto> CreateCourseAsync(Guid instructorId, CreateCourseDto dto)
@@ -315,6 +421,7 @@ public class CourseService : ICourseService
             ReviewsCount = c.Reviews?.Count ?? 0,
             TotalDurationMinutes = c.Sections != null ? c.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes) : 0,
             StudentsCount = c.Enrollments?.Count ?? 0,
+            IsPopular = c.IsPopular,
             CreatedAt = c.CreatedAt
         };
     }

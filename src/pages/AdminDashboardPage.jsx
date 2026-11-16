@@ -4,21 +4,43 @@ import {
   CheckCircle, Lock, BookOpen, Sparkles, DollarSign, CreditCard, 
   Search, Filter, Trash2, RefreshCw, AlertCircle, Eye, EyeOff, 
   Check, X, ArrowUpRight, GraduationCap, UserCheck, Layers, Clock,
-  Bell, CheckSquare, XCircle, FileText, Video
+  Bell, CheckSquare, XCircle, FileText, Video, Plus, Edit3, Image,
+  Settings as SettingsIcon, Globe, Mail, Phone, Tag, Star
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 
 export default function AdminDashboardPage({ currentUser, setActivePage, setSelectedCourse }) {
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'approvals' | 'users' | 'courses' | 'orders' | 'system'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'approvals' | 'users' | 'courses' | 'categories' | 'settings' | 'orders' | 'bunny' | 'system'
   
   // Real live data states from backend API
+  const { settings: globalSettings, updateSettings: updateGlobalSettings } = useSettings();
   const [stats, setStats] = useState(null);
   const [usersList, setUsersList] = useState([]);
   const [coursesList, setCoursesList] = useState([]);
   const [ordersList, setOrdersList] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
+
+  // Categories CRUD states
+  const [categoryModal, setCategoryModal] = useState({ isOpen: false, mode: 'create', category: null });
+  const [categoryForm, setCategoryForm] = useState({ name: '', slug: '', iconUrl: '' });
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+
+  // Site Settings & Logo form state
+  const [settingsForm, setSettingsForm] = useState({
+    logoUrl: '',
+    siteName: 'TOTC',
+    heroTitle: 'ისწავლეთ ონლაინ შეუზღუდავად',
+    heroSubtitle: '',
+    contactEmail: 'support@totc.edu.ge',
+    contactPhone: '+995 32 200 00 00',
+    footerText: '',
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Search & Filter states
   const [userSearch, setUserSearch] = useState('');
@@ -48,17 +70,19 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const loadAdminData = async () => {
     try {
       setRefreshing(true);
-      const [statsData, usersData, coursesData, ordersData] = await Promise.all([
+      const [statsData, usersData, coursesData, ordersData, categoriesData] = await Promise.all([
         api.admin.getStats(),
         api.admin.getUsers(),
         api.admin.getCourses(),
         api.admin.getOrders(),
+        api.categories.getAll(),
       ]);
 
       setStats(statsData);
       setUsersList(usersData || []);
       setCoursesList(coursesData || []);
       setOrdersList(ordersData || []);
+      setCategoriesList(categoriesData || []);
     } catch (err) {
       console.error('Failed to load admin telemetry:', err);
       setActionMessage({ type: 'error', text: 'ადმინის API-სთან დაკავშირების შეცდომა: ' + err.message });
@@ -67,6 +91,21 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       setRefreshing(false);
     }
   };
+
+  // Sync settingsForm whenever globalSettings is fetched or updated
+  useEffect(() => {
+    if (globalSettings) {
+      setSettingsForm({
+        logoUrl: globalSettings.logoUrl || '',
+        siteName: globalSettings.siteName || 'TOTC',
+        heroTitle: globalSettings.heroTitle || 'ისწავლეთ ონლაინ შეუზღუდავად',
+        heroSubtitle: globalSettings.heroSubtitle || 'თანამედროვე საგანმანათლებლო პლატფორმა პროფესიონალური კურსებით, სერტიფიკატებითა და ინტერაქტიული ლექციებით.',
+        contactEmail: globalSettings.contactEmail || 'support@totc.edu.ge',
+        contactPhone: globalSettings.contactPhone || '+995 32 200 00 00',
+        footerText: globalSettings.footerText || 'ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა',
+      });
+    }
+  }, [globalSettings]);
 
   useEffect(() => {
     loadAdminData();
@@ -224,6 +263,86 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       setStats(updatedStats);
     } catch (err) {
       setActionMessage({ type: 'error', text: 'კურსის წაშლა ვერ მოხერხდა: ' + err.message });
+    }
+  };
+
+  // Handle toggle course popular status (prioritizing at top of catalog)
+  const handleToggleCoursePopular = async (courseId, currentPopularStatus) => {
+    try {
+      const res = await api.admin.toggleCoursePopular(courseId);
+      setCoursesList(prev => prev.map(c => c.id === courseId ? { ...c, isPopular: res.isPopular } : c));
+      setActionMessage({
+        type: 'success',
+        text: `✓ კურსის პოპულარობის სტატუსი: ${res.isPopular ? '⭐ მონიშნულია როგორც პოპულარული (გამოდის კატალოგის სათავეში)' : 'სტანდარტული პრიორიტეტი'}.`
+      });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'პოპულარობის სტატუსის შეცვლა ვერ მოხერხდა: ' + err.message });
+    }
+  };
+
+  // Categories CRUD Handlers
+  const handleOpenCategoryModal = (category = null) => {
+    if (category) {
+      setCategoryModal({ isOpen: true, mode: 'edit', category });
+      setCategoryForm({ name: category.name, slug: category.slug, iconUrl: category.iconUrl || '' });
+    } else {
+      setCategoryModal({ isOpen: true, mode: 'create', category: null });
+      setCategoryForm({ name: '', slug: '', iconUrl: '' });
+    }
+  };
+
+  const handleSaveCategory = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!categoryForm.name.trim()) {
+      alert('გთხოვთ მიუთითოთ კატეგორიის სახელი.');
+      return;
+    }
+
+    setSavingCategory(true);
+    try {
+      if (categoryModal.mode === 'create') {
+        const created = await api.categories.create(categoryForm);
+        setCategoriesList(prev => [...prev, created]);
+        setActionMessage({ type: 'success', text: `✓ კატეგორია „${created.name}“ წარმატებით შეიქმნა!` });
+      } else {
+        const updated = await api.categories.update(categoryModal.category.id, categoryForm);
+        setCategoriesList(prev => prev.map(c => c.id === updated.id ? updated : c));
+        setActionMessage({ type: 'success', text: `✓ კატეგორია „${updated.name}“ წარმატებით განახლდა!` });
+      }
+      setCategoryModal({ isOpen: false, mode: 'create', category: null });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'კატეგორიის შენახვა ვერ მოხერხდა: ' + err.message });
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId, catName) => {
+    if (!window.confirm(`დარწმუნებული ხართ, რომ გსურთ კატეგორიის „${catName}“ წაშლა?`)) return;
+
+    try {
+      await api.categories.delete(catId);
+      setCategoriesList(prev => prev.filter(c => c.id !== catId));
+      setActionMessage({ type: 'success', text: `✓ კატეგორია „${catName}“ წარმატებით წაიშალა.` });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'კატეგორიის წაშლა ვერ მოხერხდა: ' + err.message });
+    }
+  };
+
+  // Site Settings & Logo Save Handler
+  const handleSaveSettings = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setSavingSettings(true);
+    try {
+      await updateGlobalSettings(settingsForm);
+      setActionMessage({ 
+        type: 'success', 
+        text: '✓ საიტის პარამეტრები და ლოგო წარმატებით განახლდა! ცვლილებები მყისიერად აისახა ნავბარში, ფუტერსა და სისტემაში.' 
+      });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: 'პარამეტრების განახლება ვერ მოხერხდა: ' + err.message });
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -417,6 +536,8 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             { id: 'approvals', label: 'კურსების დამტკიცება', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
             { id: 'users', label: 'მომხმარებლები და როლები', icon: Users, count: usersList.length, alert: false },
             { id: 'courses', label: 'კურსების მართვა', icon: BookOpen, count: coursesList.length, alert: false },
+            { id: 'categories', label: 'კატეგორიები', icon: Layers, count: categoriesList.length, alert: false },
+            { id: 'settings', label: 'საიტის პარამეტრები & ლოგო', icon: SettingsIcon, count: null, alert: false },
             { id: 'orders', label: 'შეკვეთები და შემოსავალი', icon: CreditCard, count: ordersList.length, alert: false },
             { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
             { id: 'system', label: 'სისტემის არქიტექტურა', icon: Server, count: null, alert: false },
@@ -819,6 +940,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                     <th className="py-3 px-4">ფასი</th>
                     <th className="py-3 px-4">სტუდენტები</th>
                     <th className="py-3 px-4">ხილვადობა</th>
+                    <th className="py-3 px-4">პრიორიტეტი</th>
                     <th className="py-3 px-4 text-right">მოქმედება</th>
                   </tr>
                 </thead>
@@ -895,6 +1017,22 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                         >
                           {course.isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           <span>{course.isPublished ? 'აქტიური' : 'დამალული'}</span>
+                        </button>
+                      </td>
+
+                      {/* Popular / Pinned to Catalog Top Toggle */}
+                      <td className="py-3.5 px-4">
+                        <button
+                          onClick={() => handleToggleCoursePopular(course.id, course.isPopular)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-sm ${
+                            course.isPopular
+                              ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 ring-2 ring-amber-300/40'
+                              : 'bg-gray-100 text-gray-500 hover:bg-amber-50 hover:text-amber-800 border border-gray-200'
+                          }`}
+                          title={course.isPopular ? "კურსი მონიშნულია როგორც პოპულარული და ჩნდება კატალოგის სათავეში" : "დააჭირეთ კატალოგის სათავეში პოპულარულად გამოსატანად"}
+                        >
+                          <Star className={`w-3.5 h-3.5 ${course.isPopular ? 'text-amber-600 fill-amber-500' : 'text-gray-400'}`} />
+                          <span>{course.isPopular ? '⭐ სათავეში' : 'სტანდარტული'}</span>
                         </button>
                       </td>
 
@@ -1254,7 +1392,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
           </div>
         )}
 
-        {/* Tab 6: System Architecture & Security */}
+        {/* Tab 7: Course Categories Management */}
         {activeTab === 'system' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-4">
@@ -1310,6 +1448,306 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 7: Course Categories Management */}
+        {activeTab === 'categories' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-totc-teal" />
+                    <span>კურსების კატეგორიების მართვა</span>
+                  </h3>
+                  <p className="text-xs text-totc-gray mt-1">
+                    დაამატეთ ახალი მიმართულებები, დაარედაქტირეთ ან წაშალეთ არსებული კატეგორიები. ცვლილებები მყისიერად აისახება კურსების კატალოგში.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleOpenCategoryModal()}
+                  className="px-5 py-2.5 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>ახალი კატეგორიის დამატება</span>
+                </button>
+              </div>
+
+              {/* Search filter for categories */}
+              <div className="relative max-w-md">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="მოძებნეთ კატეგორია სახელით ან სლაგით..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal"
+                />
+              </div>
+
+              {/* Categories Table */}
+              <div className="overflow-x-auto rounded-2xl border border-gray-100">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-totc-gray font-bold border-b border-gray-200">
+                      <th className="py-3 px-4">ხატულა / ლოგო</th>
+                      <th className="py-3 px-4">დასახელება</th>
+                      <th className="py-3 px-4">Slug (იდენტიფიკატორი)</th>
+                      <th className="py-3 px-4">აქტიური კურსები</th>
+                      <th className="py-3 px-4 text-right">მოქმედება</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {categoriesList
+                      .filter(cat => 
+                        cat.name.toLowerCase().includes(categorySearch.toLowerCase()) || 
+                        cat.slug.toLowerCase().includes(categorySearch.toLowerCase())
+                      )
+                      .map(cat => (
+                        <tr key={cat.id} className="hover:bg-slate-50/60 transition-colors">
+                          <td className="py-3.5 px-4">
+                            {cat.iconUrl ? (
+                              <img src={cat.iconUrl} alt={cat.name} className="w-8 h-8 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-totc-teal font-bold text-xs">
+                                {cat.name.charAt(0)}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-totc-navy">
+                            {cat.name}
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-[11px] text-totc-gray">
+                            {cat.slug}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-1 rounded-full bg-teal-50 text-totc-teal font-bold text-[11px]">
+                              {cat.coursesCount || 0} კურსი
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleOpenCategoryModal(cat)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                                title="რედაქტირება"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>რედაქტირება</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                title="წაშლა"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    {categoriesList.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-8 text-center text-totc-gray">
+                          კატეგორიები არ მოიძებნა. დააჭირეთ „ახალი კატეგორიის დამატება“-ს დასაწყებად.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 8: Site Settings & Logo Management */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
+              <div>
+                <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <span>საიტის პარამეტრები, ლოგო და ბრენდინგი</span>
+                </h3>
+                <p className="text-xs text-totc-gray mt-1">
+                  მართეთ პლატფორმის ლოგო, საიტის დასახელება, მთავარი გვერდის სათაურები და საკონტაქტო მონაცემები. ცვლილებები მომენტალურად აისახება ნავბარში, ფუტერსა და მთელ საიტზე.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveSettings} className="space-y-8">
+                {/* 1. Logo Branding Section */}
+                <div className="p-5 rounded-2xl bg-slate-50 border border-gray-200/80 space-y-4">
+                  <h4 className="font-poppins font-bold text-sm text-totc-navy flex items-center gap-2">
+                    <Image className="w-4 h-4 text-totc-teal" />
+                    <span>პლატფორმის ლოგო (Logo Management)</span>
+                  </h4>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    {/* Live Preview */}
+                    <div className="w-48 h-20 rounded-2xl bg-white border-2 border-dashed border-gray-200 p-2 flex items-center justify-center shadow-inner shrink-0">
+                      {settingsForm.logoUrl ? (
+                        <img
+                          src={settingsForm.logoUrl}
+                          alt="Logo Preview"
+                          className="max-h-full max-w-full object-contain"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2 text-totc-gray text-xs">
+                          <div className="w-8 h-8 rounded-lg bg-totc-teal flex items-center justify-center text-white font-black text-xs">
+                            {(settingsForm.siteName || 'T').charAt(0)}
+                          </div>
+                          <span className="font-bold text-totc-navy">{settingsForm.siteName || 'TOTC'}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Logo URL Input */}
+                    <div className="flex-1 space-y-2 w-full">
+                      <label className="text-xs font-bold text-totc-navy">ლოგოს სურათის ბმული (Image URL)</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/logo.png ან SVG ბმული"
+                        value={settingsForm.logoUrl}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                      />
+                      <p className="text-[11px] text-totc-gray">
+                        მიუთითეთ პირდაპირი ბმული გამჭვირვალე PNG ან SVG ლოგოზე. თუ ველი ცარიელია, გამოიყენება სტანდარტული TOTC ემბლემა.
+                      </p>
+                      
+                      {/* Presets */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span className="text-[10px] font-semibold text-totc-gray">სწრაფი ნიმუშები:</span>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, logoUrl: '' })}
+                          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[10px] font-bold text-totc-navy hover:bg-gray-100"
+                        >
+                          სტანდარტული ემბლემა
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSettingsForm({ ...settingsForm, logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80' })}
+                          className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50"
+                        >
+                          Modern Geometric
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Brand & Platform Identity */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-totc-navy flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-totc-teal" />
+                      <span>საიტის დასახელება (Brand / Site Name)</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsForm.siteName}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, siteName: e.target.value })}
+                      placeholder="მაგ: TOTC E-Learning"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy font-semibold"
+                    />
+                    <p className="text-[10px] text-totc-gray">ჩნდება ნავბარში, ფუტერში და ბრაუზერის სათაურში.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-totc-navy flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-totc-teal" />
+                      <span>ფუტერის ქვესათაური / აღწერა</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={settingsForm.footerText}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, footerText: e.target.value })}
+                      placeholder="მაგ: ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Hero Headlines */}
+                <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <h4 className="font-poppins font-bold text-sm text-totc-navy">მთავარი გვერდის სათაურები</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-totc-navy">მთავარი სარეკლამო სათაური (Hero Title)</label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroTitle}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroTitle: e.target.value })}
+                        placeholder="მაგ: ისწავლეთ ონლაინ შეუზღუდავად"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-totc-navy">ქვესათაური / აღწერა (Hero Subtitle)</label>
+                      <input
+                        type="text"
+                        value={settingsForm.heroSubtitle}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, heroSubtitle: e.target.value })}
+                        placeholder="მაგ: თანამედროვე საგანმანათლებლო პლატფორმა..."
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Support Contacts */}
+                <div className="space-y-4 pt-2 border-t border-gray-100">
+                  <h4 className="font-poppins font-bold text-sm text-totc-navy">საკონტაქტო ინფორმაცია</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-totc-navy flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-totc-teal" />
+                        <span>მხარდაჭერის ელ-ფოსტა</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={settingsForm.contactEmail}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, contactEmail: e.target.value })}
+                        placeholder="support@totc.edu.ge"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-totc-navy flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-totc-teal" />
+                        <span>მხარდაჭერის ტელეფონი</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.contactPhone}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, contactPhone: e.target.value })}
+                        placeholder="+995 32 200 00 00"
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4 flex items-center justify-end border-t border-gray-100">
+                  <button
+                    type="submit"
+                    disabled={savingSettings}
+                    className="px-8 py-3 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs transition-all shadow-md flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{savingSettings ? 'ინახება...' : 'პარამეტრების შენახვა და გააქტიურება'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
@@ -1500,6 +1938,79 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
                 გაგზავნა და უარყოფა
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Create/Edit Modal */}
+      {categoryModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[24px] max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
+                <Layers className="w-5 h-5 text-totc-teal" />
+                <span>{categoryModal.mode === 'create' ? 'ახალი კატეგორიის დამატება' : 'კატეგორიის რედაქტირება'}</span>
+              </h3>
+              <button
+                onClick={() => setCategoryModal({ isOpen: false, mode: 'create', category: null })}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCategory} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-totc-navy">კატეგორიის დასახელება *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="მაგ: ხელოვნური ინტელექტი, მარკეტინგი..."
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-totc-navy">Slug (იდენტიფიკატორი URL-ისთვის)</label>
+                <input
+                  type="text"
+                  placeholder="მაგ: artificial-intelligence (დატოვეთ ცარიელი ავტოგენერაციისთვის)"
+                  value={categoryForm.slug}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-totc-navy">ხატულის / სურათის ბმული (Icon URL)</label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/icon.svg"
+                  value={categoryForm.iconUrl}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, iconUrl: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-gray-200 text-xs text-totc-navy focus:outline-none focus:border-totc-teal"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setCategoryModal({ isOpen: false, mode: 'create', category: null })}
+                  className="px-4 py-2 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200"
+                >
+                  გაუქმება
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCategory}
+                  className="px-5 py-2 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md disabled:opacity-50"
+                >
+                  {savingCategory ? 'ინახება...' : categoryModal.mode === 'create' ? 'დამატება' : 'განახლება'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

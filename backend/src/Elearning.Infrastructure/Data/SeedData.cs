@@ -12,6 +12,7 @@ public static class SeedData
     public static async Task InitializeAsync(ElearningDbContext context)
     {
         await SeedPromoCodesAsync(context);
+        await SeedSiteSettingsAsync(context);
 
         if (await context.Categories.AnyAsync())
         {
@@ -123,7 +124,8 @@ public static class SeedData
             Level = CourseLevel.Advanced,
             CategoryId = devCategory.Id,
             InstructorId = instructorLina.Id,
-            IsPublished = true
+            IsPublished = true,
+            IsPopular = true
         };
 
         // Course 1 Sections & Lessons
@@ -623,6 +625,25 @@ public static class SeedData
         };
 
         context.PromoCodes.AddRange(promoCodes);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedSiteSettingsAsync(ElearningDbContext context)
+    {
+        if (await context.SiteSettings.AnyAsync()) return;
+
+        var settings = new List<SiteSetting>
+        {
+            new() { Key = "SiteSetting:LogoUrl", Value = "" },
+            new() { Key = "SiteSetting:SiteName", Value = "TOTC" },
+            new() { Key = "SiteSetting:HeroTitle", Value = "ისწავლეთ ონლაინ შეუზღუდავად" },
+            new() { Key = "SiteSetting:HeroSubtitle", Value = "თანამედროვე საგანმანათლებლო პლატფორმა პროფესიონალური კურსებით, სერტიფიკატებითა და ინტერაქტიული ლექციებით." },
+            new() { Key = "SiteSetting:ContactEmail", Value = "support@totc.edu.ge" },
+            new() { Key = "SiteSetting:ContactPhone", Value = "+995 32 200 00 00" },
+            new() { Key = "SiteSetting:FooterText", Value = "ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა" }
+        };
+
+        context.SiteSettings.AddRange(settings);
         await context.SaveChangesAsync();
     }
 }

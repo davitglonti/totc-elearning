@@ -170,6 +170,47 @@ export const api = {
     },
   },
 
+  // Categories Management (Public browse + Admin CRUD)
+  categories: {
+    async getAll() {
+      return request('/categories');
+    },
+
+    async create(data) {
+      return request('/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async update(id, data) {
+      return request(`/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    async delete(id) {
+      return request(`/categories/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Public & Admin Platform Settings (Logo, Site Title, Contacts)
+  settings: {
+    async get() {
+      return request('/settings');
+    },
+
+    async update(data) {
+      return request('/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
   // Instructor Authoring & Studio
   instructor: {
     async getMyCourses() {
@@ -419,6 +460,12 @@ export const api = {
 
     async toggleCoursePublish(courseId) {
       return request(`/admin/courses/${courseId}/toggle-publish`, {
+        method: 'PUT',
+      });
+    },
+
+    async toggleCoursePopular(courseId) {
+      return request(`/admin/courses/${courseId}/toggle-popular`, {
         method: 'PUT',
       });
     },
