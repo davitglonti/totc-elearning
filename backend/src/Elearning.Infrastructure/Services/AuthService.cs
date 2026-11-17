@@ -274,7 +274,7 @@ public class AuthService : IAuthService
                 .Include(u => u.AuthoredCourses)
                     .ThenInclude(c => c.Sections)
                         .ThenInclude(s => s.Lessons)
-                .FirstOrDefaultAsync(u => u.Id == guidId);
+                .FirstOrDefaultAsync(u => u.Id == guidId && u.Role == UserRole.Instructor);
         }
 
         if (user == null)
@@ -289,7 +289,8 @@ public class AuthService : IAuthService
                 .Include(u => u.AuthoredCourses)
                     .ThenInclude(c => c.Sections)
                         .ThenInclude(s => s.Lessons)
-                .FirstOrDefaultAsync(u => u.FullName.ToLower() == cleanTerm || u.Email.ToLower() == cleanTerm);
+                .FirstOrDefaultAsync(u => u.Role == UserRole.Instructor && 
+                    (u.FullName.ToLower() == cleanTerm || u.Email.ToLower() == cleanTerm));
         }
 
         // Fuzzy fallback: e.g. "sophia" or "lina" or "marcus" in full name
@@ -305,10 +306,11 @@ public class AuthService : IAuthService
                 .Include(u => u.AuthoredCourses)
                     .ThenInclude(c => c.Sections)
                         .ThenInclude(s => s.Lessons)
-                .FirstOrDefaultAsync(u => u.FullName.ToLower().Contains(cleanTerm));
+                .FirstOrDefaultAsync(u => u.Role == UserRole.Instructor && u.FullName.ToLower().Contains(cleanTerm));
         }
 
-        if (user == null)
+        // Strictly enforce that only Instructors are returned; non-instructors (Students, Admins) throw 404
+        if (user == null || user.Role != UserRole.Instructor)
         {
             throw new KeyNotFoundException($"Instructor '{idOrName}' was not found.");
         }
@@ -331,7 +333,7 @@ public class AuthService : IAuthService
             InstructorName = user.FullName,
             InstructorAvatar = user.AvatarUrl,
             InstructorId = user.Id,
-            InstructorEmail = user.Email,
+            InstructorEmail = string.Empty, // Do not expose private account email to public course viewers
             AverageRating = c.Reviews.Any() ? Math.Round(c.Reviews.Average(r => r.Rating), 1) : 5.0,
             ReviewsCount = c.Reviews.Count,
             TotalDurationMinutes = c.Sections.SelectMany(s => s.Lessons).Sum(l => l.DurationMinutes),
@@ -343,7 +345,7 @@ public class AuthService : IAuthService
         {
             Id = user.Id,
             FullName = user.FullName,
-            Email = user.Email,
+            Email = null, // Strictly nullify private login email for public unauthenticated callers
             Role = user.Role.ToString(),
             AvatarUrl = user.AvatarUrl ?? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
             Headline = !string.IsNullOrWhiteSpace(user.Headline) 

@@ -89,7 +89,7 @@ export default function InstructorProfilePage({
     currentUser &&
     profile &&
     (currentUser.id === profile.id ||
-      (currentUser.email && currentUser.email.toLowerCase() === profile.email.toLowerCase()) ||
+      (currentUser.email && profile.email && currentUser.email.toLowerCase() === profile.email.toLowerCase()) ||
       (currentUser.fullName && currentUser.fullName.toLowerCase() === profile.fullName.toLowerCase()))
   );
 
@@ -185,10 +185,12 @@ export default function InstructorProfilePage({
                   </p>
 
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-xs text-totc-gray pt-1">
-                    <div className="flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-totc-teal" />
-                      <span>{p.email}</span>
-                    </div>
+                    {p.email && (
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-totc-teal" />
+                        <span>{p.email}</span>
+                      </div>
+                    )}
                     {p.website && (
                       <a
                         href={p.website}
@@ -230,7 +232,8 @@ export default function InstructorProfilePage({
                   <button
                     onClick={() => {
                       const subject = encodeURIComponent(`შეკითხვა TOTC ინსტრუქტორთან: ${p.fullName}`);
-                      window.location.href = `mailto:${p.email}?subject=${subject}`;
+                      const targetMail = p.email || 'support@totc.edu.ge';
+                      window.location.href = `mailto:${targetMail}?subject=${subject}`;
                     }}
                     className="w-full sm:w-auto px-7 py-3 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"
                   >

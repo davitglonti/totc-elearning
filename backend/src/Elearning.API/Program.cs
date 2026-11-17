@@ -445,20 +445,25 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 // 9. Automatic Database Migration and Seeding
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<ElearningDbContext>();
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<ElearningDbContext>();
+    var config = services.GetRequiredService<IConfiguration>();
+    var env = services.GetRequiredService<IHostEnvironment>();
+
     try
     {
         await dbContext.Database.MigrateAsync();
 
-        await SeedData.InitializeAsync(dbContext);
+        await SeedData.InitializeAsync(dbContext, config, env);
         await SeedData.EnrichInstructorProfilesAsync(dbContext);
         await SeedData.EnrichModuleQuizzesAsync(dbContext);
         await SeedData.SeedPromoCodesAsync(dbContext);
-        Console.WriteLine("[TOTC LMS] Database migrated and seeded successfully.");
+        app.Logger.LogInformation("[TOTC LMS] Database migrated and initialized successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[TOTC LMS] Error during database migration/initialization: {ex.Message}");
+        app.Logger.LogCritical(ex, "[TOTC LMS] Fatal error during database migration/initialization. Terminating host.");
+        throw;
     }
 }
 

@@ -89,7 +89,7 @@ public class InstructorPublicProfileDto
 {
     public Guid Id { get; set; }
     public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public string Role { get; set; } = "Instructor";
     public string? AvatarUrl { get; set; }
     public string? Headline { get; set; }

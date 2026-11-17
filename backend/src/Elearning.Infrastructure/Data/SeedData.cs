@@ -1,46 +1,98 @@
 using Elearning.Domain.Entities;
 using Elearning.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace Elearning.Infrastructure.Data;
 
 /// <summary>
 /// Seeds initial realistic data matching the TOTC frontend platform.
+/// In Production: only seeds configured admin (if credentials provided) and essential lookup data.
+/// In Development: seeds demo instructors, student accounts, courses, and sample quizzes.
 /// </summary>
 public static class SeedData
 {
-    public static async Task InitializeAsync(ElearningDbContext context)
+    public static async Task InitializeAsync(
+        ElearningDbContext context,
+        IConfiguration? configuration = null,
+        IHostEnvironment? environment = null)
     {
         await SeedPromoCodesAsync(context);
         await SeedSiteSettingsAsync(context);
 
-        if (await context.Categories.AnyAsync())
+        var isDev = environment == null || environment.IsDevelopment();
+
+        // 1. Resolve and Seed Administrator Account (Environment Separation)
+        var adminEmail = configuration?["Admin:Email"] ?? configuration?["ADMIN_EMAIL"];
+        var adminPassword = configuration?["Admin:Password"] ?? configuration?["ADMIN_PASSWORD"];
+
+        // Fall back to hardcoded demo admin credentials ONLY in Development
+        if (isDev)
         {
-            return; // Data already seeded
+            if (string.IsNullOrWhiteSpace(adminEmail))
+            {
+                adminEmail = "admin@totc.com";
+            }
+            if (string.IsNullOrWhiteSpace(adminPassword))
+            {
+                adminPassword = "Password123!";
+            }
         }
 
-        // 1. Seed Categories with deterministic IDs
-        var devCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Development", Slug = "development", IconUrl = "code" };
-        var designCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Design", Slug = "design", IconUrl = "layout" };
-        var photoCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "Photography", Slug = "photography", IconUrl = "camera" };
-        var businessCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000004"), Name = "Business", Slug = "business", IconUrl = "briefcase" };
-        var marketingCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000005"), Name = "Marketing", Slug = "marketing", IconUrl = "trending-up" };
-
-        context.Categories.AddRange(devCategory, designCategory, photoCategory, businessCategory, marketingCategory);
-
-        // 2. Seed Users & Instructors with deterministic IDs
-        var defaultPasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!");
-
-        var adminUser = new User
+        // In Production, if not configured, do not seed default hardcoded credentials
+        if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
         {
-            Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
-            FullName = "TOTC Administrator",
-            Email = "admin@totc.com",
-            PasswordHash = defaultPasswordHash,
-            Role = UserRole.Admin,
-            AvatarUrl = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80",
-            Bio = "Chief Education Officer and Administrator at TOTC."
-        };
+            var adminLower = adminEmail.Trim().ToLowerInvariant();
+            var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == adminLower || u.Role == UserRole.Admin);
+            if (existingAdmin == null)
+            {
+                var adminUser = new User
+                {
+                    Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
+                    FullName = "TOTC Administrator",
+                    Email = adminLower,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                    Role = UserRole.Admin,
+                    AvatarUrl = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80",
+                    Bio = "Chief Education Officer and Administrator at TOTC."
+                };
+                context.Users.Add(adminUser);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 2. Seed Categories with deterministic IDs (essential lookup catalog data)
+        var devCategory = await context.Categories.FindAsync(Guid.Parse("10000000-0000-0000-0000-000000000001"));
+        var designCategory = await context.Categories.FindAsync(Guid.Parse("10000000-0000-0000-0000-000000000002"));
+        var photoCategory = await context.Categories.FindAsync(Guid.Parse("10000000-0000-0000-0000-000000000003"));
+        var businessCategory = await context.Categories.FindAsync(Guid.Parse("10000000-0000-0000-0000-000000000004"));
+        var marketingCategory = await context.Categories.FindAsync(Guid.Parse("10000000-0000-0000-0000-000000000005"));
+
+        if (devCategory == null)
+        {
+            devCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000001"), Name = "Development", Slug = "development", IconUrl = "code" };
+            designCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000002"), Name = "Design", Slug = "design", IconUrl = "layout" };
+            photoCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000003"), Name = "Photography", Slug = "photography", IconUrl = "camera" };
+            businessCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000004"), Name = "Business", Slug = "business", IconUrl = "briefcase" };
+            marketingCategory = new Category { Id = Guid.Parse("10000000-0000-0000-0000-000000000005"), Name = "Marketing", Slug = "marketing", IconUrl = "trending-up" };
+
+            context.Categories.AddRange(devCategory, designCategory!, photoCategory!, businessCategory!, marketingCategory!);
+            await context.SaveChangesAsync();
+        }
+
+        // 3. Demo instructor and student accounts (Lina, Marcus, Sophia, Gloria, Davit) and demo courses are ONLY seeded in Development
+        if (!isDev)
+        {
+            return;
+        }
+
+        if (await context.Courses.AnyAsync())
+        {
+            return; // Demo courses and users already seeded
+        }
+
+        var defaultPasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!");
 
         var instructorLina = new User
         {
@@ -112,7 +164,7 @@ public static class SeedData
             Bio = "Pro Member with unlimited access to all courses."
         };
 
-        context.Users.AddRange(adminUser, instructorLina, instructorMarcus, instructorSophia, studentUser, proUser);
+        context.Users.AddRange(instructorLina, instructorMarcus, instructorSophia, studentUser, proUser);
 
         // 3. Seed Course 1: AWS Certified Solutions Architect
         var courseAws = new Course
@@ -122,7 +174,7 @@ public static class SeedData
             ThumbnailUrl = "/assets/explore_row_1.png",
             Price = 450m,
             Level = CourseLevel.Advanced,
-            CategoryId = devCategory.Id,
+            CategoryId = devCategory!.Id,
             InstructorId = instructorLina.Id,
             IsPublished = true,
             IsPopular = true
@@ -334,7 +386,7 @@ public static class SeedData
             ThumbnailUrl = "/assets/explore_row_2.png",
             Price = 380m,
             Level = CourseLevel.Intermediate,
-            CategoryId = designCategory.Id,
+            CategoryId = designCategory!.Id,
             InstructorId = instructorMarcus.Id,
             IsPublished = true
         };
@@ -360,7 +412,7 @@ public static class SeedData
             ThumbnailUrl = "/assets/explore_row_3.png",
             Price = 290m,
             Level = CourseLevel.Beginner,
-            CategoryId = photoCategory.Id,
+            CategoryId = photoCategory!.Id,
             InstructorId = instructorSophia.Id,
             IsPublished = true
         };
