@@ -192,12 +192,13 @@ public class CertificateService : ICertificateService
 
     private static string GenerateCertificateHtml(CertificateDto cert)
     {
-        var issuedDate = cert.IssuedAt.ToString("dd MMMM, yyyy");
+        var issuedDate = System.Net.WebUtility.HtmlEncode(cert.IssuedAt.ToString("dd MMMM, yyyy"));
         var studentName = System.Net.WebUtility.HtmlEncode(cert.StudentName ?? "Student");
         var courseTitle = System.Net.WebUtility.HtmlEncode(cert.CourseTitle ?? "Course Completion");
         var instructorName = System.Net.WebUtility.HtmlEncode(cert.InstructorName ?? "Instructor");
         var certNumber = System.Net.WebUtility.HtmlEncode(cert.CertificateNumber ?? "");
         var verifyHash = System.Net.WebUtility.HtmlEncode(cert.VerificationHash ?? "");
+        var verificationUrl = System.Net.WebUtility.HtmlEncode(cert.VerificationUrl ?? "");
 
         return $@"<!DOCTYPE html>
 <html lang=""ka"">
@@ -493,7 +494,7 @@ public class CertificateService : ICertificateService
         </div>
 
         <div class=""verification"">
-            VERIFICATION HASH: {verifyHash} • VERIFY AT TOTC.GE{cert.VerificationUrl}
+            VERIFICATION HASH: {verifyHash} • VERIFY AT TOTC.GE{verificationUrl}
         </div>
     </div>
 </body>

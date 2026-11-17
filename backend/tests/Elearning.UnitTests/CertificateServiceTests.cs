@@ -152,4 +152,44 @@ public class CertificateServiceTests
         // Assert
         html.Should().BeNull();
     }
+
+    [Fact]
+    public async Task GenerateCertificateHtmlAsync_WhenInputContainsScriptTags_HtmlEncodesDynamicFields()
+    {
+        // Arrange
+        var instructor = new User { Id = Guid.NewGuid(), FullName = "Dr. <script>alert('xss1')</script>", Email = "inst@totc.com", Role = UserRole.Instructor };
+        var student = new User { Id = Guid.NewGuid(), FullName = "Student <script>alert('xss2')</script>", Email = "stud@totc.com", Role = UserRole.Student };
+        var course = new Course { Id = Guid.NewGuid(), Title = "Course <b>Bold</b> & <script>alert('xss3')</script>", InstructorId = instructor.Id, Instructor = instructor };
+
+        var cert = new Certificate
+        {
+            Id = Guid.NewGuid(),
+            UserId = student.Id,
+            User = student,
+            CourseId = course.Id,
+            Course = course,
+            CertificateNumber = "TOTC-2026-<script>",
+            VerificationHash = "HASH<img src=x onerror=alert(1)>",
+            IssuedAt = DateTime.UtcNow
+        };
+
+        _context.Users.AddRange(instructor, student);
+        _context.Courses.Add(course);
+        _context.Certificates.Add(cert);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var html = await _service.GenerateCertificateHtmlAsync(cert.CertificateNumber);
+
+        // Assert
+        html.Should().NotBeNullOrEmpty();
+        html.Should().NotContain("<script>alert('xss1')</script>");
+        html.Should().NotContain("<script>alert('xss2')</script>");
+        html.Should().NotContain("<script>alert('xss3')</script>");
+        html.Should().NotContain("<img src=x onerror=alert(1)>");
+
+        html.Should().Contain("&lt;script&gt;alert(&#39;xss1&#39;)&lt;/script&gt;");
+        html.Should().Contain("&lt;script&gt;alert(&#39;xss2&#39;)&lt;/script&gt;");
+        html.Should().Contain("&lt;script&gt;alert(&#39;xss3&#39;)&lt;/script&gt;");
+    }
 }
