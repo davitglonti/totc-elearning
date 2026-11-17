@@ -736,10 +736,19 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const handleCompleteCurrentLesson = async () => {
     if (!activeLesson) return;
 
+    if (activeLesson.lessonType === 'Quiz' || activeLesson.quiz) {
+      if (!passedQuizIds.has(activeLesson.id)) {
+        alert('ამ ლექციის დასასრულებლად აუცილებელია თანდართული ტესტის წარმატებით ჩაბარება.');
+        return;
+      }
+    }
+
     try {
       await api.learning.completeLesson(activeLesson.id, currentVideoTime, true);
     } catch (e) {
-      console.warn('Saved completion locally:', e.message);
+      console.warn('Could not complete lesson on server:', e.message);
+      alert(e.message || 'ლექციის დასრულება ვერ მოხერხდა.');
+      return;
     }
 
     setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));

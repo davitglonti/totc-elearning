@@ -148,6 +148,29 @@ public class CertificateService : ICertificateService
             }
         }
 
+        // 3b. Verify all course assessments / quizzes / final exams are passed
+        var sectionIds = course.Sections.Select(s => s.Id).ToList();
+        var allCourseQuizzes = await _context.Quizzes
+            .Where(q => (q.LessonId != null && allLessonIds.Contains(q.LessonId.Value)) ||
+                        (q.SectionId != null && sectionIds.Contains(q.SectionId.Value)))
+            .ToListAsync();
+
+        if (allCourseQuizzes.Count > 0)
+        {
+            var quizIds = allCourseQuizzes.Select(q => q.Id).ToList();
+            var passedQuizIds = await _context.QuizAttempts
+                .Where(qa => qa.UserId == userId && qa.Passed && quizIds.Contains(qa.QuizId))
+                .Select(qa => qa.QuizId)
+                .Distinct()
+                .ToListAsync();
+
+            var unpassedQuiz = allCourseQuizzes.FirstOrDefault(q => !passedQuizIds.Contains(q.Id));
+            if (unpassedQuiz != null)
+            {
+                throw new InvalidOperationException($"Cannot issue certificate: Course requires passing all assessments. Quiz '{unpassedQuiz.Title}' has not been passed.");
+            }
+        }
+
         // 4. Generate unique serial number and cryptographic verification hash
         var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
         var rawHashPayload = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";

@@ -214,6 +214,22 @@ public class EnrollmentService : IEnrollmentService
             throw new UnauthorizedAccessException("You must be enrolled in the course to complete lessons.");
         }
 
+        // Academic Integrity: verify attached quiz is passed before allowing lesson completion
+        if (dto.MarkAsComplete)
+        {
+            var hasAttachedQuiz = await _context.Quizzes.AnyAsync(q => q.LessonId == lessonId);
+            if (hasAttachedQuiz)
+            {
+                var hasPassedQuiz = await _context.QuizAttempts
+                    .AnyAsync(qa => qa.Quiz!.LessonId == lessonId && qa.UserId == userId && qa.Passed);
+
+                if (!hasPassedQuiz)
+                {
+                    throw new InvalidOperationException("This lesson contains a required quiz. You must achieve a passing score on the quiz to complete this lesson.");
+                }
+            }
+        }
+
         // Enforce Sequential Lesson Progression: all prior lessons in curriculum order must be completed first
         // (Bypassed if course author enabled IsOpenAccess)
         var course = await _context.Courses.FindAsync(courseId);
@@ -276,31 +292,58 @@ public class EnrollmentService : IEnrollmentService
 
             if (completedLessonCount >= allLessonIds.Count)
             {
-                var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == userId);
-                if (enrollment != null && !enrollment.IsCompleted)
+                // Verify all course assessments/quizzes/final exams are passed before completing enrollment and issuing certificate
+                var sectionIds = await _context.Sections
+                    .Where(s => s.CourseId == courseId)
+                    .Select(s => s.Id)
+                    .ToListAsync();
+
+                var allCourseQuizzes = await _context.Quizzes
+                    .Where(q => (q.LessonId != null && allLessonIds.Contains(q.LessonId.Value)) ||
+                                (q.SectionId != null && sectionIds.Contains(q.SectionId.Value)))
+                    .ToListAsync();
+
+                var allQuizzesPassed = true;
+                if (allCourseQuizzes.Count > 0)
                 {
-                    enrollment.IsCompleted = true;
-                    enrollment.CompletedAt = DateTime.UtcNow;
+                    var quizIds = allCourseQuizzes.Select(q => q.Id).ToList();
+                    var passedQuizIds = await _context.QuizAttempts
+                        .Where(qa => qa.UserId == userId && qa.Passed && quizIds.Contains(qa.QuizId))
+                        .Select(qa => qa.QuizId)
+                        .Distinct()
+                        .ToListAsync();
+
+                    allQuizzesPassed = allCourseQuizzes.All(q => passedQuizIds.Contains(q.Id));
                 }
 
-                // Automatically generate Certificate upon 100% course completion
-                var certExists = await _context.Certificates.AnyAsync(c => c.UserId == userId && c.CourseId == courseId);
-                if (!certExists)
+                if (allQuizzesPassed)
                 {
-                    var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
-                    var rawHash = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";
-                    var hashBytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawHash));
-                    var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
-
-                    _context.Certificates.Add(new Certificate
+                    var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == userId);
+                    if (enrollment != null && !enrollment.IsCompleted)
                     {
-                        UserId = userId,
-                        CourseId = courseId,
-                        CertificateNumber = serialNumber,
-                        VerificationHash = verificationHash,
-                        IssuedAt = DateTime.UtcNow,
-                        PdfUrl = $"/api/certificates/{serialNumber}/download"
-                    });
+                        enrollment.IsCompleted = true;
+                        enrollment.CompletedAt = DateTime.UtcNow;
+                    }
+
+                    // Automatically generate Certificate upon 100% course and assessment completion
+                    var certExists = await _context.Certificates.AnyAsync(c => c.UserId == userId && c.CourseId == courseId);
+                    if (!certExists)
+                    {
+                        var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
+                        var rawHash = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";
+                        var hashBytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawHash));
+                        var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
+
+                        _context.Certificates.Add(new Certificate
+                        {
+                            UserId = userId,
+                            CourseId = courseId,
+                            CertificateNumber = serialNumber,
+                            VerificationHash = verificationHash,
+                            IssuedAt = DateTime.UtcNow,
+                            PdfUrl = $"/api/certificates/{serialNumber}/download"
+                        });
+                    }
                 }
             }
         }
