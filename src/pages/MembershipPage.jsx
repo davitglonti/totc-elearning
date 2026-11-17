@@ -5,8 +5,13 @@ import {
   BookOpen, ExternalLink, RefreshCw, Lock, User, Shield, CheckCircle2
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useSettings, defaultMembershipContent } from '../context/SettingsContext';
 
 export default function MembershipPage({ setActivePage, openAuthModal, currentUser, onSubscriptionUpdated }) {
+  const { settings } = useSettings();
+  const membershipContent = settings?.membershipContent || defaultMembershipContent;
+  const headerContent = membershipContent.header || defaultMembershipContent.header;
+
   const [annualBilling, setAnnualBilling] = useState(true);
   const [selectedPlanModal, setSelectedPlanModal] = useState(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -26,59 +31,48 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
     postalCode: ''
   });
 
-  const plans = [
-    {
-      name: 'უფასო სტარტერი',
-      planId: 'Free',
-      price: '₾0',
-      period: 'უფასო სამუდამოდ',
-      desc: 'იდეალურია დამწყები მსმენელებისთვის შესავალი ონლაინ გაკვეთილების გასაცნობად.',
-      features: [
-        'წვდომა უფასო შესავალ საჩვენებელ ლექციებზე',
-        'სტანდარტული სასწავლო ფორუმები და დისკუსიები',
-        'წვდომა მობილურიდან და კომპიუტერიდან',
-        'შეზღუდული ტესტირებები (თვეში 3 ტესტი)'
-      ],
-      buttonText: 'მიმდინარე უფასო პაკეტი',
-      buttonStyle: 'bg-gray-100 text-totc-navy hover:bg-gray-200',
-      isPopular: false
-    },
-    {
-      name: 'სტუდენტური Pro სრული წვდომა',
-      planId: 'Pro',
-      price: annualBilling ? '₾49' : '₾65',
-      period: annualBilling ? '/ თვეში (წლიური ₾588)' : '/ თვეში',
-      desc: 'გახსენით შეუზღუდავი წვდომა ყველა კურსზე, ვორქშოპზე და სერტიფიკატზე.',
-      features: [
-        '✨ შეუზღუდავი მყისიერი წვდომა კატალოგის ყველა კურსზე',
-        'პირდაპირი ვიდეო ჩართვები ინსტრუქტორებთან',
-        'ავტომატური შეფასების და პროგრესის კონტროლი',
-        'ინდივიდუალური პრივატული კონსულტაციები',
-        'ოფიციალური ვერიფიცირებული სერტიფიკატები',
-        'ოფლაინ მასალებისა და კოდის ფაილების ჩამოტვირთვა'
-      ],
-      buttonText: 'Pro სრული წვდომის გააქტიურება',
-      buttonStyle: 'bg-totc-teal text-white hover:bg-totc-teal-dark shadow-lg shadow-totc-teal/30',
-      isPopular: true
-    },
-    {
-      name: 'ორგანიზაცია / კამპუსი',
-      planId: 'Enterprise',
-      price: annualBilling ? '₾229' : '₾279',
-      period: annualBilling ? '/ მომხმარებელი / თვეში' : '/ მომხმარებელი / თვეში',
-      desc: 'შექმნილია სკოლებისთვის, უნივერსიტეტებისა და კორპორატიული აკადემიებისთვის.',
-      features: [
-        'სრული Zoom API და LMS ინტეგრაცია (Canvas, Blackboard)',
-        'შეუზღუდავი სტუდენტური სიები და დასწრების აღრიცხვა',
-        'ადმინისტრაციული ანალიტიკის პანელი',
-        'ორგანიზაციის ბრენდირება და ქვედომენი',
-        '24/7 პრიორიტეტული მხარდაჭერა და დანერგვის მენეჯერი'
-      ],
-      buttonText: 'კორპორატიული პაკეტის გააქტიურება',
-      buttonStyle: 'bg-totc-navy text-white hover:bg-slate-800 shadow-lg',
-      isPopular: false
-    }
-  ];
+  const rawPlans = (membershipContent.plans && membershipContent.plans.length > 0)
+    ? membershipContent.plans
+    : defaultMembershipContent.plans;
+
+  const plans = rawPlans
+    .filter(p => p.isEnabled !== false)
+    .map(plan => {
+      const isFree = plan.planId === 'Free' || (Number(plan.monthlyPrice) === 0 && Number(plan.annualMonthlyPrice) === 0);
+      const curr = plan.currency || '₾';
+
+      let displayPrice = `${curr}0`;
+      let displayPeriod = plan.periodText || 'უფასო სამუდამოდ';
+
+      if (!isFree) {
+        if (annualBilling) {
+          const mPrice = plan.annualMonthlyPrice !== undefined ? plan.annualMonthlyPrice : plan.monthlyPrice;
+          const fullAnnual = plan.annualFullPrice || (mPrice * 12);
+          displayPrice = `${curr}${mPrice}`;
+          displayPeriod = `/ თვეში (წლიური ${curr}${fullAnnual})`;
+        } else {
+          displayPrice = `${curr}${plan.monthlyPrice}`;
+          displayPeriod = plan.periodText || '/ თვეში';
+        }
+      }
+
+      let btnStyle = 'bg-gray-100 text-totc-navy hover:bg-gray-200';
+      if (plan.buttonStyle === 'primary' || plan.isPopular) {
+        btnStyle = 'bg-totc-teal text-white hover:bg-totc-teal-dark shadow-lg shadow-totc-teal/30';
+      } else if (plan.buttonStyle === 'dark') {
+        btnStyle = 'bg-totc-navy text-white hover:bg-slate-800 shadow-lg';
+      } else if (plan.buttonStyle && plan.buttonStyle.includes(' ')) {
+        btnStyle = plan.buttonStyle;
+      }
+
+      return {
+        ...plan,
+        price: displayPrice,
+        period: displayPeriod,
+        buttonStyle: btnStyle,
+        buttonText: plan.buttonText || (isFree ? 'მიმდინარე უფასო პაკეტი' : `${plan.name}-ის გააქტიურება`)
+      };
+    });
 
   const handleSelectPlan = (plan) => {
     if (plan.planId === 'Free') {
@@ -403,19 +397,19 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
               )}
 
               <span className="px-4 py-1.5 rounded-full bg-totc-teal-light text-totc-teal font-semibold text-xs tracking-wider uppercase">
-                შეუზღუდავი სწავლების პაკეტი
+                {headerContent.badgeText || 'შეუზღუდავი სწავლების პაკეტი'}
               </span>
               <h1 className="font-poppins font-bold text-3xl sm:text-5xl text-totc-navy leading-tight">
-                მარტივი, სრული წვდომის წევრობა
+                {headerContent.title || 'მარტივი, სრული წვდომის წევრობა'}
               </h1>
               <p className="text-totc-gray text-base sm:text-lg">
-                გამოიწერეთ ერთხელ და გახსენით ყველა კურსი, ვიდეო გაკვეთილი და სერტიფიკატი მთელ TOTC პლატფორმაზე.
+                {headerContent.subtitle || 'გამოიწერეთ ერთხელ და გახსენით ყველა კურსი, ვიდეო გაკვეთილი და სერტიფიკატი მთელ TOTC პლატფორმაზე.'}
               </p>
 
               {/* Billing Switch */}
               <div className="flex items-center justify-center gap-4 pt-6">
                 <span className={`text-sm font-semibold ${!annualBilling ? 'text-totc-navy' : 'text-totc-gray'}`}>
-                  ყოველთვიური გადახდა
+                  {headerContent.monthlyBillingText || 'ყოველთვიური გადახდა'}
                 </span>
                 <button
                   onClick={() => setAnnualBilling(!annualBilling)}
@@ -431,11 +425,13 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 </button>
                 <div className="flex items-center gap-1.5">
                   <span className={`text-sm font-semibold ${annualBilling ? 'text-totc-navy' : 'text-totc-gray'}`}>
-                    წლიური გადახდა
+                    {headerContent.annualBillingText || 'წლიური გადახდა'}
                   </span>
-                  <span className="bg-totc-orange-light text-totc-orange text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    დაზოგე 25%
-                  </span>
+                  {headerContent.discountBadge && (
+                    <span className="bg-totc-orange-light text-totc-orange text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                      {headerContent.discountBadge}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -501,6 +497,13 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 </div>
               ))}
             </div>
+
+            {headerContent.guaranteeText && (
+              <div className="text-center text-xs text-totc-gray flex items-center justify-center gap-2 -mt-12 mb-16">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{headerContent.guaranteeText}</span>
+              </div>
+            )}
 
           </div>
         )}

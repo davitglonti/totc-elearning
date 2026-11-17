@@ -6,4 +6,5 @@ export { AdminOrdersTab } from './AdminOrdersTab';
 export { AdminBunnyTab } from './AdminBunnyTab';
 export { AdminSystemTab } from './AdminSystemTab';
 export { AdminCmsSettingsTab, AdminCategoriesTab, AdminHomeCmsTab, AdminSettingsTab } from './AdminCmsSettingsTab';
+export { AdminMembershipCmsTab } from './AdminMembershipCmsTab';
 export { CourseReviewModal } from './CourseReviewModal';

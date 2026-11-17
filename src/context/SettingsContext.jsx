@@ -87,6 +87,86 @@ export const defaultHomeContent = {
   },
 };
 
+export const defaultMembershipContent = {
+  header: {
+    badgeText: 'შეუზღუდავი სწავლების პაკეტი',
+    title: 'მარტივი, სრული წვდომის წევრობა',
+    subtitle: 'გამოიწერეთ ერთხელ და გახსენით ყველა კურსი, ვიდეო გაკვეთილი და სერტიფიკატი მთელ TOTC პლატფორმაზე.',
+    monthlyBillingText: 'ყოველთვიური გადახდა',
+    annualBillingText: 'წლიური გადახდა',
+    discountBadge: 'დაზოგე 25%',
+    guaranteeText: '14-დღიანი თანხის დაბრუნების გარანტია. გაუქმება ნებისმიერ დროს.',
+  },
+  plans: [
+    {
+      id: 'free',
+      planId: 'Free',
+      name: 'უფასო სტარტერი',
+      monthlyPrice: 0,
+      annualMonthlyPrice: 0,
+      annualFullPrice: 0,
+      currency: '₾',
+      periodText: 'უფასო სამუდამოდ',
+      desc: 'იდეალურია დამწყები მსმენელებისთვის შესავალი ონლაინ გაკვეთილების გასაცნობად.',
+      features: [
+        'წვდომა უფასო შესავალ საჩვენებელ ლექციებზე',
+        'სტანდარტული სასწავლო ფორუმები და დისკუსიები',
+        'წვდომა მობილურიდან და კომპიუტერიდან',
+        'შეზღუდული ტესტირებები (თვეში 3 ტესტი)',
+      ],
+      buttonText: 'მიმდინარე უფასო პაკეტი',
+      buttonStyle: 'secondary',
+      isPopular: false,
+      isEnabled: true,
+    },
+    {
+      id: 'pro',
+      planId: 'Pro',
+      name: 'სტუდენტური Pro სრული წვდომა',
+      monthlyPrice: 65,
+      annualMonthlyPrice: 49,
+      annualFullPrice: 588,
+      currency: '₾',
+      periodText: '/ თვეში',
+      desc: 'გახსენით შეუზღუდავი წვდომა ყველა კურსზე, ვორქშოპზე და სერტიფიკატზე.',
+      features: [
+        '✨ შეუზღუდავი მყისიერი წვდომა კატალოგის ყველა კურსზე',
+        'პირდაპირი ვიდეო ჩართვები ინსტრუქტორებთან',
+        'ავტომატური შეფასების და პროგრესის კონტროლი',
+        'ინდივიდუალური პრივატული კონსულტაციები',
+        'ოფიციალური ვერიფიცირებული სერტიფიკატები',
+        'ოფლაინ მასალებისა და კოდის ფაილების ჩამოტვირთვა',
+      ],
+      buttonText: 'Pro სრული წვდომის გააქტიურება',
+      buttonStyle: 'primary',
+      isPopular: true,
+      isEnabled: true,
+    },
+    {
+      id: 'enterprise',
+      planId: 'Enterprise',
+      name: 'ორგანიზაცია / კამპუსი',
+      monthlyPrice: 279,
+      annualMonthlyPrice: 229,
+      annualFullPrice: 2748,
+      currency: '₾',
+      periodText: '/ მომხმარებელი / თვეში',
+      desc: 'შექმნილია სკოლებისთვის, უნივერსიტეტებისა და კორპორატიული აკადემიებისთვის.',
+      features: [
+        'სრული Zoom API და LMS ინტეგრაცია (Canvas, Blackboard)',
+        'შეუზღუდავი სტუდენტური სიები და დასწრების აღრიცხვა',
+        'ადმინისტრაციული ანალიტიკის პანელი',
+        'ორგანიზაციის ბრენდირება და ქვედომენი',
+        '24/7 პრიორიტეტული მხარდაჭერა და დანერგვის მენეჯერი',
+      ],
+      buttonText: 'კორპორატიული პაკეტის გააქტიურება',
+      buttonStyle: 'dark',
+      isPopular: false,
+      isEnabled: true,
+    },
+  ],
+};
+
 const defaultSettings = {
   logoUrl: '',
   siteName: 'TOTC',
@@ -96,6 +176,7 @@ const defaultSettings = {
   contactPhone: '+995 32 200 00 00',
   footerText: 'ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა',
   homeContent: defaultHomeContent,
+  membershipContent: defaultMembershipContent,
 };
 
 const SettingsContext = createContext({
@@ -104,6 +185,7 @@ const SettingsContext = createContext({
   refreshSettings: async () => {},
   updateSettings: async () => {},
   updateHomeContent: async () => {},
+  updateMembershipContent: async () => {},
 });
 
 export function SettingsProvider({ children }) {
@@ -133,6 +215,21 @@ export function SettingsProvider({ children }) {
           }
         }
 
+        let parsedMembership = defaultMembershipContent;
+        if (data.membershipContentJson) {
+          try {
+            const parsedMem = JSON.parse(data.membershipContentJson);
+            parsedMembership = {
+              header: { ...defaultMembershipContent.header, ...(parsedMem.header || {}) },
+              plans: Array.isArray(parsedMem.plans) && parsedMem.plans.length > 0 
+                ? parsedMem.plans 
+                : defaultMembershipContent.plans,
+            };
+          } catch (e) {
+            console.warn('Could not parse membershipContentJson:', e.message);
+          }
+        }
+
         setSettings({
           logoUrl: data.logoUrl || '',
           siteName: data.siteName || 'TOTC',
@@ -142,6 +239,7 @@ export function SettingsProvider({ children }) {
           contactPhone: data.contactPhone || defaultSettings.contactPhone,
           footerText: data.footerText || defaultSettings.footerText,
           homeContent: parsedHome,
+          membershipContent: parsedMembership,
         });
       }
     } catch (err) {
@@ -161,6 +259,10 @@ export function SettingsProvider({ children }) {
       payload.homeContentJson = JSON.stringify(payload.homeContent);
       delete payload.homeContent;
     }
+    if (payload.membershipContent) {
+      payload.membershipContentJson = JSON.stringify(payload.membershipContent);
+      delete payload.membershipContent;
+    }
     const updated = await api.settings.update(payload);
     await fetchSettings();
     return updated;
@@ -174,6 +276,14 @@ export function SettingsProvider({ children }) {
     return updated;
   };
 
+  const updateMembershipContent = async (newMembershipContent) => {
+    const updated = await api.settings.update({
+      membershipContentJson: JSON.stringify(newMembershipContent),
+    });
+    await fetchSettings();
+    return updated;
+  };
+
   return (
     <SettingsContext.Provider
       value={{
@@ -182,6 +292,7 @@ export function SettingsProvider({ children }) {
         refreshSettings: fetchSettings,
         updateSettings,
         updateHomeContent,
+        updateMembershipContent,
       }}
     >
       {children}

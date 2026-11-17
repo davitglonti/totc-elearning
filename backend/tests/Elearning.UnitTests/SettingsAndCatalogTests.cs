@@ -31,6 +31,9 @@ public class SettingsAndCatalogTests
         Assert.Equal("TOTC", settings.SiteName);
         Assert.Equal(string.Empty, settings.LogoUrl);
         Assert.False(string.IsNullOrWhiteSpace(settings.ContactEmail));
+        Assert.False(string.IsNullOrWhiteSpace(settings.MembershipContentJson));
+        Assert.Contains("უფასო სტარტერი", settings.MembershipContentJson);
+        Assert.Contains("Pro", settings.MembershipContentJson);
     }
 
     [Fact]
@@ -43,16 +46,19 @@ public class SettingsAndCatalogTests
         {
             LogoUrl = "https://example.com/logo.png",
             SiteName = "My Custom LMS",
-            HeroTitle = "ახალი სათაური"
+            HeroTitle = "ახალი სათაური",
+            MembershipContentJson = "{\"custom\":\"pricing\"}"
         });
 
         Assert.Equal("https://example.com/logo.png", updated.LogoUrl);
         Assert.Equal("My Custom LMS", updated.SiteName);
         Assert.Equal("ახალი სათაური", updated.HeroTitle);
+        Assert.Equal("{\"custom\":\"pricing\"}", updated.MembershipContentJson);
 
         var retrieved = await service.GetSettingsAsync();
         Assert.Equal("https://example.com/logo.png", retrieved.LogoUrl);
         Assert.Equal("My Custom LMS", retrieved.SiteName);
+        Assert.Equal("{\"custom\":\"pricing\"}", retrieved.MembershipContentJson);
     }
 
     [Fact]

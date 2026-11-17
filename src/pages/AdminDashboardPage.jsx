@@ -3,7 +3,7 @@ import {
   Shield, Users, Server, Activity, ExternalLink, 
   CheckCircle, BookOpen, DollarSign, CreditCard, 
   RefreshCw, AlertCircle, X, ArrowUpRight, CheckSquare,
-  Video, Layers, Settings as SettingsIcon, Layout, Bell
+  Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useSettings, defaultHomeContent } from '../context/SettingsContext';
@@ -17,6 +17,7 @@ import {
   AdminBunnyTab,
   AdminSystemTab,
   AdminCmsSettingsTab,
+  AdminMembershipCmsTab,
   CourseReviewModal
 } from '../components/admin';
 
@@ -645,6 +646,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             { id: 'courses', label: 'კურსების მართვა', icon: BookOpen, count: coursesList.length, alert: false },
             { id: 'categories', label: 'კატეგორიები', icon: Layers, count: categoriesList.length, alert: false },
             { id: 'home_cms', label: 'მთავარი გვერდის CMS', icon: Layout, count: null, alert: false },
+            { id: 'membership_cms', label: 'გამოწერა & ფასების CMS', icon: Sparkles, count: null, alert: false },
             { id: 'settings', label: 'საიტის პარამეტრები & ლოგო', icon: SettingsIcon, count: null, alert: false },
             { id: 'orders', label: 'შეკვეთები და შემოსავალი', icon: CreditCard, count: ordersList.length, alert: false },
             { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
@@ -750,6 +752,11 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         {/* Tab 7: System Architecture */}
         {activeTab === 'system' && (
           <AdminSystemTab />
+        )}
+
+        {/* Tab 8: Membership & Pricing CMS */}
+        {activeTab === 'membership_cms' && (
+          <AdminMembershipCmsTab setActivePage={setActivePage} />
         )}
 
         {/* Tabs 8, 9, 10: Categories, Home CMS, Site Settings */}
