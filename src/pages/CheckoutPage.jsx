@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, ShieldCheck, CheckCircle2, Lock, ArrowLeft, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
+import { CreditCard, ShieldCheck, CheckCircle2, Lock, ArrowLeft, ArrowRight, AlertCircle, BookOpen, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function CheckoutPage({ setActivePage, selectedCourse, currentUser }) {
@@ -198,6 +198,37 @@ export default function CheckoutPage({ setActivePage, selectedCourse, currentUse
             <span>{errorMessage}</span>
           </div>
         )}
+
+        {/* Subscription Upsell Alert */}
+        <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-totc-teal/10 via-white to-totc-purple/10 border border-totc-teal/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-totc-teal/15 text-totc-teal flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-totc-teal" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-totc-navy flex items-center gap-2">
+                <span>გსურთ შეუზღუდავი წვდომა ყველა კურსზე?</span>
+                <span className="text-[10px] font-black text-totc-amber bg-totc-amber/10 px-2 py-0.5 rounded-full uppercase">
+                  დაზოგეთ მეტი
+                </span>
+              </h4>
+              <p className="text-xs text-totc-gray mt-0.5">
+                მხოლოდ ამ კურსის შეძენის ნაცვლად, მიიღეთ წვდომა მთელ ბიბლიოთეკაზე TOTC Pro გამოწერით თვეში ₾49-დან.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActivePage('membership');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="px-5 py-2.5 rounded-full bg-white hover:bg-totc-teal hover:text-white text-totc-teal border-2 border-totc-teal text-xs font-bold transition-all shadow-sm shrink-0 flex items-center gap-1.5"
+          >
+            <span>გამოწერაზე გადასვლა</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* Payment & Billing Left (7 cols) */}

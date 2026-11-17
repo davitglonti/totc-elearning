@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Star, Play, CheckCircle, Clock, BookOpen, Award, ShieldCheck, 
   ArrowRight, User, Sparkles, Lock, Unlock, Video, HelpCircle, 
-  Layers, ArrowLeft, Edit3
+  Layers, ArrowLeft, Edit3, Zap
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -628,30 +628,71 @@ export default function CourseDetailPage({
               )
               /* 4. NON-ENROLLED GUEST / STUDENT */
               : (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-poppins font-bold text-4xl text-totc-purple">
-                        {courseData.price}
-                      </span>
-                      <span className="text-lg text-gray-400 line-through">
-                        {courseData.oldPrice || '₾600'}
-                      </span>
-                      <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
-                        -25% ფასდაკლება
-                      </span>
+                <div className="space-y-4">
+                  {/* Option 1: Buy Course Individually */}
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-poppins font-bold text-4xl text-totc-purple">
+                          {courseData.price}
+                        </span>
+                        <span className="text-lg text-gray-400 line-through">
+                          {courseData.oldPrice || '₾600'}
+                        </span>
+                        <span className="text-xs font-bold text-totc-mint bg-totc-mint/10 px-2.5 py-1 rounded-full uppercase">
+                          -25% ფასდაკლება
+                        </span>
+                      </div>
+                      <p className="text-xs text-red-500 font-medium">შეზღუდული შეთავაზება მთავრდება 2 დღეში</p>
                     </div>
-                    <p className="text-xs text-red-500 font-medium">შეზღუდული შეთავაზება მთავრდება 2 დღეში</p>
+
+                    <button
+                      onClick={handleBuyNow}
+                      className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-base sm:text-lg transition-colors shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2"
+                    >
+                      <span>კურსის შეძენა</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                    <p className="text-[11px] text-center text-totc-gray">სამუდამო წვდომა მხოლოდ ამ კურსზე</p>
                   </div>
 
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full py-4 rounded-full bg-totc-teal hover:bg-totc-teal-dark text-white font-semibold text-lg transition-colors shadow-lg shadow-totc-teal/20 active:scale-98 flex items-center justify-center gap-2"
-                  >
-                    <span>კურსის შეძენა</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                </>
+                  {/* Divider */}
+                  <div className="relative flex items-center justify-center pt-1 pb-1">
+                    <div className="border-t border-gray-200 w-full"></div>
+                    <span className="bg-white px-3 text-xs text-totc-gray uppercase font-bold tracking-wider">ან</span>
+                    <div className="border-t border-gray-200 w-full"></div>
+                  </div>
+
+                  {/* Option 2: All-Access Membership Subscription (TOTC Pro) */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-totc-teal/10 via-totc-purple/5 to-amber-500/10 border-2 border-totc-teal/30 space-y-3 relative overflow-hidden group hover:border-totc-teal transition-all shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-totc-navy uppercase tracking-wider">
+                        <Sparkles className="w-4 h-4 text-totc-amber fill-totc-amber" />
+                        <span>TOTC Pro გამოწერა</span>
+                      </div>
+                      <span className="text-[11px] font-black text-totc-teal bg-totc-teal/10 px-2.5 py-0.5 rounded-full border border-totc-teal/20">
+                        ₾49 / თვე
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-totc-navy leading-relaxed font-medium">
+                      გახსენით <span className="font-bold text-totc-teal">ულიმიტო წვდომა</span> ამ და ყველა სხვა კურსზე, სერტიფიკატებსა და პრაქტიკულ მასალებზე.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePage('membership');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="w-full py-3 rounded-full bg-white hover:bg-totc-navy text-totc-navy hover:text-white border-2 border-totc-navy/15 hover:border-totc-navy font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm active:scale-98"
+                    >
+                      <Zap className="w-4 h-4 text-totc-amber fill-totc-amber" />
+                      <span>გამოწერით დაწყება (ყველა კურსი)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* Course Value Props Checklist */}
