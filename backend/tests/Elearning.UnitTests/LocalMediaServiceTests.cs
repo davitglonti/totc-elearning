@@ -99,10 +99,11 @@ public class LocalMediaServiceTests
         var relativeUrl = await _service.UploadFileAsync(stream, fileName, contentType);
 
         // Assert
-        relativeUrl.Should().StartWith("/uploads/");
+        relativeUrl.Should().Match(url => url.StartsWith("/uploads/") || url.StartsWith("/api/media/secure/"));
         relativeUrl.Should().EndWith(Path.GetExtension(fileName).ToLowerInvariant());
 
-        var savedPath = Path.Combine(_testUploadDir, Path.GetFileName(relativeUrl));
+        var savedPath = _service.GetProtectedFilePath(Path.GetFileName(relativeUrl));
+        savedPath.Should().NotBeNull();
         File.Exists(savedPath).Should().BeTrue();
 
         // Cleanup

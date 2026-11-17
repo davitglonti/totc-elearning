@@ -408,11 +408,19 @@ app.UseRouting();
 app.UseCors("AllowFrontend");
 app.UseRateLimiter();
 
-// 8. Serve Static Uploaded Files with CORS support
+// 8. Serve Static Uploaded Files with CORS support and Defense-in-Depth Extension Protection
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
+        var fileName = ctx.File.Name.ToLowerInvariant();
+        if (fileName.EndsWith(".pdf") || fileName.EndsWith(".zip") || fileName.EndsWith(".mp4") || fileName.EndsWith(".webm"))
+        {
+            ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            ctx.Context.Response.Body = Stream.Null;
+            return;
+        }
+
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
         ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "*");

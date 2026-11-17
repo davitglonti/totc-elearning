@@ -190,7 +190,7 @@ public class InstructorCoursesController : BaseApiController
     [HttpPost("media/upload")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UploadMedia(IFormFile file)
+    public async Task<IActionResult> UploadMedia(IFormFile file, [FromQuery] bool isPublic = false)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "No file uploaded." });
@@ -199,7 +199,7 @@ public class InstructorCoursesController : BaseApiController
             return BadRequest(new { message = "File exceeds 200MB size limit." });
 
         using var stream = file.OpenReadStream();
-        var url = await _mediaService.UploadFileAsync(stream, file.FileName, file.ContentType);
+        var url = await _mediaService.UploadFileAsync(stream, file.FileName, file.ContentType, isPublic);
 
         return Ok(new { url });
     }

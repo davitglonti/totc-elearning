@@ -35,14 +35,16 @@ export const instructorApi = {
     });
   },
 
-  async uploadMedia(file) {
+  async uploadMedia(file, isPublic = false) {
     const token = localStorage.getItem('totc_token');
     const formData = new FormData();
     formData.append('file', file);
 
+    const query = isPublic ? '?isPublic=true' : '?isPublic=false';
+
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_BASE}/instructor/media/upload`);
+      xhr.open('POST', `${API_BASE}/instructor/media/upload${query}`);
       if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
       xhr.onload = () => {

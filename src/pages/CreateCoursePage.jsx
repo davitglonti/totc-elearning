@@ -261,7 +261,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     if (!file) return;
     setUploadingArtwork(true);
     try {
-      const res = await api.instructor.uploadMedia(file);
+      const res = await api.instructor.uploadMedia(file, true);
       const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
       setThumbnailUrl(fullUrl);
       setSuccessMessage('✓ კურსის გარეკანის სურათი წარმატებით აიტვირთა!');
@@ -283,7 +283,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
     setUploadingResourceKey(itemKey);
 
     try {
-      const res = await api.instructor.uploadMedia(file);
+      const res = await api.instructor.uploadMedia(file, false);
       const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
 
       const sizeStr = file.size > 1024 * 1024

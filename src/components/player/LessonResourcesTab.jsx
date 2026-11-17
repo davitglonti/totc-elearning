@@ -2,6 +2,50 @@ import React from 'react';
 import { Code, FolderArchive, FileText, Download, ExternalLink } from 'lucide-react';
 
 export function LessonResourcesTab({ activeLesson, resolveVideoUrl }) {
+  const getDownloadUrl = (url) => {
+    if (!url || url === '#') return '#';
+    let resolved = resolveVideoUrl ? resolveVideoUrl(url) : url;
+    const token = localStorage.getItem('totc_token');
+    if (token && (resolved.includes('/api/media/secure') || resolved.includes('/media/secure'))) {
+      const separator = resolved.includes('?') ? '&' : '?';
+      return `${resolved}${separator}token=${encodeURIComponent(token)}`;
+    }
+    return resolved;
+  };
+
+  const handleDownload = async (e, res) => {
+    if (!res.fileUrl || res.fileUrl === '#') return;
+    const token = localStorage.getItem('totc_token');
+    let resolved = resolveVideoUrl ? resolveVideoUrl(res.fileUrl) : res.fileUrl;
+
+    if (token && (resolved.includes('/api/media/secure') || resolved.includes('/media/secure'))) {
+      e.preventDefault();
+      try {
+        const response = await fetch(resolved, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = res.name || 'download';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(blobUrl);
+          return;
+        }
+      } catch (err) {
+        console.warn('Authenticated blob download failed, falling back to window open:', err);
+      }
+      const separator = resolved.includes('?') ? '&' : '?';
+      window.open(`${resolved}${separator}token=${encodeURIComponent(token)}`, '_blank');
+    }
+  };
+
   const resourcesList = (activeLesson?.resources && activeLesson.resources.length > 0)
     ? activeLesson.resources
     : (activeLesson?.id === 'les-1' ? [
@@ -61,11 +105,12 @@ export function LessonResourcesTab({ activeLesson, resolveVideoUrl }) {
 
               {res.fileUrl && res.fileUrl !== '#' ? (
                 <a
-                  href={resolveVideoUrl ? resolveVideoUrl(res.fileUrl) : res.fileUrl}
+                  href={getDownloadUrl(res.fileUrl)}
+                  onClick={(e) => handleDownload(e, res)}
                   download={res.name}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                  className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   <span>ფაილის ჩამოტვირთვა</span>
