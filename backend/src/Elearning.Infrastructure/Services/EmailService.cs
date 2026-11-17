@@ -30,15 +30,30 @@ public class EmailService : IEmailService
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken, string recipientName)
     {
-        var provider = (_configuration["Email:Provider"] ?? "Console").Trim();
-        var apiKey = _configuration["Email:ApiKey"]?.Trim();
-        var fromAddress = _configuration["Email:FromAddress"]?.Trim();
+        var provider = (_configuration["Email:Provider"]
+            ?? _configuration["Email__Provider"]
+            ?? Environment.GetEnvironmentVariable("Email__Provider")
+            ?? Environment.GetEnvironmentVariable("Email:Provider")
+            ?? "Console").Trim();
+
+        var apiKey = (_configuration["Email:ApiKey"]
+            ?? _configuration["Email__ApiKey"]
+            ?? Environment.GetEnvironmentVariable("Email__ApiKey")
+            ?? Environment.GetEnvironmentVariable("Email:ApiKey"))?.Trim();
+
+        var fromAddress = (_configuration["Email:FromAddress"]
+            ?? _configuration["Email__FromAddress"]
+            ?? Environment.GetEnvironmentVariable("Email__FromAddress")
+            ?? Environment.GetEnvironmentVariable("Email:FromAddress"))?.Trim();
         if (string.IsNullOrWhiteSpace(fromAddress))
         {
             fromAddress = "TOTC E-Learning <noreply@totc.ge>";
         }
 
-        var frontendUrl = _configuration["Email:FrontendUrl"]?.Trim();
+        var frontendUrl = (_configuration["Email:FrontendUrl"]
+            ?? _configuration["Email__FrontendUrl"]
+            ?? Environment.GetEnvironmentVariable("Email__FrontendUrl")
+            ?? Environment.GetEnvironmentVariable("Email:FrontendUrl"))?.Trim();
         if (string.IsNullOrWhiteSpace(frontendUrl))
         {
             frontendUrl = "http://localhost:5173";

@@ -33,6 +33,11 @@ foreach (var dir in envCandidates)
                 var envKey = line.Substring(0, splitIndex).Trim();
                 var envVal = line.Substring(splitIndex + 1).Trim().Trim('"').Trim('\'');
                 Environment.SetEnvironmentVariable(envKey, envVal);
+                builder.Configuration[envKey] = envVal;
+                if (envKey.Contains("__"))
+                {
+                    builder.Configuration[envKey.Replace("__", ":")] = envVal;
+                }
             }
         }
         break;
