@@ -105,4 +105,51 @@ public class CertificateServiceTests
         result.IsValid.Should().BeFalse();
         result.Message.Should().Contain("Certificate not found");
     }
+
+    [Fact]
+    public async Task GenerateCertificateHtmlAsync_WhenCertificateExists_ReturnsFormattedHtmlDocument()
+    {
+        // Arrange
+        var instructor = new User { Id = Guid.NewGuid(), FullName = "Prof. Xavier", Email = "xavier2@totc.com", Role = UserRole.Instructor };
+        var student = new User { Id = Guid.NewGuid(), FullName = "Peter Parker", Email = "spidey2@totc.com", Role = UserRole.Student };
+        var course = new Course { Id = Guid.NewGuid(), Title = "Advanced Web Slinging", InstructorId = instructor.Id, Instructor = instructor };
+
+        var cert = new Certificate
+        {
+            Id = Guid.NewGuid(),
+            UserId = student.Id,
+            User = student,
+            CourseId = course.Id,
+            Course = course,
+            CertificateNumber = "TOTC-2026-HTML999",
+            VerificationHash = "ABCDEF1234567890ABCDEF1234567899",
+            IssuedAt = DateTime.UtcNow
+        };
+
+        _context.Users.AddRange(instructor, student);
+        _context.Courses.Add(course);
+        _context.Certificates.Add(cert);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var html = await _service.GenerateCertificateHtmlAsync("TOTC-2026-HTML999");
+
+        // Assert
+        html.Should().NotBeNullOrEmpty();
+        html.Should().Contain("<!DOCTYPE html>");
+        html.Should().Contain("Peter Parker");
+        html.Should().Contain("Advanced Web Slinging");
+        html.Should().Contain("TOTC-2026-HTML999");
+        html.Should().Contain("სერტიფიკატი"); // Georgian localization check
+    }
+
+    [Fact]
+    public async Task GenerateCertificateHtmlAsync_WhenCertificateDoesNotExist_ReturnsNull()
+    {
+        // Act
+        var html = await _service.GenerateCertificateHtmlAsync("NON-EXISTENT-CERT-000");
+
+        // Assert
+        html.Should().BeNull();
+    }
 }

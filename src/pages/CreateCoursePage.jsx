@@ -1,20 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, Plus, Trash2, Video, FileText, CheckCircle, 
-  HelpCircle, Clock, Sparkles, BookOpen, Layers, DollarSign, 
-  Image as ImageIcon, Globe, Eye, EyeOff, Save, AlertCircle, RefreshCw,
-  UploadCloud, Check, Loader2, Play, Paperclip, FileCode, FolderArchive,
-  Download, ChevronDown, ChevronUp, CheckSquare, X, Lock, Unlock
+  ArrowLeft, BookOpen, Save, Sparkles, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { api } from '../services/api';
-
-const PRESET_THUMBNAILS = [
-  { label: 'ქლაუდი და DevOps', url: '/assets/explore_row_1.png' },
-  { label: 'UI/UX დიზაინი', url: '/assets/explore_row_2.png' },
-  { label: 'ფოტოგრაფია და მედია', url: '/assets/explore_row_3.png' },
-  { label: 'პროგრამირება', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80' },
-  { label: 'ბიზნესი და ტექნოლოგიები', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80' },
-];
+import { CourseMetadataForm, CurriculumBuilder } from '../components/course-builder';
 
 export default function CreateCoursePage({ currentUser, courseToEdit, setActivePage, setSelectedCourse }) {
   const isEditing = Boolean(courseToEdit);
@@ -286,7 +275,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   };
 
   // Downloadable Materials / Lesson Resources Upload State & Handlers
-  const [uploadingResourceKey, setUploadingResourceKey] = useState(null); // e.g. "sIdx-lIdx"
+  const [uploadingResourceKey, setUploadingResourceKey] = useState(null);
 
   const handleResourceUpload = async (sIdx, lIdx, file) => {
     if (!file) return;
@@ -297,12 +286,10 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
       const res = await api.instructor.uploadMedia(file);
       const fullUrl = res.url?.startsWith('/') ? `http://localhost:5000${res.url}` : res.url;
 
-      // Format readable size
       const sizeStr = file.size > 1024 * 1024
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${Math.max(1, Math.round(file.size / 1024))} KB`;
 
-      // Determine readable file category
       let fType = 'დოკუმენტი';
       const ext = file.name.split('.').pop()?.toLowerCase();
       if (ext === 'pdf') fType = 'PDF დოკუმენტი';
@@ -339,7 +326,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   };
 
   // Knowledge Check Quiz Builder Handlers per Lesson
-  const [expandedQuizKey, setExpandedQuizKey] = useState(null); // e.g. "sIdx-lIdx"
+  const [expandedQuizKey, setExpandedQuizKey] = useState(null);
 
   const handleToggleQuiz = (sIdx, lIdx) => {
     const updated = [...sections];
@@ -465,9 +452,9 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
   };
 
   // Direct Video Upload to Bunny Stream CDN with Live Progress
-  const [uploadingKey, setUploadingKey] = useState(null); // e.g. "sIdx-lIdx"
+  const [uploadingKey, setUploadingKey] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadNotice, setUploadNotice] = useState(null); // { key, message, isSuccess }
+  const [uploadNotice, setUploadNotice] = useState(null);
 
   const handleVideoUpload = async (sIdx, lIdx, file, lessonTitle) => {
     if (!file) return;
@@ -501,7 +488,6 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         }
       );
 
-      // Preferred video URL: embedUrl (Bunny iframe) or directPlayUrl
       const finalUrl = res.embedUrl || res.directPlayUrl || res.hlsUrl;
       if (finalUrl) {
         handleLessonChange(sIdx, lIdx, 'videoUrl', finalUrl);
@@ -736,7 +722,7 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-sm font-semibold animate-bounce">
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-sm font-semibold">
             <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{successMessage}</span>
           </div>
@@ -746,866 +732,63 @@ export default function CreateCoursePage({ currentUser, courseToEdit, setActiveP
           
           {/* LEFT COLUMN: Course Meta & Settings (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
-            
-            {/* Basic Info Card */}
-            <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
-                <FileText className="w-4 h-4 text-totc-teal" />
-                <span>კურსის ძირითადი მონაცემები</span>
-              </h3>
-
-              {/* Title */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  კურსის სათაური <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="მაგ: AWS Cloud არქიტექტურა და DevOps"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20 outline-none text-sm font-medium transition-all"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  მიმოხილვა / აღწერა
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="მოკლედ აღწერეთ რას ისწავლიან სტუდენტები ამ კურსში..."
-                  rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20 outline-none text-sm transition-all"
-                />
-              </div>
-
-              {/* Category */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  მიმართულება / კატეგორია
-                </label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20 outline-none text-sm font-medium transition-all bg-white"
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                  {categories.length === 0 && (
-                    <option value="">ზოგადი განვითარება</option>
-                  )}
-                </select>
-              </div>
-
-              {/* Level & Price */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                    სირთულის დონე
-                  </label>
-                  <select
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value)}
-                    className="w-full px-3 py-3 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-medium transition-all bg-white"
-                  >
-                    <option value="Beginner">დამწყები</option>
-                    <option value="Intermediate">საშუალო</option>
-                    <option value="Advanced">პროფესიონალი</option>
-                    <option value="AllLevels">ყველა დონე</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-totc-navy uppercase tracking-wider">
-                    ფასი (₾ GEL)
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₾</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="5"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      className="w-full pl-8 pr-3 py-3 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs font-bold text-totc-navy transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Course Access Mode (Sequential / Gated vs Fully Open Access) */}
-              <div className="pt-3 border-t border-gray-100 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-totc-navy uppercase tracking-wider flex items-center gap-1.5">
-                    {isOpenAccess ? (
-                      <Unlock className="w-3.5 h-3.5 text-totc-teal" />
-                    ) : (
-                      <Lock className="w-3.5 h-3.5 text-amber-500" />
-                    )}
-                    <span>მასალებზე წვდომის რეჟიმი</span>
-                  </label>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-all ${
-                    isOpenAccess 
-                      ? 'bg-teal-50 text-totc-teal border border-teal-200' 
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}>
-                    {isOpenAccess ? 'სრულად ღია' : 'თანმიმდევრული'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2">
-                  {/* Sequential / Gated option */}
-                  <div
-                    onClick={() => setIsOpenAccess(false)}
-                    className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start gap-3 text-left ${
-                      !isOpenAccess 
-                        ? 'bg-amber-50/60 border-amber-300 ring-2 ring-amber-400/20 shadow-xs' 
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="courseAccessMode"
-                      checked={!isOpenAccess}
-                      onChange={() => setIsOpenAccess(false)}
-                      className="mt-0.5 text-amber-500 focus:ring-amber-400 cursor-pointer"
-                    />
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 font-bold text-xs text-totc-navy">
-                        <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span>🔒 ეტაპობრივი გავლა (გავლის მიხედვით)</span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed">
-                        ლექციები და ტესტები იხსნება თანმიმდევრულად — წინა მასალის ნახვისა და გამოცდის ჩაბარების შემდეგ.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Open Access non-linear option */}
-                  <div
-                    onClick={() => setIsOpenAccess(true)}
-                    className={`cursor-pointer p-3 rounded-2xl border transition-all flex items-start gap-3 text-left ${
-                      isOpenAccess 
-                        ? 'bg-teal-50/60 border-teal-400 ring-2 ring-teal-500/20 shadow-xs' 
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="courseAccessMode"
-                      checked={isOpenAccess}
-                      onChange={() => setIsOpenAccess(true)}
-                      className="mt-0.5 text-totc-teal focus:ring-totc-teal cursor-pointer"
-                    />
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 font-bold text-xs text-totc-navy">
-                        <Unlock className="w-3.5 h-3.5 text-totc-teal shrink-0" />
-                        <span>🔓 სრულად ღია კურსი (თავისუფალი წვდომა)</span>
-                      </div>
-                      <p className="text-[11px] text-gray-500 leading-relaxed">
-                        შეძენისთანავე სტუდენტს შეუძლია ნებისმიერი ლექციის (მაგ. მე-6 ლექციის) პირდაპირ ნახვა წინების გავლის გარეშე.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Thumbnail Selection */}
-            <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm space-y-4">
-              <h3 className="font-poppins font-bold text-lg text-totc-navy flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-totc-teal" />
-                <span>კურსის გარეკანი</span>
-              </h3>
-
-              {/* Current Preview */}
-              <div className="relative rounded-2xl overflow-hidden aspect-video bg-gray-100 border border-gray-200 shadow-inner">
-                <img
-                  src={thumbnailUrl || '/assets/explore_row_1.png'}
-                  alt="გარეკანის გადახედვა"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Custom Image File Upload Dropzone */}
-              <div>
-                <label className={`cursor-pointer w-full p-4 rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-1.5 text-center ${
-                  uploadingArtwork
-                    ? 'bg-amber-50 border-amber-300 pointer-events-none'
-                    : 'bg-teal-50/40 hover:bg-teal-50 border-teal-200 hover:border-totc-teal'
-                }`}>
-                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-totc-teal flex items-center justify-center shrink-0">
-                    {uploadingArtwork ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
-                    ) : (
-                      <UploadCloud className="w-5 h-5 text-totc-teal" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-totc-navy">
-                      {uploadingArtwork ? 'იტვირთება გარეკანის ფოტო...' : 'ატვირთე საჩვენებელი ფოტო'}
-                    </p>
-                    <p className="text-[10px] text-gray-500">
-                      აირჩიეთ PNG, JPG ან WebP ფაილი (მაქს. 10MB)
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingArtwork}
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleArtworkUpload(e.target.files[0]);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Presets */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">
-                  აირჩიეთ მზა სურათი
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {PRESET_THUMBNAILS.map((p, idx) => (
-                    <button
-                      type="button"
-                      key={idx}
-                      onClick={() => setThumbnailUrl(p.url)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium text-left truncate border transition-all ${
-                        thumbnailUrl === p.url
-                          ? 'border-totc-teal bg-totc-teal-light text-totc-teal font-bold'
-                          : 'border-gray-200 hover:border-gray-300 text-totc-navy'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Custom URL */}
-              <div className="space-y-1 pt-1">
-                <label className="text-[11px] font-bold text-totc-gray uppercase tracking-wider">
-                  ან ჩასვით სურათის ბმული (URL)
-                </label>
-                <input
-                  type="url"
-                  value={thumbnailUrl}
-                  onChange={(e) => setThumbnailUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy transition-all"
-                />
-              </div>
-            </div>
-
+            <CourseMetadataForm
+              title={title}
+              setTitle={setTitle}
+              description={description}
+              setDescription={setDescription}
+              categoryId={categoryId}
+              setCategoryId={setCategoryId}
+              categories={categories}
+              level={level}
+              setLevel={setLevel}
+              price={price}
+              setPrice={setPrice}
+              isOpenAccess={isOpenAccess}
+              setIsOpenAccess={setIsOpenAccess}
+              thumbnailUrl={thumbnailUrl}
+              setThumbnailUrl={setThumbnailUrl}
+              uploadingArtwork={uploadingArtwork}
+              handleArtworkUpload={handleArtworkUpload}
+            />
           </div>
 
           {/* RIGHT COLUMN: Curriculum Builder (Modules & Lectures) (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
-            
-            <div className="bg-white p-6 sm:p-8 rounded-[28px] border border-gray-100 shadow-sm space-y-6">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-                <div>
-                  <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-indigo-600" />
-                    <span>სასწავლო გეგმა და ვიდეო ლექციები</span>
-                  </h3>
-                  <p className="text-xs text-totc-gray mt-0.5">
-                    ააწყვეთ მრავალმოდულიანი სტრუქტურა, ატვირთეთ ვიდეოები და მონიშნეთ უფასო საჩვენებელი ლექციები.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleAddSection}
-                  className="px-4 py-2 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition-colors flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>მოდულის დამატება</span>
-                </button>
-              </div>
-
-              {/* Sections List */}
-              <div className="space-y-6">
-                {sections.map((section, sIdx) => (
-                  <div
-                    key={section.id || sIdx}
-                    className="p-5 sm:p-6 rounded-2xl bg-gray-50/70 border border-gray-200/80 space-y-4 shadow-2xs"
-                  >
-                    {/* Section Header */}
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center shrink-0">
-                          {sIdx + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={section.title}
-                          onChange={(e) => handleSectionTitleChange(sIdx, e.target.value)}
-                          placeholder={`მოდული ${sIdx + 1}-ის სათაური`}
-                          className="flex-1 px-3 py-1.5 bg-white rounded-lg border border-gray-200 focus:border-indigo-600 outline-none text-sm font-bold text-totc-navy transition-all"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSection(sIdx)}
-                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                        title="მოდულის წაშლა"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Lessons inside Section */}
-                    <div className="space-y-3 pl-2 sm:pl-4 border-l-2 border-indigo-200/60">
-                      {section.lessons.map((lesson, lIdx) => (
-                        <div
-                          key={lesson.id || lIdx}
-                          className="bg-white p-4 rounded-xl border border-gray-200 space-y-3 shadow-xs"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="text-[11px] font-bold text-totc-gray">
-                                {sIdx + 1}.{lIdx + 1}
-                              </span>
-                              <input
-                                type="text"
-                                value={lesson.title}
-                                onChange={(e) => handleLessonChange(sIdx, lIdx, 'title', e.target.value)}
-                                placeholder="ლექციის სათაური"
-                                className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-xs font-semibold text-totc-navy"
-                              />
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveLesson(sIdx, lIdx)}
-                              className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors"
-                              title="ლექციის წაშლა"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          {/* Video Upload & Stream Settings (Strictly File Upload - No Link/URL Input) */}
-                          <div className="space-y-2 pt-1">
-                            {/* If no video uploaded yet: show prominent upload area */}
-                            {!lesson.videoUrl ? (
-                              <label className={`cursor-pointer w-full p-4 rounded-xl border-2 border-dashed transition-all flex flex-col sm:flex-row items-center justify-between gap-3 ${
-                                uploadingKey === `${sIdx}-${lIdx}`
-                                  ? 'bg-amber-50 border-amber-300 pointer-events-none'
-                                  : 'bg-indigo-50/40 hover:bg-indigo-50/80 border-indigo-200 hover:border-indigo-400'
-                              }`}>
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                                    {uploadingKey === `${sIdx}-${lIdx}` ? (
-                                      <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
-                                    ) : (
-                                      <UploadCloud className="w-5 h-5 text-indigo-600" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-bold text-indigo-950">
-                                      {uploadingKey === `${sIdx}-${lIdx}` ? `იტვირთება ვიდეო (${uploadProgress}%)...` : 'ატვირთეთ ლექციის ვიდეო ფაილი'}
-                                    </p>
-                                    <p className="text-[11px] text-indigo-600/80">
-                                      აირჩიეთ MP4, MOV ან WebM ფაილი (მაქს. 2GB). იტვირთება პირდაპირ Bunny CDN-ზე.
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <span className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs shadow-xs hover:bg-indigo-700 transition-colors shrink-0">
-                                  ვიდეოს არჩევა
-                                </span>
-
-                                <input
-                                  type="file"
-                                  accept="video/*"
-                                  disabled={uploadingKey === `${sIdx}-${lIdx}`}
-                                  onChange={(e) => {
-                                    if (e.target.files?.[0]) {
-                                      handleVideoUpload(sIdx, lIdx, e.target.files[0], lesson.title);
-                                    }
-                                  }}
-                                  className="hidden"
-                                />
-                              </label>
-                            ) : (
-                              /* If video is already uploaded and attached */
-                              <div className="p-3 bg-gradient-to-r from-teal-50/80 to-emerald-50/60 rounded-xl border border-teal-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
-                                    <Video className="w-4 h-4 text-teal-700" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
-                                        <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                                        {lesson.videoUrl.includes('mediadelivery.net') || lesson.videoUrl.includes('b-cdn.net')
-                                          ? '⚡ Bunny Stream CDN ვიდეო მზადაა'
-                                          : '📁 ვიდეო ფაილი მიმაგრებულია'}
-                                      </span>
-                                      <a
-                                        href={lesson.videoUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[10px] text-teal-700 hover:text-teal-900 font-bold underline"
-                                      >
-                                        გადახედვა
-                                      </a>
-                                    </div>
-                                    <p className="text-[10px] text-gray-500 font-mono truncate max-w-xs sm:max-w-md">
-                                      {lesson.videoUrl.split('/').pop()}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* Action buttons: Replace or Remove */}
-                                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                                  <label className={`cursor-pointer px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors border shadow-xs ${
-                                    uploadingKey === `${sIdx}-${lIdx}`
-                                      ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
-                                      : 'bg-white hover:bg-gray-50 text-totc-navy border-gray-200'
-                                  }`}>
-                                    {uploadingKey === `${sIdx}-${lIdx}` ? (
-                                      <>
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                                        <span>იტვირთება ({uploadProgress}%)...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <UploadCloud className="w-3.5 h-3.5 text-totc-teal" />
-                                        <span>ვიდეოს შეცვლა</span>
-                                      </>
-                                    )}
-                                    <input
-                                      type="file"
-                                      accept="video/*"
-                                      disabled={uploadingKey === `${sIdx}-${lIdx}`}
-                                      onChange={(e) => {
-                                        if (e.target.files?.[0]) {
-                                          handleVideoUpload(sIdx, lIdx, e.target.files[0], lesson.title);
-                                        }
-                                      }}
-                                      className="hidden"
-                                    />
-                                  </label>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleLessonChange(sIdx, lIdx, 'videoUrl', '')}
-                                    className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                    title="მიმაგრებული ვიდეოს წაშლა"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Active Upload Progress Bar */}
-                            {uploadingKey === `${sIdx}-${lIdx}` && (
-                              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 animate-in fade-in">
-                                <div className="flex items-center justify-between text-[11px] font-bold text-amber-800">
-                                  <span className="flex items-center gap-1.5">
-                                    <UploadCloud className="w-4 h-4 animate-bounce text-amber-600" />
-                                    მიმდინარეობს ვიდეო ნაკადის ატვირთვა Bunny CDN-ზე...
-                                  </span>
-                                  <span className="font-mono">{uploadProgress}%</span>
-                                </div>
-                                <div className="w-full h-2 bg-amber-200/60 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-200 rounded-full"
-                                    style={{ width: `${uploadProgress}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Upload Notice (Success / Error toast) */}
-                            {uploadNotice?.key === `${sIdx}-${lIdx}` && (
-                              <div className={`p-2.5 rounded-xl text-[11px] font-semibold flex items-center justify-between gap-2 ${
-                                uploadNotice.isSuccess 
-                                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' 
-                                  : 'bg-red-50 border border-red-200 text-red-800'
-                              }`}>
-                                <span>{uploadNotice.message}</span>
-                                <button 
-                                  type="button" 
-                                  onClick={() => setUploadNotice(null)} 
-                                  className="text-gray-400 hover:text-gray-600 text-xs font-bold"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Lecture Metadata Row: Duration & Free Preview */}
-                            <div className="flex items-center justify-between gap-4 pt-1 text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold text-totc-gray flex items-center gap-1">
-                                  <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                  ხანგრძლივობა:
-                                </span>
-                                <div className="relative w-24">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={lesson.durationMinutes}
-                                    onChange={(e) => handleLessonChange(sIdx, lIdx, 'durationMinutes', e.target.value)}
-                                    placeholder="წთ"
-                                    className="w-full px-2.5 py-1 rounded-lg border border-gray-200 focus:border-totc-teal outline-none text-xs font-bold text-totc-navy"
-                                  />
-                                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-semibold">წთ</span>
-                                </div>
-                              </div>
-
-                              <label className="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-totc-navy font-semibold shrink-0">
-                                <input
-                                  type="checkbox"
-                                  checked={lesson.isFreePreview}
-                                  onChange={(e) => handleLessonChange(sIdx, lIdx, 'isFreePreview', e.target.checked)}
-                                  className="rounded text-totc-teal focus:ring-totc-teal"
-                                />
-                                <span>უფასო ნახვა</span>
-                              </label>
-                            </div>
-                          </div>
-
-                          {/* Lesson Summary / Content */}
-                          <div>
-                            <input
-                              type="text"
-                              value={lesson.contentText || ''}
-                              onChange={(e) => handleLessonChange(sIdx, lIdx, 'contentText', e.target.value)}
-                              placeholder="ლექციის მოკლე აღწერა ან ძირითადი თეზისები..."
-                              className="w-full px-3 py-1.5 rounded-lg border border-gray-100 bg-gray-50/70 focus:bg-white focus:border-totc-teal outline-none text-[11px] text-totc-gray transition-colors"
-                            />
-                          </div>
-
-                          {/* Attached Downloadable Resources */}
-                          <div className="pt-2 border-t border-gray-100 space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="font-bold text-totc-navy flex items-center gap-1.5">
-                                <Paperclip className="w-3.5 h-3.5 text-totc-teal" />
-                                <span>ჩამოსატვირთი მასალები ({lesson.resources?.length || 0})</span>
-                              </span>
-
-                              <label className={`cursor-pointer px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 border shadow-2xs ${
-                                uploadingResourceKey === `${sIdx}-${lIdx}`
-                                  ? 'bg-amber-50 text-amber-700 border-amber-300 pointer-events-none'
-                                  : 'bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
-                              }`}>
-                                {uploadingResourceKey === `${sIdx}-${lIdx}` ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
-                                    <span>იტვირთება...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UploadCloud className="w-3 h-3" />
-                                    <span>+ ფაილის მიმაგრება (PDF, ZIP, კოდი)</span>
-                                  </>
-                                )}
-                                <input
-                                  type="file"
-                                  disabled={uploadingResourceKey === `${sIdx}-${lIdx}`}
-                                  onChange={(e) => {
-                                    if (e.target.files?.[0]) {
-                                      handleResourceUpload(sIdx, lIdx, e.target.files[0]);
-                                      e.target.value = '';
-                                    }
-                                  }}
-                                  className="hidden"
-                                />
-                              </label>
-                            </div>
-
-                            {/* Files list */}
-                            {lesson.resources && lesson.resources.length > 0 && (
-                              <div className="space-y-1.5">
-                                {lesson.resources.map((res, rIdx) => (
-                                  <div
-                                    key={res.id || rIdx}
-                                    className="px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-between gap-3 text-xs"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <FileText className="w-3.5 h-3.5 text-totc-teal shrink-0" />
-                                      <span className="font-semibold text-totc-navy truncate max-w-[200px] sm:max-w-xs">
-                                        {res.name}
-                                      </span>
-                                      <span className="text-[10px] text-gray-400 font-mono shrink-0">
-                                        ({res.size || res.fileSize})
-                                      </span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveResource(sIdx, lIdx, rIdx)}
-                                      className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors shrink-0"
-                                      title="Remove attachment"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Knowledge Check Quiz Section */}
-                          <div className="pt-2 border-t border-gray-100">
-                            <div className="flex items-center justify-between">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!lesson.quiz) {
-                                    handleToggleQuiz(sIdx, lIdx);
-                                  } else {
-                                    setExpandedQuizKey(expandedQuizKey === `${sIdx}-${lIdx}` ? null : `${sIdx}-${lIdx}`);
-                                  }
-                                }}
-                                className="flex items-center gap-1.5 text-xs font-bold text-purple-700 hover:text-purple-900 transition-colors"
-                              >
-                                <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
-                                <span>
-                                  {lesson.quiz 
-                                    ? `ცოდნის შემოწმების ტესტი (${lesson.quiz.questions?.length || 0} კითხვა)`
-                                    : '+ ცოდნის შემოწმების ტესტის დამატება'}
-                                </span>
-                                {lesson.quiz && (
-                                  expandedQuizKey === `${sIdx}-${lIdx}` ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-
-                              {lesson.quiz && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleQuiz(sIdx, lIdx)}
-                                  className="text-[10px] text-red-500 hover:underline font-semibold"
-                                >
-                                  ტესტის წაშლა
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Expanded Quiz Editor */}
-                            {lesson.quiz && expandedQuizKey === `${sIdx}-${lIdx}` && (
-                              <div className="mt-3 p-4 rounded-xl bg-purple-50/50 border border-purple-200/80 space-y-4 animate-in fade-in">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                  <div className="sm:col-span-2 space-y-1">
-                                    <label className="text-[10px] font-bold text-purple-900 uppercase">ტესტის სათაური</label>
-                                    <input
-                                      type="text"
-                                      value={lesson.quiz.title}
-                                      onChange={(e) => {
-                                        const updated = [...sections];
-                                        updated[sIdx].lessons[lIdx].quiz.title = e.target.value;
-                                        setSections(updated);
-                                      }}
-                                      placeholder="მაგ: ცოდნის შემოწმება: ქლაუდ არქიტექტურა"
-                                      className="w-full px-3 py-1.5 bg-white rounded-lg border border-purple-200 text-xs font-semibold text-totc-navy"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-purple-900 uppercase">გამსვლელი ქულა %</label>
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      max="100"
-                                      value={lesson.quiz.passingScorePercentage || 70}
-                                      onChange={(e) => {
-                                        const updated = [...sections];
-                                        updated[sIdx].lessons[lIdx].quiz.passingScorePercentage = parseInt(e.target.value, 10) || 70;
-                                        setSections(updated);
-                                      }}
-                                      className="w-full px-3 py-1.5 bg-white rounded-lg border border-purple-200 text-xs font-bold text-totc-navy"
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Questions */}
-                                <div className="space-y-3">
-                                  {lesson.quiz.questions?.map((q, qIdx) => (
-                                    <div key={q.id || qIdx} className="p-3 bg-white rounded-xl border border-purple-100 shadow-2xs space-y-2.5">
-                                      <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 flex-1">
-                                          <span className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-                                            Q{qIdx + 1}
-                                          </span>
-                                          <input
-                                            type="text"
-                                            value={q.questionText}
-                                            onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'questionText', e.target.value)}
-                                            placeholder="ჩაწერეთ კითხვის ტექსტი აქ..."
-                                            className="flex-1 px-2.5 py-1 rounded-lg border border-gray-200 focus:border-purple-600 outline-none text-xs font-semibold text-totc-navy"
-                                          />
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveQuizQuestion(sIdx, lIdx, qIdx)}
-                                          className="text-gray-400 hover:text-red-500 p-1"
-                                          title="კითხვის წაშლა"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </div>
-
-                                      {/* Options */}
-                                      <div className="space-y-1.5 pl-7">
-                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                                          ვარიანტები (მონიშნეთ სწორი პასუხი მწვანე ღილაკით):
-                                        </span>
-                                        {q.options?.map((opt, oIdx) => (
-                                          <div key={opt.id || oIdx} className="flex items-center gap-2">
-                                            <input
-                                              type="radio"
-                                              name={`correct-q-${sIdx}-${lIdx}-${qIdx}`}
-                                              checked={Boolean(opt.isCorrect)}
-                                              onChange={() => handleSetCorrectOption(sIdx, lIdx, qIdx, oIdx)}
-                                              className="text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                                              title="მონიშნეთ სწორ პასუხად"
-                                            />
-                                            <input
-                                              type="text"
-                                              value={opt.optionText}
-                                              onChange={(e) => handleQuizOptionChange(sIdx, lIdx, qIdx, oIdx, e.target.value)}
-                                              placeholder={`ვარიანტი ${oIdx + 1}`}
-                                              className={`flex-1 px-2.5 py-1 rounded-lg border text-xs ${
-                                                opt.isCorrect 
-                                                  ? 'border-emerald-400 bg-emerald-50/50 text-emerald-950 font-bold'
-                                                  : 'border-gray-200 text-totc-navy'
-                                              }`}
-                                            />
-                                            {opt.isCorrect && (
-                                              <span className="text-[10px] text-emerald-600 font-bold shrink-0">✓ სწორია</span>
-                                            )}
-                                            <button
-                                              type="button"
-                                              onClick={() => handleRemoveQuizOption(sIdx, lIdx, qIdx, oIdx)}
-                                              className="text-gray-400 hover:text-red-500 p-1"
-                                              title="ვარიანტის წაშლა"
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        ))}
-
-                                        <button
-                                          type="button"
-                                          onClick={() => handleAddQuizOption(sIdx, lIdx, qIdx)}
-                                          className="text-[11px] font-bold text-purple-700 hover:text-purple-900 inline-flex items-center gap-1 mt-1"
-                                        >
-                                          <Plus className="w-3 h-3" />
-                                          <span>ვარიანტის დამატება</span>
-                                        </button>
-                                      </div>
-
-                                      {/* Explanation */}
-                                      <div className="pl-7 pt-1">
-                                        <input
-                                          type="text"
-                                          value={q.explanation || ''}
-                                          onChange={(e) => handleQuizQuestionChange(sIdx, lIdx, qIdx, 'explanation', e.target.value)}
-                                          placeholder="განმარტება სტუდენტებისთვის პასუხის გაცემის შემდეგ (არასავალდებულო)..."
-                                          className="w-full px-2.5 py-1 rounded-lg border border-purple-100 bg-purple-50/30 text-[11px] text-totc-gray"
-                                        />
-                                      </div>
-                                    </div>
-                                  ))}
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleAddQuizQuestion(sIdx, lIdx)}
-                                    className="w-full py-2 rounded-xl bg-purple-100/70 hover:bg-purple-100 text-purple-800 font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
-                                  >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    <span>კითხვის დამატება ტესტში</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add Lesson & Add Final Exam Buttons */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleAddLesson(sIdx)}
-                          className="py-2.5 px-4 rounded-xl border border-dashed border-indigo-300 hover:border-indigo-500 bg-white hover:bg-indigo-50/50 text-indigo-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>+ ლექციის დამატება</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleAddFinalExam(sIdx)}
-                          className="py-2.5 px-4 rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 hover:bg-purple-100/50 text-purple-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-                        >
-                          <HelpCircle className="w-3.5 h-3.5 text-purple-600" />
-                          <span>+ მოდულის ფინალური გამოცდა</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom Action Footer */}
-              <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <button
-                  type="button"
-                  onClick={handleAddSection}
-                  className="px-5 py-2.5 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition-colors inline-flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>ახალი მოდულის დამატება</span>
-                </button>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleSubmitCourse(false)}
-                    disabled={submitting || loadingCourse}
-                    className="px-5 py-2.5 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-1.5"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>მონახაზად შენახვა</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSubmitCourse(true)}
-                    disabled={submitting || loadingCourse}
-                    className="px-6 py-2.5 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>
-                      {submitting 
-                        ? 'ინახება...' 
-                        : isEditing 
-                          ? (currentUser?.role === 'Admin' ? 'შენახვა და განახლება' : 'შენახვა და განხილვაზე გაგზავნა') 
-                          : (currentUser?.role === 'Admin' ? 'შენახვა და გამოქვეყნება' : 'განხილვაზე გაგზავნა')}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
+            <CurriculumBuilder
+              sections={sections}
+              setSections={setSections}
+              handleAddSection={handleAddSection}
+              handleRemoveSection={handleRemoveSection}
+              handleSectionTitleChange={handleSectionTitleChange}
+              handleAddLesson={handleAddLesson}
+              handleAddFinalExam={handleAddFinalExam}
+              handleRemoveLesson={handleRemoveLesson}
+              handleLessonChange={handleLessonChange}
+              uploadingKey={uploadingKey}
+              uploadProgress={uploadProgress}
+              uploadNotice={uploadNotice}
+              setUploadNotice={setUploadNotice}
+              handleVideoUpload={handleVideoUpload}
+              uploadingResourceKey={uploadingResourceKey}
+              handleResourceUpload={handleResourceUpload}
+              handleRemoveResource={handleRemoveResource}
+              expandedQuizKey={expandedQuizKey}
+              setExpandedQuizKey={setExpandedQuizKey}
+              handleToggleQuiz={handleToggleQuiz}
+              handleAddQuizQuestion={handleAddQuizQuestion}
+              handleRemoveQuizQuestion={handleRemoveQuizQuestion}
+              handleQuizQuestionChange={handleQuizQuestionChange}
+              handleAddQuizOption={handleAddQuizOption}
+              handleRemoveQuizOption={handleRemoveQuizOption}
+              handleQuizOptionChange={handleQuizOptionChange}
+              handleSetCorrectOption={handleSetCorrectOption}
+              handleSubmitCourse={handleSubmitCourse}
+              submitting={submitting}
+              loadingCourse={loadingCourse}
+              isEditing={isEditing}
+              currentUser={currentUser}
+            />
           </div>
 
         </div>

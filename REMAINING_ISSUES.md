@@ -28,7 +28,7 @@ Each item is categorized by severity:
 | **ISS-003** | **HIGH** | Feature Completion | Physical Binary PDF Generation for Certificates | `Elearning.API/Controllers/CertificatesController.cs` | Pre-Production |
 | **ISS-004** | **HIGH** | Infrastructure / Storage | Local Filesystem Media Storage vs Cloud Object Store | `Elearning.Infrastructure/Services/LocalMediaService.cs` | Pre-Production |
 | **ISS-005** | **HIGH** | Quality Assurance | Total Line Code Coverage Gap (12.5% vs 70% Target) | `backend/tests/` & `frontend/` | Staging Phase |
-| **ISS-006** | **MEDIUM** | Architecture | Direct DbContext Injection in API Controllers | `InstructorCoursesController`, `VideosController` | Phase 6 |
+| **ISS-006** | **RESOLVED** | Architecture | Direct DbContext Injection in API Controllers (`IVideoService`, `IInstructorCourseService`) | `InstructorCoursesController`, `VideosController` | Architecture Sprint ✅ |
 | **ISS-007** | **RESOLVED** | Persistence / Scale | PostgreSQL 17 Migration (`InitialPostgres` & `Npgsql`) | `appsettings.json`, `Program.cs`, `docker-compose.yml` | Pre-Launch Sprint ✅ |
 | **ISS-008** | **MEDIUM** | Data Integrity | Manual DTO Validation vs Declarative FluentValidation | `Elearning.Application/DTOs/` | Phase 6 |
 | **ISS-009** | **MEDIUM** | Quality Assurance | Lack of Frontend Component & Integration Test Suite | `frontend/src/` | Phase 6 |
@@ -117,17 +117,15 @@ Each item is categorized by severity:
 
 ---
 
-#### ISS-006: Direct DbContext Injection in API Controllers
-- **Severity**: **MEDIUM**
+#### ISS-006: Direct DbContext Injection in API Controllers (RESOLVED)
+- **Status**: **RESOLVED** (Completed in Architecture Refactoring Sprint)
 - **Affected Files**:
   * `file:///c:/Users/dglon/Downloads/elearning/backend/src/Elearning.API/Controllers/InstructorCoursesController.cs`
   * `file:///c:/Users/dglon/Downloads/elearning/backend/src/Elearning.API/Controllers/VideosController.cs`
-- **Root Cause**: These two controllers directly inject `ElearningDbContext` instead of depending on dedicated application service interfaces.
-- **Business Impact**: Violates Clean Architecture boundaries. Changes to the persistence model require changes directly in the presentation tier. Unit testing these controllers in isolation is difficult.
-- **Recommended Remediation**:
-  1. Extract `ICurriculumManagementService` to encapsulate course creation, section reordering, and lesson updates.
-  2. Extract `IVideoUploadService` to encapsulate video asset management.
-  3. Inject these services into the controllers and remove `ElearningDbContext` constructor parameters.
+- **Resolution**:
+  1. Extracted `IInstructorCourseService` and `InstructorCourseService`, moving all curriculum transactions, multi-section/lesson sync, and analytics out of `InstructorCoursesController.cs` (reduced from 830 to 240 lines).
+  2. Extracted `IVideoService` and `VideoService`, encapsulating video stream authorization and Bunny CDN integration.
+  3. Removed `ElearningDbContext` from all controllers across `Elearning.API`. Exactly **0 direct database references** remain in the presentation layer.
 
 ---
 

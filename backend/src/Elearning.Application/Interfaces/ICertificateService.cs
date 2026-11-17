@@ -13,4 +13,5 @@ public interface ICertificateService
     Task<CertificateDto?> GetCertificateByNumberAsync(string certificateNumber);
     Task<CertificateVerificationDto> VerifyCertificateAsync(string verificationHash);
     Task<CertificateDto> IssueCertificateAsync(Guid userId, Guid courseId);
+    Task<string?> GenerateCertificateHtmlAsync(string certificateNumber);
 }

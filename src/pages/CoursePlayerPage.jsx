@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Play, Pause, CheckCircle, ArrowLeft, ArrowRight, BookOpen, 
-  Clock, Award, Download, MessageSquare, FileText, Share2, 
-  Volume2, Maximize, Check, HelpCircle, Code, ThumbsUp, Send, 
-  Plus, Trash2, Sparkles, AlertCircle, Bookmark, Compass,
-  Video, ExternalLink, Loader2, Lock, Unlock, FolderArchive, Paperclip, X,
-  Shield, ShieldAlert, ShieldCheck, AlertTriangle, Timer, Maximize2, Minimize2,
-  RefreshCw, EyeOff, Trophy, GraduationCap, Printer, Copy, CheckCheck
+  ArrowLeft, CheckCircle, Award, Lock, Check, BookOpen, 
+  HelpCircle, Download, MessageSquare, FileText, Sparkles, 
+  Trophy, ArrowRight, Timer, ShieldCheck
 } from 'lucide-react';
 import { api } from '../services/api';
 import BunnyPlayer from '../components/BunnyPlayer';
+import { 
+  useExamProctoring,
+  LessonOverviewTab,
+  LessonResourcesTab,
+  LessonQaTab,
+  LessonNotesTab,
+  ExamEnvironmentView,
+  PlayerCurriculumSidebar,
+  CourseCompletionModal
+} from '../components/player';
 
 export default function CoursePlayerPage({ activeCourse, setActivePage, currentUser }) {
   const [courseContent, setCourseContent] = useState(null);
@@ -31,21 +37,12 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   const [passedQuizIds, setPassedQuizIds] = useState(new Set());
   const [moduleUnlockNotice, setModuleUnlockNotice] = useState(null);
 
-  // Anti-Cheating & Exam Integrity Proctoring State
-  const [examStrikes, setExamStrikes] = useState(0);
-  const [examTerminated, setExamTerminated] = useState(false);
-  const [strikeModal, setStrikeModal] = useState({ isOpen: false, strikes: 0, message: '' });
-  const [examTimerSeconds, setExamTimerSeconds] = useState(1200); // 20 mins default
-  const [proctorToast, setProctorToast] = useState('');
-  const [isFullscreenExam, setIsFullscreenExam] = useState(false);
-
   // Quiz State
   const [quizData, setQuizData] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [quizResult, setQuizResult] = useState(null);
   const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [isExamStarted, setIsExamStarted] = useState(false);
-  const [cooldownRemainingSeconds, setCooldownRemainingSeconds] = useState(0);
 
   // Q&A Discussion State
   const [questionsList, setQuestionsList] = useState([
@@ -108,6 +105,15 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
   ]);
   const [newNoteText, setNewNoteText] = useState('');
 
+  // Resolve current user & progression gating permissions
+  const resolvedUser = currentUser || api.auth.getCurrentUser();
+  const userEmail = (resolvedUser?.email || '').toLowerCase().trim();
+  const authorEmail = (courseContent?.instructorEmail || activeCourse?.instructorEmail || '').toLowerCase().trim();
+  const currentUserId = (resolvedUser?.id || '').toString().toLowerCase().trim();
+  const authorId = (courseContent?.instructorId || activeCourse?.instructorId || '').toString().toLowerCase().trim();
+  const userFullName = (resolvedUser?.fullName || '').toLowerCase().trim();
+  const authorName = (courseContent?.instructorName || activeCourse?.instructorName || '').toLowerCase().trim();
+
   // Helper to ensure local uploaded videos resolve to the backend server
   const resolveVideoUrl = (url) => {
     if (!url) return '';
@@ -116,13 +122,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
       return `http://localhost:5000${trimmed}`;
     }
     return trimmed;
-  };
-
-  const triggerProctorToast = (msg) => {
-    setProctorToast(msg);
-    setTimeout(() => {
-      setProctorToast(prev => prev === msg ? '' : prev);
-    }, 2800);
   };
 
   const shuffleArray = (arr) => {
@@ -144,28 +143,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
         options: shuffleArray(q.options || [])
       }))
     };
-  };
-
-  const formatExamTime = (totalSeconds) => {
-    const mins = Math.max(0, Math.floor(totalSeconds / 60));
-    const secs = Math.max(0, totalSeconds % 60);
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const formatCooldownTime = (totalSeconds) => {
-    const safeSecs = Math.max(0, totalSeconds || 0);
-    const hours = Math.floor(safeSecs / 3600);
-    const mins = Math.floor((safeSecs % 3600) / 60);
-    const secs = safeSecs % 60;
-    if (hours > 0) {
-      return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const getCooldownStorageKey = (lessonId) => {
-    const uId = currentUserId || userEmail || 'student';
-    return `totc_cooldown_${uId}_${lessonId || 'default'}`;
   };
 
   // Fallback static course content if API fails
@@ -328,507 +305,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     ]
   };
 
-  // Load Course Content and Curriculum
-  useEffect(() => {
-    async function fetchCourseDetails() {
-      setLoading(true);
-      const targetCourseId = activeCourse?.courseId || activeCourse?.id;
-      if (targetCourseId) {
-        try {
-          let data = null;
-          try {
-            data = await api.learning.getContent(targetCourseId);
-          } catch (e) {
-            console.warn('api.learning.getContent failed, attempting api.courses.getById:', e.message);
-            data = await api.courses.getById(targetCourseId);
-          }
-
-          if (data && data.sections && data.sections.length > 0) {
-            setCourseContent(data);
-            const initialCompleted = new Set();
-            data.sections.forEach(sec => {
-              sec.lessons?.forEach(les => {
-                if (les.isCompleted) initialCompleted.add(les.id);
-              });
-            });
-            setCompletedLessonIds(initialCompleted);
-
-            const allLessonsList = data.sections.flatMap(s => s.lessons);
-            let targetLesson = null;
-            if (activeCourse?.targetLessonId) {
-              targetLesson = allLessonsList.find(l => l.id === activeCourse.targetLessonId);
-            }
-            if (!targetLesson) {
-              const firstIncomplete = allLessonsList.find(l => !l.isCompleted);
-              targetLesson = firstIncomplete || allLessonsList[0];
-            }
-
-            if (targetLesson) {
-              setActiveLesson(targetLesson);
-              if (targetLesson.lessonType === 'Quiz' || !targetLesson.videoUrl || targetLesson.title?.toLowerCase().includes('exam') || targetLesson.title?.toLowerCase().includes('quiz') || targetLesson.title?.toLowerCase().includes('გამოცდა')) {
-                setActiveTab('quiz');
-              }
-              loadQuizForLesson(targetLesson.id, targetLesson);
-            }
-            setLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn('Using local fallback curriculum:', err.message);
-        }
-      }
-
-      // Fallback
-      setCourseContent(defaultCourse);
-      const setIds = new Set(['les-1']);
-      setCompletedLessonIds(setIds);
-      const defaultActive = defaultCourse.sections[0].lessons[0];
-      setActiveLesson(defaultActive);
-      setQuizData(fallbackQuiz);
-      setLoading(false);
-    }
-
-    fetchCourseDetails();
-  }, [activeCourse]);
-
-  // All lessons in sequential order for progress & locking
-  const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
-  const completedCount = allLessons.filter(l => completedLessonIds.has(l.id)).length;
-  const currentProgressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
-
-  // Resolve current user & progression gating permissions
-  const resolvedUser = currentUser || api.auth.getCurrentUser();
-  const userEmail = (resolvedUser?.email || '').toLowerCase().trim();
-  const authorEmail = (courseContent?.instructorEmail || activeCourse?.instructorEmail || '').toLowerCase().trim();
-  const currentUserId = (resolvedUser?.id || '').toString().toLowerCase().trim();
-  const authorId = (courseContent?.instructorId || activeCourse?.instructorId || '').toString().toLowerCase().trim();
-  const userFullName = (resolvedUser?.fullName || '').toLowerCase().trim();
-  const authorName = (courseContent?.instructorName || activeCourse?.instructorName || '').toLowerCase().trim();
-
-  // Only the actual creator/instructor of THIS specific course or an Admin has author bypass
-  const isCourseAuthor = Boolean(
-    resolvedUser && (
-      (authorId && currentUserId && authorId === currentUserId) ||
-      (authorEmail && userEmail && authorEmail === userEmail) ||
-      (!authorId && !authorEmail && authorName && userFullName && authorName === userFullName)
-    )
-  );
-
-  const isAdmin = resolvedUser?.role === 'Admin';
-  const isAuthorOrAdmin = isCourseAuthor || isAdmin;
-
-  // Determine if course has open access (non-linear viewing) enabled by author
-  const isOpenAccessCourse = Boolean(
-    courseContent?.isOpenAccess ?? 
-    activeCourse?.isOpenAccess ?? 
-    false
-  );
-
-  // Check if an entire module/section is unlocked for the student
-  const isSectionUnlocked = (sectionIndex) => {
-    if (isAuthorOrAdmin || isOpenAccessCourse) return true; // Instructors, Admins & Open-Access courses have all modules unlocked
-    if (sectionIndex <= 0) return true; // First module is always open
-
-    const sections = courseContent?.sections || [];
-    for (let i = 0; i < sectionIndex; i++) {
-      const prevSec = sections[i];
-      if (!prevSec || !prevSec.lessons || prevSec.lessons.length === 0) continue;
-
-      // 1. All lessons in preceding module must be completed
-      const allPrevLessonsCompleted = prevSec.lessons.every(l => completedLessonIds.has(l.id));
-      if (!allPrevLessonsCompleted) return false;
-
-      // 2. Any quiz / exam in preceding module must be passed
-      const quizLessons = prevSec.lessons.filter(l => l.lessonType === 'Quiz' || l.hasQuiz || l.quiz);
-      for (const ql of quizLessons) {
-        if (!completedLessonIds.has(ql.id) && !passedQuizIds.has(ql.id)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  };
-
-  // Check if a specific lesson is unlocked for the current student
-  const isLessonUnlocked = (lessonId) => {
-    if (isAuthorOrAdmin || isOpenAccessCourse) return true; // Instructors, Admins & Open-Access courses allow direct access to any lecture
-    const sections = courseContent?.sections || [];
-    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lessonId));
-
-    // If section is locked, all its lessons are strictly locked
-    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
-      return false;
-    }
-
-    // Within unlocked section, sequential progression applies:
-    const idx = allLessons.findIndex(l => l.id === lessonId);
-    if (idx <= 0) return true; // First lesson is always unlocked
-    const previousLesson = allLessons[idx - 1];
-    return completedLessonIds.has(previousLesson?.id);
-  };
-
-  const isCurrentLessonLocked = activeLesson ? !isLessonUnlocked(activeLesson.id) : false;
-
-  // Course completion status
-  const isCourseFullyCompleted = allLessons.length > 0 && completedCount === allLessons.length;
-
-  // Fetch or issue certificate for this course
-  const loadEarnedCertificate = async () => {
-    const courseId = activeCourse?.id || courseContent?.id;
-    if (!courseId) return null;
-
-    setIsLoadingCertificate(true);
-    try {
-      // 1. Try to fetch existing certificate
-      const cert = await api.certificates.getByCourse(courseId);
-      if (cert) {
-        setEarnedCertificate(cert);
-        return cert;
-      }
-    } catch {
-      // 2. Try claim/issue certificate
-      try {
-        const claimed = await api.certificates.claim(courseId);
-        if (claimed) {
-          setEarnedCertificate(claimed);
-          return claimed;
-        }
-      } catch (err) {
-        console.warn('Could not claim certificate from server:', err?.message);
-      }
-    } finally {
-      setIsLoadingCertificate(false);
-    }
-
-    // 3. Fallback client certificate object if server offline/local
-    const fallbackCert = {
-      certificateNumber: `TOTC-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-      studentName: resolvedUser?.fullName || 'Gloria Rose',
-      courseTitle: courseContent?.title || activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations',
-      instructorName: courseContent?.instructorName || activeCourse?.instructorName || 'Lina Wilson',
-      issuedAt: new Date().toISOString(),
-      verificationHash: (Math.random().toString(16).substring(2, 18) + Math.random().toString(16).substring(2, 18)).toLowerCase(),
-      verificationUrl: `/verify/certificate/TOTC-2026`
-    };
-    setEarnedCertificate(fallbackCert);
-    return fallbackCert;
-  };
-
-  // Auto-fetch certificate once 100% completed
-  useEffect(() => {
-    if (isCourseFullyCompleted && !earnedCertificate) {
-      loadEarnedCertificate();
-    }
-  }, [isCourseFullyCompleted]);
-
-  // Global listener from other pages (e.g. Student Dashboard)
-  useEffect(() => {
-    const handleOpenCertEvent = () => {
-      loadEarnedCertificate();
-      setShowCompletionCelebration(true);
-    };
-    window.addEventListener('totc-open-certificate', handleOpenCertEvent);
-    return () => window.removeEventListener('totc-open-certificate', handleOpenCertEvent);
-  }, [courseContent, activeCourse]);
-
-  const handleDownloadPdf = () => {
-    if (earnedCertificate?.certificateNumber) {
-      window.open(`http://localhost:5000/api/certificates/${earnedCertificate.certificateNumber}/download`, '_blank');
-    } else {
-      window.print();
-    }
-  };
-
-  const handleCopyCertLink = () => {
-    const num = earnedCertificate?.certificateNumber || earnedCertificate?.verificationHash || 'TOTC-2026-ARCH';
-    const url = `${window.location.origin}/certificates/${num}`;
-    navigator.clipboard.writeText(url);
-    setCopiedCertLink(true);
-    setTimeout(() => setCopiedCertLink(false), 3000);
-  };
-
-  // Cooldown timer ticker
-  useEffect(() => {
-    if (cooldownRemainingSeconds <= 0) return;
-    const interval = setInterval(() => {
-      setCooldownRemainingSeconds(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [cooldownRemainingSeconds]);
-
-  // Load Quiz when lesson changes
-  const loadQuizForLesson = async (lessonId, lessonObj = null) => {
-    setSelectedAnswers({});
-    setQuizResult(null);
-    setIsExamStarted(false);
-    setExamStrikes(0);
-    setExamTerminated(false);
-    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
-    setExamTimerSeconds((lessonObj?.durationMinutes || 20) * 60);
-
-    // Check localStorage for active 1-hour cooldown
-    const cooldownKey = getCooldownStorageKey(lessonId);
-    const savedCooldown = localStorage.getItem(cooldownKey);
-    if (savedCooldown) {
-      const diff = Math.max(0, Math.floor((parseInt(savedCooldown, 10) - Date.now()) / 1000));
-      setCooldownRemainingSeconds(diff);
-    } else {
-      setCooldownRemainingSeconds(0);
-    }
-
-    // If lesson has embedded quiz
-    if (lessonObj?.quiz && lessonObj.quiz.questions && lessonObj.quiz.questions.length > 0) {
-      setQuizData(randomizeQuizOptions(lessonObj.quiz));
-      return;
-    }
-
-    try {
-      const q = await api.quizzes.getByLesson(lessonId);
-      if (q && q.questions && q.questions.length > 0) {
-        setQuizData(randomizeQuizOptions(q));
-        return;
-      }
-    } catch (e) {
-      console.warn('API quiz fetch note:', e.message);
-    }
-
-    // Use fallback quizzes
-    const isExam = lessonObj?.title?.toLowerCase().includes('exam') || lessonId === 'les-exam-1';
-    if (isExam) {
-      setQuizData(randomizeQuizOptions(fallbackExamQuiz));
-    } else if (lessonId === 'les-1' || !activeCourse?.id || activeCourse?.id === 'demo') {
-      setQuizData(randomizeQuizOptions(fallbackQuiz));
-    } else {
-      setQuizData(null);
-    }
-  };
-
-  const handleLessonSwitch = (lesson) => {
-    const sections = courseContent?.sections || [];
-    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lesson.id));
-
-    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
-      const prevSec = sections[secIdx - 1];
-      setSuccessNotice(`🔒 ეს მოდული ჩაკეტილია! შემდეგ მოდულზე გადასასვლელად ჯერ წარმატებით უნდა ჩააბაროთ წინა მოდულის ("${prevSec?.title || 'Module'}") ფინალური გამოცდა (მინიმუმ 70%).`);
-      setTimeout(() => setSuccessNotice(''), 5500);
-      return;
-    }
-
-    if (!isLessonUnlocked(lesson.id)) {
-      const idx = allLessons.findIndex(l => l.id === lesson.id);
-      const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
-      setSuccessNotice(`🔒 გთხოვთ გაიაროთ წინა გაკვეთილი ("${prevLesson?.title || 'Preceding lesson'}"), რათა გაიხსნას ეს მასალა.`);
-      setTimeout(() => setSuccessNotice(''), 4500);
-      return;
-    }
-
-    setActiveLesson(lesson);
-    setIsPlaying(false);
-    setCurrentVideoTime(0);
-
-    // Reset proctoring state for fresh attempt
-    setIsExamStarted(false);
-    setExamStrikes(0);
-    setExamTerminated(false);
-    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
-    setExamTimerSeconds((lesson.durationMinutes || 20) * 60);
-
-    // If student clicks a Quiz or Exam item in the syllabus, automatically focus the Quiz environment!
-    if (lesson.lessonType === 'Quiz' || !lesson.videoUrl || lesson.title?.toLowerCase().includes('exam') || lesson.title?.toLowerCase().includes('quiz') || lesson.title?.toLowerCase().includes('გამოცდა')) {
-      setActiveTab('quiz');
-    }
-
-    loadQuizForLesson(lesson.id, lesson);
-  };
-
-  // Start Exam explicitly when student clicks "გამოცდის დაწყება"
-  const handleStartExam = () => {
-    if (cooldownRemainingSeconds > 0) return;
-    setIsExamStarted(true);
-    setSelectedAnswers({});
-    setQuizResult(null);
-    setExamStrikes(0);
-    setExamTerminated(false);
-    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
-    setExamTimerSeconds((activeLesson?.durationMinutes || 20) * 60);
-    if (quizData) {
-      setQuizData(randomizeQuizOptions(quizData));
-    }
-  };
-
-
-  // 1. Anti-Cheating: Tab Switching & Window Blur Monitoring
-  useEffect(() => {
-    if (activeTab !== 'quiz' || !isExamStarted || quizResult || examTerminated || !quizData?.questions?.length || cooldownRemainingSeconds > 0) return;
-
-    let debounceTimeout = null;
-
-    const handleInfraction = () => {
-      if (debounceTimeout) return;
-      debounceTimeout = setTimeout(() => { debounceTimeout = null; }, 1200);
-
-      setExamStrikes(prev => {
-        const nextStrikes = prev + 1;
-        if (nextStrikes >= 3) {
-          setExamTerminated(true);
-          setIsExamStarted(false);
-
-          // 1 hour lockout on disqualification
-          if (activeLesson) {
-            const cooldownKey = getCooldownStorageKey(activeLesson.id);
-            const oneHourSeconds = 60 * 60;
-            const unlockTimestamp = Date.now() + oneHourSeconds * 1000;
-            localStorage.setItem(cooldownKey, unlockTimestamp.toString());
-            setCooldownRemainingSeconds(oneHourSeconds);
-          }
-
-          setStrikeModal({
-            isOpen: true,
-            strikes: 3,
-            message: '❌ გამოცდა გაუქმებულია: დაფიქსირდა 3 დარღვევა (ჩანართის ან ფანჯრის დატოვება). თქვენ ვერ ჩააბარეთ მოდულის გამოცდა. შემდეგი ცდა შესაძლებელი იქნება 1 საათის შემდეგ.'
-          });
-          setQuizResult({
-            totalQuestions: quizData?.questions?.length || 0,
-            correctAnswersCount: 0,
-            scorePercentage: 0,
-            passed: false,
-            feedbackMessage: '❌ გამოცდა გაუქმებულია საგამოცდო წესების 3-ჯერ დარღვევის გამო (ჩანართის/ბრაუზერის დატოვება). შემდეგი ცდა ხელმისაწვდომი იქნება 1 საათის შემდეგ.'
-          });
-          return 3;
-        } else {
-          setStrikeModal({
-            isOpen: true,
-            strikes: nextStrikes,
-            message: nextStrikes === 1
-              ? '⚠️ საგამოცდო წესების დარღვევა! ბრაუზერის ჩანართის დატოვება ან სხვა ფანჯარაზე გადასვლა კატეგორიულად აკრძალულია. დაფიქსირდა გაფრთხილება: 1 / 3. მე-3 დარღვევაზე გამოცდა ავტომატურად გაუქმდება!'
-              : '🚨 კრიტიკული გაფრთხილება! თქვენ მეორედ დატოვეთ საგამოცდო გვერდი. დაფიქსირდა გაფრთხილება: 2 / 3. შემდეგი დარღვევისთანავე თქვენი გამოცდა დაუყოვნებლივ გაუქმდება და ჩაგეთვლებათ ჩაჭრილად!'
-          });
-          return nextStrikes;
-        }
-      });
-    };
-
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        handleInfraction();
-      }
-    };
-
-    const onWindowBlur = () => {
-      handleInfraction();
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('blur', onWindowBlur);
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('blur', onWindowBlur);
-      if (debounceTimeout) clearTimeout(debounceTimeout);
-    };
-  }, [activeTab, isExamStarted, quizResult, examTerminated, quizData, cooldownRemainingSeconds]);
-
-  // 2. Anti-Cheating: Keyboard Shortcut Interception
-  useEffect(() => {
-    if (activeTab !== 'quiz' || !isExamStarted || quizResult || !quizData?.questions?.length || cooldownRemainingSeconds > 0) return;
-
-    const handleKeyDown = (e) => {
-      const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-      const key = e.key.toLowerCase();
-
-      if (
-        (isCtrlOrCmd && ['c', 'v', 'x', 'a', 'u', 's', 'p'].includes(key)) ||
-        e.key === 'F12' ||
-        (isCtrlOrCmd && e.shiftKey && ['i', 'j', 'c'].includes(key))
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        triggerProctorToast('🚫 საგამოცდო სისტემა ბლოკავს კლავიატურის ამ კომბინაციას (კოპირება/ჩასმა/ინსპექტირება)');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [activeTab, isExamStarted, quizResult, quizData, cooldownRemainingSeconds]);
-
-  // 3. Anti-Cheating: Countdown Timer
-  useEffect(() => {
-    if (activeTab !== 'quiz' || !isExamStarted || quizResult || examTerminated || !quizData?.questions?.length || cooldownRemainingSeconds > 0) return;
-
-    const timer = setInterval(() => {
-      setExamTimerSeconds(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmitQuiz();
-          triggerProctorToast('⏱️ საგამოცდო დრო ამოიწურა! პასუხები ავტომატურად გაიგზავნა შესაფასებლად.');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [activeTab, isExamStarted, quizResult, examTerminated, quizData, cooldownRemainingSeconds]);
-
-  // Fullscreen exam toggle
-  const toggleFullscreenExam = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreenExam(true);
-      }).catch(() => {});
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().then(() => {
-          setIsFullscreenExam(false);
-        }).catch(() => {});
-      }
-    }
-  };
-
-  // Handle Mark as Complete
-  const handleCompleteCurrentLesson = async () => {
-    if (!activeLesson) return;
-
-    try {
-      await api.learning.completeLesson(activeLesson.id, currentVideoTime, true);
-    } catch (e) {
-      console.warn('Saved completion locally:', e.message);
-    }
-
-    setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
-    window.dispatchEvent(new CustomEvent('totc-lesson-completed', { detail: { lessonId: activeLesson.id } }));
-    setSuccessNotice('ლექცია მონიშნულია როგორც დასრულებული! 🎉');
-    setTimeout(() => setSuccessNotice(''), 3500);
-
-    // Advance to next lesson or celebrate course completion
-    const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
-    const currentIndex = allLessons.findIndex(l => l.id === activeLesson.id);
-    const newCompletedCount = completedLessonIds.has(activeLesson.id) ? completedLessonIds.size : completedLessonIds.size + 1;
-    const isAllComplete = (allLessons.length > 0 && newCompletedCount >= allLessons.length) || (currentIndex === allLessons.length - 1);
-
-    if (isAllComplete) {
-      loadEarnedCertificate();
-      setShowCompletionCelebration(true);
-    } else if (currentIndex >= 0 && currentIndex < allLessons.length - 1) {
-      handleLessonSwitch(allLessons[currentIndex + 1]);
-    }
-  };
-
-  // Quiz Answer Selection
-  const handleSelectOption = (questionId, optionId) => {
-    if (quizResult || examTerminated) return; // Prevent changing after submission/disqualification
-    setSelectedAnswers(prev => ({
-      ...prev,
-      [questionId]: optionId
-    }));
-  };
-
   // Submit Quiz for evaluation
   const handleSubmitQuiz = async () => {
     if (!quizData) return;
@@ -931,7 +407,367 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     }
   };
 
-  // Retake quiz after failure or disqualification
+  // Exam Proctoring Hook
+  const {
+    examStrikes,
+    setExamStrikes,
+    examTerminated,
+    setExamTerminated,
+    strikeModal,
+    setStrikeModal,
+    examTimerSeconds,
+    setExamTimerSeconds,
+    proctorToast,
+    triggerProctorToast,
+    isFullscreenExam,
+    toggleFullscreenExam,
+    cooldownRemainingSeconds,
+    setCooldownRemainingSeconds,
+    getCooldownStorageKey,
+    formatExamTime,
+    formatCooldownTime,
+  } = useExamProctoring({
+    activeTab,
+    isExamStarted,
+    setIsExamStarted,
+    quizResult,
+    setQuizResult,
+    quizData,
+    activeLesson,
+    currentUserId,
+    userEmail,
+    handleSubmitQuiz,
+  });
+
+  // Load Course Content and Curriculum
+  useEffect(() => {
+    async function fetchCourseDetails() {
+      setLoading(true);
+      const targetCourseId = activeCourse?.courseId || activeCourse?.id;
+      if (targetCourseId) {
+        try {
+          let data = null;
+          try {
+            data = await api.learning.getContent(targetCourseId);
+          } catch (e) {
+            console.warn('api.learning.getContent failed, attempting api.courses.getById:', e.message);
+            data = await api.courses.getById(targetCourseId);
+          }
+
+          if (data && data.sections && data.sections.length > 0) {
+            setCourseContent(data);
+            const initialCompleted = new Set();
+            data.sections.forEach(sec => {
+              sec.lessons?.forEach(les => {
+                if (les.isCompleted) initialCompleted.add(les.id);
+              });
+            });
+            setCompletedLessonIds(initialCompleted);
+
+            const allLessonsList = data.sections.flatMap(s => s.lessons);
+            let targetLesson = null;
+            if (activeCourse?.targetLessonId) {
+              targetLesson = allLessonsList.find(l => l.id === activeCourse.targetLessonId);
+            }
+            if (!targetLesson) {
+              const firstIncomplete = allLessonsList.find(l => !l.isCompleted);
+              targetLesson = firstIncomplete || allLessonsList[0];
+            }
+
+            if (targetLesson) {
+              setActiveLesson(targetLesson);
+              if (targetLesson.lessonType === 'Quiz' || !targetLesson.videoUrl || targetLesson.title?.toLowerCase().includes('exam') || targetLesson.title?.toLowerCase().includes('quiz') || targetLesson.title?.toLowerCase().includes('გამოცდა')) {
+                setActiveTab('quiz');
+              }
+              loadQuizForLesson(targetLesson.id, targetLesson);
+            }
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('Using local fallback curriculum:', err.message);
+        }
+      }
+
+      // Fallback
+      setCourseContent(defaultCourse);
+      const setIds = new Set(['les-1']);
+      setCompletedLessonIds(setIds);
+      const defaultActive = defaultCourse.sections[0].lessons[0];
+      setActiveLesson(defaultActive);
+      setQuizData(fallbackQuiz);
+      setLoading(false);
+    }
+
+    fetchCourseDetails();
+  }, [activeCourse]);
+
+  // All lessons in sequential order for progress & locking
+  const allLessons = courseContent?.sections?.flatMap(s => s.lessons) || [];
+  const completedCount = allLessons.filter(l => completedLessonIds.has(l.id)).length;
+  const currentProgressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+
+  // Permissions & Gating
+  const isCourseAuthor = Boolean(
+    resolvedUser && (
+      (authorId && currentUserId && authorId === currentUserId) ||
+      (authorEmail && userEmail && authorEmail === userEmail) ||
+      (!authorId && !authorEmail && authorName && userFullName && authorName === userFullName)
+    )
+  );
+
+  const isAdmin = resolvedUser?.role === 'Admin';
+  const isAuthorOrAdmin = isCourseAuthor || isAdmin;
+
+  const isOpenAccessCourse = Boolean(
+    courseContent?.isOpenAccess ?? 
+    activeCourse?.isOpenAccess ?? 
+    false
+  );
+
+  // Check if an entire module/section is unlocked for the student
+  const isSectionUnlocked = (sectionIndex) => {
+    if (isAuthorOrAdmin || isOpenAccessCourse) return true;
+    if (sectionIndex <= 0) return true;
+
+    const sections = courseContent?.sections || [];
+    for (let i = 0; i < sectionIndex; i++) {
+      const prevSec = sections[i];
+      if (!prevSec || !prevSec.lessons || prevSec.lessons.length === 0) continue;
+
+      const allPrevLessonsCompleted = prevSec.lessons.every(l => completedLessonIds.has(l.id));
+      if (!allPrevLessonsCompleted) return false;
+
+      const quizLessons = prevSec.lessons.filter(l => l.lessonType === 'Quiz' || l.hasQuiz || l.quiz);
+      for (const ql of quizLessons) {
+        if (!completedLessonIds.has(ql.id) && !passedQuizIds.has(ql.id)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  // Check if a specific lesson is unlocked for the current student
+  const isLessonUnlocked = (lessonId) => {
+    if (isAuthorOrAdmin || isOpenAccessCourse) return true;
+    const sections = courseContent?.sections || [];
+    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lessonId));
+
+    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
+      return false;
+    }
+
+    const idx = allLessons.findIndex(l => l.id === lessonId);
+    if (idx <= 0) return true;
+    const previousLesson = allLessons[idx - 1];
+    return completedLessonIds.has(previousLesson?.id);
+  };
+
+  const isCurrentLessonLocked = activeLesson ? !isLessonUnlocked(activeLesson.id) : false;
+  const isCourseFullyCompleted = allLessons.length > 0 && completedCount === allLessons.length;
+
+  // Fetch or issue certificate for this course
+  const loadEarnedCertificate = async () => {
+    const courseId = activeCourse?.id || courseContent?.id;
+    if (!courseId) return null;
+
+    setIsLoadingCertificate(true);
+    try {
+      const cert = await api.certificates.getByCourse(courseId);
+      if (cert) {
+        setEarnedCertificate(cert);
+        return cert;
+      }
+    } catch {
+      try {
+        const claimed = await api.certificates.claim(courseId);
+        if (claimed) {
+          setEarnedCertificate(claimed);
+          return claimed;
+        }
+      } catch (err) {
+        console.warn('Could not claim certificate from server:', err?.message);
+      }
+    } finally {
+      setIsLoadingCertificate(false);
+    }
+
+    const fallbackCert = {
+      certificateNumber: `TOTC-2026-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+      studentName: resolvedUser?.fullName || 'Gloria Rose',
+      courseTitle: courseContent?.title || activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations',
+      instructorName: courseContent?.instructorName || activeCourse?.instructorName || 'Lina Wilson',
+      issuedAt: new Date().toISOString(),
+      verificationHash: (Math.random().toString(16).substring(2, 18) + Math.random().toString(16).substring(2, 18)).toLowerCase(),
+      verificationUrl: `/verify/certificate/TOTC-2026`
+    };
+    setEarnedCertificate(fallbackCert);
+    return fallbackCert;
+  };
+
+  // Auto-fetch certificate once 100% completed
+  useEffect(() => {
+    if (isCourseFullyCompleted && !earnedCertificate) {
+      loadEarnedCertificate();
+    }
+  }, [isCourseFullyCompleted]);
+
+  // Global listener from other pages (e.g. Student Dashboard)
+  useEffect(() => {
+    const handleOpenCertEvent = () => {
+      loadEarnedCertificate();
+      setShowCompletionCelebration(true);
+    };
+    window.addEventListener('totc-open-certificate', handleOpenCertEvent);
+    return () => window.removeEventListener('totc-open-certificate', handleOpenCertEvent);
+  }, [courseContent, activeCourse]);
+
+  const handleDownloadPdf = () => {
+    if (earnedCertificate?.certificateNumber) {
+      window.open(`http://localhost:5000/api/certificates/${earnedCertificate.certificateNumber}/download`, '_blank');
+    } else {
+      window.print();
+    }
+  };
+
+  const handleCopyCertLink = () => {
+    const num = earnedCertificate?.certificateNumber || earnedCertificate?.verificationHash || 'TOTC-2026-ARCH';
+    const url = `${window.location.origin}/certificates/${num}`;
+    navigator.clipboard.writeText(url);
+    setCopiedCertLink(true);
+    setTimeout(() => setCopiedCertLink(false), 3000);
+  };
+
+  // Load Quiz when lesson changes
+  const loadQuizForLesson = async (lessonId, lessonObj = null) => {
+    setSelectedAnswers({});
+    setQuizResult(null);
+    setIsExamStarted(false);
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((lessonObj?.durationMinutes || 20) * 60);
+
+    const cooldownKey = getCooldownStorageKey(lessonId);
+    const savedCooldown = localStorage.getItem(cooldownKey);
+    if (savedCooldown) {
+      const diff = Math.max(0, Math.floor((parseInt(savedCooldown, 10) - Date.now()) / 1000));
+      setCooldownRemainingSeconds(diff);
+    } else {
+      setCooldownRemainingSeconds(0);
+    }
+
+    if (lessonObj?.quiz && lessonObj.quiz.questions && lessonObj.quiz.questions.length > 0) {
+      setQuizData(randomizeQuizOptions(lessonObj.quiz));
+      return;
+    }
+
+    try {
+      const q = await api.quizzes.getByLesson(lessonId);
+      if (q && q.questions && q.questions.length > 0) {
+        setQuizData(randomizeQuizOptions(q));
+        return;
+      }
+    } catch (e) {
+      console.warn('API quiz fetch note:', e.message);
+    }
+
+    const isExam = lessonObj?.title?.toLowerCase().includes('exam') || lessonId === 'les-exam-1';
+    if (isExam) {
+      setQuizData(randomizeQuizOptions(fallbackExamQuiz));
+    } else if (lessonId === 'les-1' || !activeCourse?.id || activeCourse?.id === 'demo') {
+      setQuizData(randomizeQuizOptions(fallbackQuiz));
+    } else {
+      setQuizData(null);
+    }
+  };
+
+  const handleLessonSwitch = (lesson) => {
+    const sections = courseContent?.sections || [];
+    const secIdx = sections.findIndex(s => s.lessons?.some(l => l.id === lesson.id));
+
+    if (secIdx > 0 && !isSectionUnlocked(secIdx)) {
+      const prevSec = sections[secIdx - 1];
+      setSuccessNotice(`🔒 ეს მოდული ჩაკეტილია! შემდეგ მოდულზე გადასასვლელად ჯერ წარმატებით უნდა ჩააბაროთ წინა მოდულის ("${prevSec?.title || 'Module'}") ფინალური გამოცდა (მინიმუმ 70%).`);
+      setTimeout(() => setSuccessNotice(''), 5500);
+      return;
+    }
+
+    if (!isLessonUnlocked(lesson.id)) {
+      const idx = allLessons.findIndex(l => l.id === lesson.id);
+      const prevLesson = idx > 0 ? allLessons[idx - 1] : null;
+      setSuccessNotice(`🔒 გთხოვთ გაიაროთ წინა გაკვეთილი ("${prevLesson?.title || 'Preceding lesson'}"), რათა გაიხსნას ეს მასალა.`);
+      setTimeout(() => setSuccessNotice(''), 4500);
+      return;
+    }
+
+    setActiveLesson(lesson);
+    setIsPlaying(false);
+    setCurrentVideoTime(0);
+
+    setIsExamStarted(false);
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((lesson.durationMinutes || 20) * 60);
+
+    if (lesson.lessonType === 'Quiz' || !lesson.videoUrl || lesson.title?.toLowerCase().includes('exam') || lesson.title?.toLowerCase().includes('quiz') || lesson.title?.toLowerCase().includes('გამოცდა')) {
+      setActiveTab('quiz');
+    }
+
+    loadQuizForLesson(lesson.id, lesson);
+  };
+
+  const handleStartExam = () => {
+    if (cooldownRemainingSeconds > 0) return;
+    setIsExamStarted(true);
+    setSelectedAnswers({});
+    setQuizResult(null);
+    setExamStrikes(0);
+    setExamTerminated(false);
+    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
+    setExamTimerSeconds((activeLesson?.durationMinutes || 20) * 60);
+    if (quizData) {
+      setQuizData(randomizeQuizOptions(quizData));
+    }
+  };
+
+  const handleCompleteCurrentLesson = async () => {
+    if (!activeLesson) return;
+
+    try {
+      await api.learning.completeLesson(activeLesson.id, currentVideoTime, true);
+    } catch (e) {
+      console.warn('Saved completion locally:', e.message);
+    }
+
+    setCompletedLessonIds(prev => new Set(prev).add(activeLesson.id));
+    window.dispatchEvent(new CustomEvent('totc-lesson-completed', { detail: { lessonId: activeLesson.id } }));
+    setSuccessNotice('ლექცია მონიშნულია როგორც დასრულებული! 🎉');
+    setTimeout(() => setSuccessNotice(''), 3500);
+
+    const allLessonsList = courseContent?.sections?.flatMap(s => s.lessons) || [];
+    const currentIndex = allLessonsList.findIndex(l => l.id === activeLesson.id);
+    const newCompletedCount = completedLessonIds.has(activeLesson.id) ? completedLessonIds.size : completedLessonIds.size + 1;
+    const isAllComplete = (allLessonsList.length > 0 && newCompletedCount >= allLessonsList.length) || (currentIndex === allLessonsList.length - 1);
+
+    if (isAllComplete) {
+      loadEarnedCertificate();
+      setShowCompletionCelebration(true);
+    } else if (currentIndex >= 0 && currentIndex < allLessonsList.length - 1) {
+      handleLessonSwitch(allLessonsList[currentIndex + 1]);
+    }
+  };
+
+  const handleSelectOption = (questionId, optionId) => {
+    if (quizResult || examTerminated) return;
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionId]: optionId
+    }));
+  };
+
   const handleRetakeQuiz = () => {
     if (cooldownRemainingSeconds > 0) {
       triggerProctorToast(`⏳ შემდეგი ცდა შესაძლებელი იქნება ${formatCooldownTime(cooldownRemainingSeconds)}-ში`);
@@ -949,7 +785,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     }
   };
 
-  // Add Community Question
   const handleAddQuestion = (e) => {
     e.preventDefault();
     if (!newQuestionText.trim()) return;
@@ -975,7 +810,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     setNewQuestionText('');
   };
 
-  // Add Personal Note
   const handleAddNote = (e) => {
     e.preventDefault();
     if (!newNoteText.trim()) return;
@@ -1018,478 +852,6 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
     activeLesson?.title?.toLowerCase().includes('quiz') ||
     activeLesson?.title?.toLowerCase().includes('გამოცდა')
   );
-
-  const renderExamContent = () => {
-    if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-      return (
-        <div className="p-8 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-2">
-          <HelpCircle className="w-8 h-8 text-slate-500 mx-auto" />
-          <h4 className="font-bold text-sm text-white">ამ ლექციაზე ქვიზი არ არის</h4>
-          <p className="text-xs text-slate-400">
-            ლექტორს ამ ლექციისთვის ქვიზი ჯერ არ დაუმატებია.
-          </p>
-        </div>
-      );
-    }
-
-    if (cooldownRemainingSeconds > 0 && !quizResult?.passed) {
-      /* VIEW 1: COOLDOWN LOCKOUT SCREEN (1-Hour Retake Delay) */
-      return (
-        <div className="p-6 md:p-9 bg-gradient-to-b from-slate-900 to-slate-850 rounded-3xl border border-amber-500/40 shadow-2xl text-center space-y-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold tracking-wide">
-            <Clock className="w-4 h-4 animate-spin" style={{ animationDuration: '8s' }} />
-            <span>⏳ საგამოცდო პაუზა (Cool-down Period)</span>
-          </div>
-
-          <div className="space-y-2 max-w-xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-              შემდეგი ცდა დროებით შეზღუდულია
-            </h3>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              {quizResult
-                ? `თქვენი ბოლო შედეგია ${quizResult.scorePercentage}% (გამსვლელი ბარიერი: ${quizData.passingScorePercentage || 70}%). საგამოცდო რეგულაციით, წარუმატებელი ცდის ან დისკვალიფიკაციის შემდეგ დაწესებულია 1-საათიანი მოსამზადებელი პაუზა.`
-                : 'საგამოცდო წესების დარღვევის ან წარუმატებელი ცდის გამო, შემდეგი მცდელობა ხელმისაწვდომი იქნება ქვემოთ მითითებული დროის ამოწურვის შემდეგ.'}
-            </p>
-          </div>
-
-          {/* Live Countdown Display Widget */}
-          <div className="p-6 md:p-8 bg-slate-950/80 rounded-2xl border border-amber-500/30 max-w-md mx-auto shadow-inner space-y-2">
-            <p className="text-[11px] font-bold tracking-widest uppercase text-amber-400">
-              ⏱️ დარჩენილი დრო შემდეგ ცდამდე
-            </p>
-            <div className="text-4xl md:text-5xl font-mono font-black text-amber-300 tracking-wider">
-              {formatCooldownTime(cooldownRemainingSeconds)}
-            </div>
-            <p className="text-[11px] text-slate-400">
-              დროის ამოწურვის შემდეგ ავტომატურად გაიხსნება გამოცდის ხელახალი ცდა
-            </p>
-          </div>
-
-          {/* Advice Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto text-left">
-            <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700/80 space-y-1">
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-totc-teal" />
-                <span>გადახედეთ მასალებს</span>
-              </p>
-              <p className="text-[11px] text-slate-400">
-                გამოიყენეთ ეს დრო ვიდეო ლექციებისა და რესურსების გასამეორებლად.
-              </p>
-            </div>
-            <div className="p-3.5 bg-slate-800/80 rounded-xl border border-slate-700/80 space-y-1">
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5 text-emerald-400" />
-                <span>მოდულის გახსნა</span>
-              </p>
-              <p className="text-[11px] text-slate-400">
-                მინიმუმ {quizData.passingScorePercentage || 70}%-ის დაგროვება ხსნის შემდეგ მოდულს.
-              </p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            {allLessons.findIndex(l => l.id === activeLesson?.id) > 0 ? (
-              <button
-                onClick={() => {
-                  const idx = allLessons.findIndex(l => l.id === activeLesson?.id);
-                  handleLessonSwitch(allLessons[idx - 1]);
-                }}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>📖 წინა მასალების გადამეორება</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveTab('overview')}
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-totc-teal hover:bg-totc-teal-dark text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>📖 მასალების გადამეორება (Overview)</span>
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (!isExamStarted && (!quizResult || !quizResult.passed)) {
-      /* VIEW 2: PRE-EXAM BRIEFING & START SCREEN */
-      return (
-        <div className="p-6 md:p-8 bg-slate-900/90 rounded-3xl border border-slate-700/80 shadow-xl space-y-6 animate-in fade-in duration-300">
-          {/* Briefing Top Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-700/80">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-totc-teal/15 text-totc-teal border border-totc-teal/30 text-xs font-bold mb-1">
-                <Award className="w-3.5 h-3.5" />
-                <span>ოფიციალური შემაჯამებელი ტესტირება</span>
-              </div>
-              <h3 className="text-xl md:text-2xl font-black text-white">
-                {quizData?.title || `ცოდნის შემოწმება: ${activeLesson?.title || 'ლექციის ტესტი'}`}
-              </h3>
-              <p className="text-xs md:text-sm text-slate-400 max-w-2xl leading-relaxed">
-                {quizData?.description || 'შეაფასეთ თქვენი ცოდნა და მიიღეთ შემდეგ მოდულზე გადასვლის უფლება.'}
-              </p>
-            </div>
-
-            <div className="flex md:flex-col items-center md:items-end justify-between gap-2 shrink-0">
-              <span className="text-[11px] text-slate-400 font-medium">საგამოცდო ბარიერი:</span>
-              <span className="px-3.5 py-1.5 rounded-xl bg-totc-teal/15 text-totc-teal border border-totc-teal/30 text-xs font-black">
-                გამსვლელი: {quizData.passingScorePercentage || 70}%
-              </span>
-            </div>
-          </div>
-
-          {/* Examination Key Metrics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/70 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase font-semibold flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-totc-cyan" />
-                კითხვები
-              </span>
-              <p className="text-lg font-black text-white">{quizData.questions.length} შეკითხვა</p>
-              <p className="text-[10px] text-slate-400">არჩევითი პასუხებით</p>
-            </div>
-
-            <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/70 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase font-semibold flex items-center gap-1.5">
-                <Timer className="w-3.5 h-3.5 text-amber-400" />
-                საგამოცდო დრო
-              </span>
-              <p className="text-lg font-black text-white">{activeLesson?.durationMinutes || 20} წუთი</p>
-              <p className="text-[10px] text-slate-400">ათვლა დაიწყება სტარტზე</p>
-            </div>
-
-            <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/70 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase font-semibold flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                მონიტორინგი
-              </span>
-              <p className="text-lg font-black text-emerald-300">პროქტორინგი</p>
-              <p className="text-[10px] text-slate-400">3 დარღვევის ლიმიტი</p>
-            </div>
-
-            <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700/70 space-y-1">
-              <span className="text-[11px] text-slate-400 uppercase font-semibold flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                მოდულის გახსნა
-              </span>
-              <p className="text-lg font-black text-indigo-300">ავტომატური</p>
-              <p className="text-[10px] text-slate-400">70%-ზე მეტისას</p>
-            </div>
-          </div>
-
-          {/* Rules and Security Regulations Box */}
-          <div className="p-5 bg-slate-950/70 rounded-2xl border border-slate-800 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-totc-cyan flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-totc-cyan" />
-              <span>საგამოცდო წესები და უსაფრთხოების რეგულაციები:</span>
-            </h4>
-            <ul className="text-xs text-slate-300 space-y-2.5 pl-1">
-              <li className="flex items-start gap-2">
-                <span className="text-totc-teal font-bold shrink-0">1.</span>
-                <span><strong>ჩანართის დატოვება აკრძალულია:</strong> გამოცდის მსვლელობისას სხვა ჩანართზე გადასვლა, ფანჯრის მინიმიზაცია ან სხვა პროგრამაზე გადართვა ფიქსირდება როგორც დარღვევა (მაქსიმუმ 3 გაფრთხილება დისკვალიფიკაციამდე).</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-totc-teal font-bold shrink-0">2.</span>
-                <span><strong>კოპირებისა და კონტექსტური მენიუს ბლოკირება:</strong> ტექსტის მონიშვნა, კოპირება (Ctrl+C), ჩასმა (Ctrl+V) და დეველოპერის პანელი (F12) ავტომატურად დაბლოკილია.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-totc-teal font-bold shrink-0">3.</span>
-                <span><strong>1-საათიანი ლიმიტი წარუმატებლობის შემთხვევაში:</strong> თუ ვერ გადალახავთ {quizData.passingScorePercentage || 70}%-იან ბარიერს, შემდეგი ცდა ხელმისაწვდომი იქნება ზუსტად 1 საათის შემდეგ.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-totc-teal font-bold shrink-0">4.</span>
-                <span><strong>დროის ათვლა:</strong> ტაიმერი დაიწყებს ათვლას მხოლოდ მას შემდეგ, რაც დააჭერთ ღილაკს <strong>„გამოცდის დაწყება“</strong>.</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Start Button Area */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-xs text-slate-400">
-              დარწმუნდით, რომ გაქვთ მყარი ინტერნეტ კავშირი და მზად ხართ საგამოცდო პროცესისთვის.
-            </div>
-
-            <button
-              onClick={handleStartExam}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-totc-teal to-emerald-500 hover:from-totc-teal-dark hover:to-emerald-600 text-white font-black text-sm shadow-xl shadow-totc-teal/25 hover:shadow-totc-teal/40 transition-all flex items-center justify-center gap-2.5 transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>🚀 გამოცდის დაწყება (Start Examination)</span>
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    /* VIEW 3 & 4: ACTIVE EXAM OR PASSED RESULT SCREEN */
-    return (
-      <div className="space-y-6">
-        {/* PROCTORING INTEGRITY HEADER BAR */}
-        <div className="p-4 bg-slate-900/90 rounded-2xl border border-slate-700/80 space-y-3 shadow-lg">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Live Proctor Shield & Strikes Badge */}
-            <div className="flex items-center gap-2.5">
-              <div className={`px-3 py-1.5 rounded-xl flex items-center gap-2 text-xs font-bold border transition-colors ${
-                examStrikes === 0
-                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                  : examStrikes === 1
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                  : examStrikes === 2
-                  ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
-                  : 'bg-red-500/20 text-red-300 border-red-500/40'
-              }`}>
-                {examStrikes === 0 ? (
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                ) : (
-                  <ShieldAlert className="w-4 h-4 text-amber-400 animate-pulse" />
-                )}
-                <span>
-                  {examStrikes === 0
-                    ? '🛡️ საგამოცდო კონტროლი: აქტიური (დარღვევები: 0/3)'
-                    : examStrikes === 1
-                    ? '⚠️ გაფრთხილება: 1 / 3'
-                    : examStrikes === 2
-                    ? '🚨 კრიტიკული გაფრთხილება: 2 / 3'
-                    : '❌ დისკვალიფიცირებული (3/3)'}
-                </span>
-              </div>
-
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-                <EyeOff className="w-3.5 h-3.5 text-slate-400" />
-                <span>ჩანართის დატოვება და გადაწერა აკრძალულია</span>
-              </span>
-            </div>
-
-            {/* Live Countdown Timer & Fullscreen */}
-            <div className="flex items-center gap-2.5">
-              <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 font-mono text-xs font-bold ${
-                examTimerSeconds <= 120
-                  ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse'
-                  : 'bg-slate-800 text-slate-200 border-slate-700'
-              }`}>
-                <Timer className="w-4 h-4 text-totc-teal" />
-                <span>⏱️ {formatExamTime(examTimerSeconds)}</span>
-              </div>
-
-              <button
-                onClick={toggleFullscreenExam}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium transition-all flex items-center gap-1.5"
-                title="სრულ ეკრანზე გაშლა"
-              >
-                {isFullscreenExam ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                <span className="hidden md:inline">{isFullscreenExam ? 'ფანჯარა' : 'სრული ეკრანი'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Proctoring Alert Toast */}
-          {proctorToast && (
-            <div className="p-2.5 bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-semibold rounded-xl flex items-center gap-2 animate-in fade-in">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
-              <span>{proctorToast}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
-          <div>
-            <h3 className="font-bold text-lg text-white">
-              {quizData?.title || `ცოდნის შემოწმება: ${activeLesson?.title || 'ლექციის ტესტი'}`}
-            </h3>
-            <p className="text-xs text-slate-400">
-              {quizData?.description || 'უპასუხეთ ქვემოთ მოცემულ შეკითხვებს მასალის ასათვისებლად.'}
-            </p>
-          </div>
-
-          {quizData && (
-            <div className="px-3 py-1 rounded-full bg-totc-teal/15 text-totc-teal text-xs font-bold shrink-0">
-              გამსვლელი: {quizData.passingScorePercentage || 70}%
-            </div>
-          )}
-        </div>
-
-        {/* Questions List with Anti-Copy & Anti-Selection Protection */}
-        <div 
-          className="space-y-6 select-none"
-          style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none' }}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            triggerProctorToast('🚫 მარჯვენა ღილაკის კონტექსტური მენიუ დაბლოკილია საგამოცდო რეჟიმში');
-          }}
-          onCopy={(e) => {
-            e.preventDefault();
-            triggerProctorToast('🚫 ტექსტის კოპირება დაბლოკილია საგამოცდო რეჟიმში');
-          }}
-          onCut={(e) => {
-            e.preventDefault();
-            triggerProctorToast('🚫 ამოჭრა დაბლოკილია');
-          }}
-          onPaste={(e) => {
-            e.preventDefault();
-            triggerProctorToast('🚫 ჩასმა დაბლოკილია');
-          }}
-        >
-          {quizData.questions.map((q, qIndex) => {
-            const selectedOptId = selectedAnswers[q.id];
-            const feedback = quizResult?.questionFeedbacks?.find(f => f.questionId === q.id);
-
-            return (
-              <div
-                key={q.id || qIndex}
-                className={`p-5 rounded-2xl border transition-all ${
-                  feedback
-                    ? feedback.isCorrect
-                      ? 'bg-emerald-950/20 border-emerald-500/50'
-                      : 'bg-red-950/20 border-red-500/50'
-                    : 'bg-slate-800/60 border-slate-700/60'
-                }`}
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                    {qIndex + 1}
-                  </span>
-                  <h4 className="font-bold text-sm text-white leading-snug">
-                    {q.questionText}
-                  </h4>
-                </div>
-
-                {/* Options */}
-                <div className="space-y-2.5 pl-9">
-                  {q.options?.map((opt) => {
-                    const isSelected = selectedOptId === opt.id;
-                    const isCorrectAnswer = feedback && feedback.correctOptionId === opt.id;
-                    const isSelectedWrong = feedback && isSelected && !feedback.isCorrect;
-
-                    return (
-                      <button
-                        key={opt.id}
-                        disabled={quizResult !== null || examTerminated}
-                        onClick={() => handleSelectOption(q.id, opt.id)}
-                        className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition-all flex items-center justify-between ${
-                          isCorrectAnswer
-                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold'
-                            : isSelectedWrong
-                            ? 'bg-red-500/20 border-red-500 text-red-300 font-bold'
-                            : isSelected
-                            ? 'bg-totc-teal/20 border-totc-teal text-white shadow-sm'
-                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700/60'
-                        }`}
-                      >
-                        <span>{opt.optionText}</span>
-                        {isCorrectAnswer && <Check className="w-4 h-4 text-emerald-400" />}
-                        {isSelectedWrong && <X className="w-4 h-4 text-red-400" />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation Feedback */}
-                {feedback && (
-                  <div className={`mt-4 p-3 rounded-xl text-xs flex items-start gap-2 ${
-                    feedback.isCorrect
-                      ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                      : 'bg-red-500/10 text-red-300 border border-red-500/20'
-                  }`}>
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span><strong>ახსნა-განმარტება:</strong> {feedback.explanation}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Quiz Action / Result Summary */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-700">
-          {quizResult ? (
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-md ${
-                quizResult.passed ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-red-500 text-white shadow-red-500/20'
-              }`}>
-                {quizResult.scorePercentage}%
-              </div>
-              <div>
-                <p className={`font-bold text-sm ${quizResult.passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {quizResult.passed ? 'ტესტი წარმატებით ჩაბარებულია! 🎉' : 'ტესტი ვერ ჩაბარდა'}
-                </p>
-                <p className="text-xs text-slate-300">
-                  {quizResult.passed
-                    ? `🎉 შესანიშნავი შედეგია! თქვენ წარმატებით ჩააბარეთ ტესტი ${quizResult.scorePercentage}% ქულით და ლექცია დასრულებულია.`
-                    : (quizResult.feedbackMessage || `თქვენი შედეგია ${quizResult.scorePercentage}%. გამსვლელი ბარიერია ${quizData?.passingScorePercentage || 70}%. გაიმეორეთ მასალა და სცადეთ ხელახლა!`)}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400">
-              შეავსეთ ყველა შეკითხვა და დააჭირეთ პასუხების შემოწმებას.
-            </p>
-          )}
-
-          <div className="flex items-center gap-3">
-            {quizResult ? (
-              quizResult.passed ? (
-                (() => {
-                  const allLessonsList = courseContent?.sections?.flatMap(s => s.lessons) || [];
-                  const currentIdx = allLessonsList.findIndex(l => l.id === activeLesson?.id);
-                  const nextLessonObj = currentIdx >= 0 && currentIdx < allLessonsList.length - 1 ? allLessonsList[currentIdx + 1] : null;
-
-                  if (nextLessonObj) {
-                    return (
-                      <button
-                        onClick={() => handleLessonSwitch(nextLessonObj)}
-                        className="px-6 py-3 rounded-full text-xs font-bold bg-totc-teal hover:bg-totc-teal-dark text-white transition-all shadow-lg shadow-teal-500/20 flex items-center gap-2 group cursor-pointer active:scale-98"
-                      >
-                        <span>შემდეგ ლექციაზე გადასვლა</span>
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </button>
-                    );
-                  } else {
-                    return (
-                      <button
-                        onClick={() => {
-                          loadEarnedCertificate();
-                          setShowCompletionCelebration(true);
-                        }}
-                        className="px-6 py-3 rounded-full text-xs font-extrabold bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-500 hover:brightness-110 text-slate-950 transition-all shadow-xl shadow-amber-500/20 flex items-center gap-2 cursor-pointer active:scale-95 animate-pulse"
-                      >
-                        <Award className="w-4 h-4 text-slate-950" />
-                        <span>გილოცავთ! სერტიფიკატის მიღება 🎉</span>
-                      </button>
-                    );
-                  }
-                })()
-              ) : (
-                <button
-                  onClick={handleRetakeQuiz}
-                  className="px-5 py-2.5 rounded-full text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>ხელახლა ცდა</span>
-                </button>
-              )
-            ) : (
-              <button
-                onClick={handleSubmitQuiz}
-                disabled={isSubmittingQuiz || Object.keys(selectedAnswers).length < (quizData?.questions?.length || 1) || examTerminated}
-                className={`px-8 py-3 rounded-full font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
-                  Object.keys(selectedAnswers).length >= (quizData?.questions?.length || 1) && !examTerminated
-                    ? 'bg-totc-teal text-white hover:bg-totc-teal-dark cursor-pointer'
-                    : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                {isSubmittingQuiz ? 'მოწმდება...' : 'პასუხების შემოწმება'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="pt-20 bg-[#0F172A] text-white min-h-screen flex flex-col font-poppins">
@@ -1605,9 +967,7 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
               </div>
             </div>
           ) : isExamLesson ? (
-            /* =========================================================================
-               DEDICATED IMMERSIVE EXAMINATION ENVIRONMENT (NO VIDEO PLAYER BOX)
-               ========================================================================= */
+            /* Dedicated Immersive Examination Environment */
             <div className="space-y-6 animate-in fade-in duration-300">
               {/* Exam Hero Banner */}
               <div className="bg-slate-900/90 rounded-3xl p-6 md:p-8 border border-slate-700/80 shadow-2xl relative overflow-hidden">
@@ -1756,12 +1116,37 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
               )}
 
               {/* Direct Full-Screen Focused Exam Canvas */}
-              {renderExamContent()}
+              <ExamEnvironmentView
+                quizData={quizData}
+                cooldownRemainingSeconds={cooldownRemainingSeconds}
+                formatCooldownTime={formatCooldownTime}
+                quizResult={quizResult}
+                activeLesson={activeLesson}
+                allLessons={allLessons}
+                handleLessonSwitch={handleLessonSwitch}
+                setActiveTab={setActiveTab}
+                isExamStarted={isExamStarted}
+                handleStartExam={handleStartExam}
+                examStrikes={examStrikes}
+                examTimerSeconds={examTimerSeconds}
+                formatExamTime={formatExamTime}
+                isFullscreenExam={isFullscreenExam}
+                toggleFullscreenExam={toggleFullscreenExam}
+                proctorToast={proctorToast}
+                triggerProctorToast={triggerProctorToast}
+                selectedAnswers={selectedAnswers}
+                handleSelectOption={handleSelectOption}
+                examTerminated={examTerminated}
+                handleSubmitQuiz={handleSubmitQuiz}
+                isSubmittingQuiz={isSubmittingQuiz}
+                handleRetakeQuiz={handleRetakeQuiz}
+                courseContent={courseContent}
+                loadEarnedCertificate={loadEarnedCertificate}
+                setShowCompletionCelebration={setShowCompletionCelebration}
+              />
             </div>
           ) : (
-            /* =========================================================================
-               STANDARD VIDEO LECTURE / LAB ENVIRONMENT (WITH BUNNY STREAM PLAYER)
-               ========================================================================= */
+            /* Standard Video Lecture / Lab Environment */
             <>
               {/* Video Container with Bunny Stream Player */}
               <div 
@@ -1882,848 +1267,173 @@ export default function CoursePlayerPage({ activeCourse, setActivePage, currentU
                 </div>
               )}
 
-              {/* =========================================================================
-                  HORIZONTAL TABS BAR (Overview, Quiz, Resources, Q&A, Notes)
-                  ========================================================================= */}
+              {/* Horizontal Tabs Bar */}
               <div className="bg-slate-800/40 rounded-2xl p-6 border border-slate-700/60 space-y-6">
-            
-            <div className="flex border-b border-slate-700 gap-4 sm:gap-8 overflow-x-auto pb-1 text-sm font-semibold">
-              {[
-                { id: 'overview', label: 'მიმოხილვა', icon: BookOpen, badge: null },
-                { 
-                  id: 'quiz', 
-                  label: 'გამოცდა / ქვიზი', 
-                  icon: HelpCircle, 
-                  badge: (quizData?.questions?.length || activeLesson?.quiz?.questions?.length || (activeLesson?.hasQuiz ? 1 : 0)) || null 
-                },
-                { 
-                  id: 'resources', 
-                  label: 'რესურსები', 
-                  icon: Download, 
-                  badge: activeLesson?.resources?.length > 0 
-                    ? `${activeLesson.resources.length} ფაილი` 
-                    : (activeLesson?.id === 'les-1' ? '2 ფაილი' : null) 
-                },
-                { id: 'qa', label: 'კითხვა-პასუხი', icon: MessageSquare, badge: questionsList.length },
-                { id: 'notes', label: 'ჩანაწერები', icon: FileText, badge: notesList.length },
-              ].map(tab => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-3 flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
-                      isActive
-                        ? 'border-totc-teal text-totc-teal'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                    {tab.badge !== null && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                        isActive ? 'bg-totc-teal/20 text-totc-teal font-bold' : 'bg-slate-700 text-slate-300'
-                      }`}>
-                        {tab.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* If current lesson is locked: show locked barrier instead of tab content */}
-            {isCurrentLessonLocked ? (
-              <div className="p-10 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-3 animate-in fade-in">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
-                  <Lock className="w-6 h-6" />
-                </div>
-                <h4 className="font-bold text-base text-white">მასალები და ქვიზი დაბლოკილია</h4>
-                <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                  ამ ლექციის ქვიზზე, გადმოსაწერ რესურსებსა და მასალებზე წვდომა შეზღუდულია, სანამ წინა ლექციას არ გაივლით და არ მონიშნავთ დასრულებულად.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* TAB 1: OVERVIEW */}
-                {activeTab === 'overview' && (
-                  <div className="space-y-6 text-sm text-slate-300 leading-relaxed animate-in fade-in duration-200">
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-base text-white">ლექციის შესახებ</h4>
-                      <p className="text-slate-300 text-sm">
-                        {activeLesson?.contentText || 'შეისწავლეთ თანამედროვე არქიტექტურა, პრაქტიკული ინსტრუმენტები და სასერთიფიკატო საკითხები.'}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                        <Clock className="w-5 h-5 text-amber-400 shrink-0" />
-                        <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">ხანგრძლივობა</p>
-                          <p className="font-bold text-white">{activeLesson?.durationMinutes || 15} წუთი</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                        <Award className="w-5 h-5 text-totc-teal shrink-0" />
-                        <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">სირთულის დონე</p>
-                          <p className="font-bold text-white">საშუალო / მაღალი</p>
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700 flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-                        <div>
-                          <p className="text-[11px] text-slate-400 uppercase font-semibold">წინაპირობა</p>
-                          <p className="font-bold text-white">საბაზისო ცოდნა</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-2">
-                      <h5 className="font-bold text-xs uppercase tracking-wider text-totc-cyan">მთავარი საკითხები:</h5>
-                      <ul className="list-disc pl-5 text-xs text-slate-300 space-y-1.5">
-                        <li>მაღალი ხელმისაწვდომობის არქიტექტურის დაპროექტება და დაგეგმვა.</li>
-                        <li>პრაქტიკული კონფიგურაციები და ქსელური უსაფრთხოების მართვა.</li>
-                        <li>საუკეთესო პრაქტიკების გამოყენება რეალურ სისტემებში.</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {/* TAB 2: INTERACTIVE QUIZ & PROCTORED EXAMINATION */}
-                {activeTab === 'quiz' && (
-                  <div className="space-y-6 animate-in fade-in duration-200">
-                    {renderExamContent()}
-                  </div>
-                )}
-
-                {/* TAB 3: RESOURCES & CODE */}
-                {activeTab === 'resources' && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    <div className="pb-2 border-b border-slate-700">
-                      <h4 className="font-bold text-base text-white">ჩამოსატვირთი მასალები და კოდი</h4>
-                      <p className="text-xs text-slate-400">
-                        ლექციაზე ატვირთული ყველა სასწავლო ფაილი, გზამკვლევი და პრეზენტაცია.
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      {((activeLesson?.resources && activeLesson.resources.length > 0)
-                        ? activeLesson.resources
-                        : (activeLesson?.id === 'les-1' ? [
-                            {
-                              name: 'aws_vpc_multi_az_starter_template.zip',
-                              desc: 'Terraform and CloudFormation starter templates with public/private subnet declarations.',
-                              size: '4.8 MB',
-                              type: 'Source Code',
-                              fileUrl: '#'
-                            },
-                            {
-                              name: 'cloud_architect_lecture_slides_module1.pdf',
-                              desc: 'Full high-res presentation slides and architectural decision rubrics.',
-                              size: '12.4 MB',
-                              type: 'Slides',
-                              fileUrl: '#'
-                            }
-                          ] : [])
-                      ).map((res, i) => {
-                        const isCode = res.type?.toLowerCase().includes('code') || res.name?.match(/\.(js|jsx|ts|tsx|py|cs|html|css|json)$/i);
-                        const isZip = res.type?.toLowerCase().includes('zip') || res.type?.toLowerCase().includes('archive') || res.name?.match(/\.(zip|rar|tar|gz|7z)$/i);
-
-                        return (
-                          <div
-                            key={res.id || i}
-                            className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-totc-teal/50 transition-colors"
-                          >
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="w-10 h-10 rounded-xl bg-totc-teal/15 text-totc-teal flex items-center justify-center shrink-0 mt-0.5">
-                                {isCode ? (
-                                  <Code className="w-5 h-5" />
-                                ) : isZip ? (
-                                  <FolderArchive className="w-5 h-5" />
-                                ) : (
-                                  <FileText className="w-5 h-5" />
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-sm text-white truncate">{res.name}</p>
-                                <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{res.desc || res.description || 'ლექციის დამატებითი მასალა'}</p>
-                                <span className="inline-block mt-1 text-[10px] font-semibold text-totc-cyan">
-                                  {res.type || 'ფაილი'} • {res.size || res.fileSize || 'დანართი'}
-                                </span>
-                              </div>
-                            </div>
-
-                            {res.fileUrl && res.fileUrl !== '#' ? (
-                              <a
-                                href={resolveVideoUrl(res.fileUrl)}
-                                download={res.name}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
-                              >
-                                <Download className="w-4 h-4" />
-                                <span>ფაილის ჩამოტვირთვა</span>
-                              </a>
-                            ) : (
-                              <button
-                                onClick={() => alert(`მიმდინარეობს ჩამოტვირთვა: ${res.name}`)}
-                                className="px-5 py-2.5 rounded-full bg-slate-700 hover:bg-totc-teal hover:text-white text-xs font-bold text-slate-200 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-auto"
-                              >
-                                <Download className="w-4 h-4" />
-                                <span>ჩამოტვირთვა</span>
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {(!activeLesson?.resources || activeLesson.resources.length === 0) && activeLesson?.id !== 'les-1' && (
-                        <div className="p-8 text-center bg-slate-800/40 rounded-2xl border border-slate-700/60 space-y-2">
-                          <Download className="w-8 h-8 text-slate-500 mx-auto" />
-                          <h4 className="font-bold text-sm text-white">მიმაგრებული ფაილები არ არის</h4>
-                          <p className="text-xs text-slate-400">
-                            ამ ლექციისთვის გადმოსაწერი ფაილები ან კოდი ჯერ არ არის ატვირთული.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* External GitHub Repo Banner */}
-                    <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-800 to-indigo-950/60 border border-slate-700 flex items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <p className="font-bold text-xs text-white">Course GitHub Repository</p>
-                        <p className="text-[11px] text-slate-400">Clone the complete repo: git clone https://github.com/davitglonti/totc-elearning.git</p>
-                      </div>
-                      <a
-                        href="https://github.com/davitglonti/totc-elearning"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-bold text-totc-teal hover:underline flex items-center gap-1 shrink-0"
-                      >
-                        <span>View Repository</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  </div>
-                )}
-
-            {/* TAB 4: Q&A DISCUSSION */}
-            {activeTab === 'qa' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                
-                {/* Ask a Question Box */}
-                <form onSubmit={handleAddQuestion} className="bg-slate-800/80 p-4 sm:p-5 rounded-2xl border border-slate-700 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-white uppercase tracking-wider">დასვით კითხვა</span>
-                    <label className="flex items-center gap-2 text-xs text-totc-cyan cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={includeTimestampInQuestion}
-                        onChange={(e) => setIncludeTimestampInQuestion(e.target.checked)}
-                        className="rounded border-slate-700 text-totc-teal focus:ring-0"
-                      />
-                      <span>მიმდინარე დროის მონიშვნა ({formatSeconds(currentVideoTime)})</span>
-                    </label>
-                  </div>
-
-                  <textarea
-                    rows="2"
-                    required
-                    placeholder="დაუსვით კითხვა ინსტრუქტორს ამ ლექციასთან დაკავშირებით..."
-                    value={newQuestionText}
-                    onChange={(e) => setNewQuestionText(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-totc-teal"
-                  />
-
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="px-5 py-2 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark shadow-sm flex items-center gap-1.5"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>კითხვის გაგზავნა</span>
-                    </button>
-                  </div>
-                </form>
-
-                {/* Questions Thread */}
-                <div className="space-y-4">
-                  {questionsList.map((q) => (
-                    <div key={q.id} className="p-4 sm:p-5 bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={q.avatar}
-                            alt={q.author}
-                            className="w-8 h-8 rounded-full object-cover border border-totc-teal"
-                          />
-                          <div>
-                            <span className="font-bold text-xs text-white">{q.author}</span>
-                            <span className="text-[10px] text-slate-400 ml-2">{q.date}</span>
-                          </div>
-                        </div>
-
-                        {q.timestamp !== 'General' && (
-                          <button
-                            onClick={() => handleSeekToTime(q.timeSeconds)}
-                            className="px-2.5 py-1 rounded-full bg-totc-cyan/15 text-totc-cyan font-mono text-[11px] font-bold hover:bg-totc-cyan hover:text-slate-950 transition-colors flex items-center gap-1"
-                          >
-                            <Play className="w-2.5 h-2.5 fill-current" />
-                            <span>{q.timestamp}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <p className="text-xs text-slate-200 leading-relaxed pl-11">
-                        {q.question}
-                      </p>
-
-                      {/* Replies */}
-                      {q.replies && q.replies.length > 0 && (
-                        <div className="ml-11 mt-3 space-y-2 border-l-2 border-slate-700 pl-4">
-                          {q.replies.map((reply, rIdx) => (
-                            <div key={rIdx} className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={reply.avatar}
-                                  alt={reply.author}
-                                  className="w-6 h-6 rounded-full object-cover border border-purple-400"
-                                />
-                                <span className="font-bold text-xs text-totc-cyan">{reply.author}</span>
-                                <span className="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[9px] font-bold uppercase">
-                                  Instructor
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-300 leading-relaxed">
-                                {reply.text}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-            )}
-
-            {/* TAB 5: PERSONAL NOTES */}
-            {activeTab === 'notes' && (
-              <div className="space-y-6 animate-in fade-in duration-200">
-                <div className="pb-2 border-b border-slate-700">
-                  <h4 className="font-bold text-base text-white">ჩემი ჩანაწერები დროის ნიშნულებით</h4>
-                  <p className="text-xs text-slate-400">
-                    ჩაინიშნეთ მნიშვნელოვანი მომენტები ყურებისას. დროზე დაჭერით ვიდეო ზუსტად იმ მომენტზე გადავა.
-                  </p>
-                </div>
-
-                {/* Add Note Input */}
-                <form onSubmit={handleAddNote} className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700 space-y-3">
-                  <div className="flex items-center justify-between text-xs font-semibold text-white">
-                    <span>ჩანაწერის შექმნა დროზე:</span>
-                    <span className="font-mono text-totc-cyan bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
-                      ⏱️ {formatSeconds(currentVideoTime)}
-                    </span>
-                  </div>
-
-                  <textarea
-                    rows="2"
-                    required
-                    placeholder="თქვენი პირადი ჩანაწერები..."
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-totc-teal"
-                  />
-
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="px-5 py-2 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-totc-teal-dark shadow-sm flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>ჩანაწერის შენახვა</span>
-                    </button>
-                  </div>
-                </form>
-
-                {/* Notes List */}
-                <div className="space-y-3">
-                  {notesList.map((note) => (
-                    <div
-                      key={note.id}
-                      className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/60 flex items-start justify-between gap-4 group"
-                    >
-                      <div className="space-y-1.5">
-                        <button
-                          onClick={() => handleSeekToTime(note.seconds)}
-                          className="px-2.5 py-0.5 rounded-full bg-totc-cyan/20 hover:bg-totc-cyan hover:text-slate-950 text-totc-cyan font-mono text-[11px] font-bold transition-colors inline-flex items-center gap-1"
-                        >
-                          <Play className="w-2.5 h-2.5 fill-current" />
-                          <span>{note.timestamp}</span>
-                        </button>
-                        <p className="text-xs text-slate-200 leading-relaxed">
-                          {note.text}
-                        </p>
-                      </div>
-
+                <div className="flex border-b border-slate-700 gap-4 sm:gap-8 overflow-x-auto pb-1 text-sm font-semibold">
+                  {[
+                    { id: 'overview', label: 'მიმოხილვა', icon: BookOpen, badge: null },
+                    { 
+                      id: 'quiz', 
+                      label: 'გამოცდა / ქვიზი', 
+                      icon: HelpCircle, 
+                      badge: (quizData?.questions?.length || activeLesson?.quiz?.questions?.length || (activeLesson?.hasQuiz ? 1 : 0)) || null 
+                    },
+                    { 
+                      id: 'resources', 
+                      label: 'რესურსები', 
+                      icon: Download, 
+                      badge: activeLesson?.resources?.length > 0 
+                        ? `${activeLesson.resources.length} ფაილი` 
+                        : (activeLesson?.id === 'les-1' ? '2 ფაილი' : null) 
+                    },
+                    { id: 'qa', label: 'კითხვა-პასუხი', icon: MessageSquare, badge: questionsList.length },
+                    { id: 'notes', label: 'ჩანაწერები', icon: FileText, badge: notesList.length },
+                  ].map(tab => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
                       <button
-                        onClick={() => setNotesList(notesList.filter(n => n.id !== note.id))}
-                        className="text-slate-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete note"
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`pb-3 flex items-center gap-2 border-b-2 whitespace-nowrap transition-colors ${
+                          isActive
+                            ? 'border-totc-teal text-totc-teal'
+                            : 'border-transparent text-slate-400 hover:text-slate-200'
+                        }`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Icon className="w-4 h-4" />
+                        <span>{tab.label}</span>
+                        {tab.badge !== null && (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                            isActive ? 'bg-totc-teal/20 text-totc-teal font-bold' : 'bg-slate-700 text-slate-300'
+                          }`}>
+                            {tab.badge}
+                          </span>
+                        )}
                       </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              </div>
-            )}
-              </>
-            )}
 
-          </div>
+                {/* If current lesson is locked */}
+                {isCurrentLessonLocked ? (
+                  <div className="p-10 text-center bg-slate-800/60 rounded-2xl border border-slate-700/60 space-y-3 animate-in fade-in">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-base text-white">მასალები და ქვიზი დაბლოკილია</h4>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                      ამ ლექციის ქვიზზე, გადმოსაწერ რესურსებსა და მასალებზე წვდომა შეზღუდულია, სანამ წინა ლექციას არ გაივლით და არ მონიშნავთ დასრულებულად.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {activeTab === 'overview' && (
+                      <LessonOverviewTab activeLesson={activeLesson} />
+                    )}
+
+                    {activeTab === 'quiz' && (
+                      <ExamEnvironmentView
+                        quizData={quizData}
+                        cooldownRemainingSeconds={cooldownRemainingSeconds}
+                        formatCooldownTime={formatCooldownTime}
+                        quizResult={quizResult}
+                        activeLesson={activeLesson}
+                        allLessons={allLessons}
+                        handleLessonSwitch={handleLessonSwitch}
+                        setActiveTab={setActiveTab}
+                        isExamStarted={isExamStarted}
+                        handleStartExam={handleStartExam}
+                        examStrikes={examStrikes}
+                        examTimerSeconds={examTimerSeconds}
+                        formatExamTime={formatExamTime}
+                        isFullscreenExam={isFullscreenExam}
+                        toggleFullscreenExam={toggleFullscreenExam}
+                        proctorToast={proctorToast}
+                        triggerProctorToast={triggerProctorToast}
+                        selectedAnswers={selectedAnswers}
+                        handleSelectOption={handleSelectOption}
+                        examTerminated={examTerminated}
+                        handleSubmitQuiz={handleSubmitQuiz}
+                        isSubmittingQuiz={isSubmittingQuiz}
+                        handleRetakeQuiz={handleRetakeQuiz}
+                        courseContent={courseContent}
+                        loadEarnedCertificate={loadEarnedCertificate}
+                        setShowCompletionCelebration={setShowCompletionCelebration}
+                      />
+                    )}
+
+                    {activeTab === 'resources' && (
+                      <LessonResourcesTab activeLesson={activeLesson} resolveVideoUrl={resolveVideoUrl} />
+                    )}
+
+                    {activeTab === 'qa' && (
+                      <LessonQaTab
+                        questionsList={questionsList}
+                        newQuestionText={newQuestionText}
+                        setNewQuestionText={setNewQuestionText}
+                        includeTimestampInQuestion={includeTimestampInQuestion}
+                        setIncludeTimestampInQuestion={setIncludeTimestampInQuestion}
+                        currentVideoTime={currentVideoTime}
+                        handleAddQuestion={handleAddQuestion}
+                        handleSeekToTime={handleSeekToTime}
+                        formatSeconds={formatSeconds}
+                      />
+                    )}
+
+                    {activeTab === 'notes' && (
+                      <LessonNotesTab
+                        notesList={notesList}
+                        setNotesList={setNotesList}
+                        newNoteText={newNoteText}
+                        setNewNoteText={setNewNoteText}
+                        currentVideoTime={currentVideoTime}
+                        handleAddNote={handleAddNote}
+                        handleSeekToTime={handleSeekToTime}
+                        formatSeconds={formatSeconds}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
 
-        {/* Right Column: Course Content / Syllabus (4 Cols) */}
-        <div className="lg:col-span-4 bg-[#1E293B] border-t lg:border-t-0 lg:border-l border-slate-700/80 p-6 flex flex-col">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div>
-              <h3 className="font-bold text-lg text-white">კურსის შინაარსი</h3>
-              <p className="text-xs text-slate-400">
-                {courseContent?.sections?.length || 2} მოდული • {allLessons.length} ლექცია
-              </p>
-            </div>
-            {isOpenAccessCourse ? (
-              <span className="px-2.5 py-1 rounded-full bg-teal-500/15 text-teal-400 border border-teal-500/30 text-[10px] font-bold flex items-center gap-1 shrink-0" title="ავტორის მიერ დაშვებულია ნებისმიერ ლექციაზე თავისუფალი გადასვლა">
-                <Unlock className="w-3 h-3" />
-                <span>ღია წვდომა</span>
-              </span>
-            ) : (
-              <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1 shrink-0" title="მასალები იხსნება ეტაპობრივად, წინამორბედი ლექციის გავლის მიხედვით">
-                <Lock className="w-3 h-3" />
-                <span>ეტაპობრივი</span>
-              </span>
-            )}
-          </div>
-
-          {/* Course Fully Completed Sidebar Banner */}
-          {isCourseFullyCompleted && (
-            <div className="mb-4 p-3.5 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-teal-500/10 border border-amber-400/50 rounded-2xl flex items-center justify-between gap-2 shadow-sm animate-in fade-in">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/30 text-amber-300 flex items-center justify-center shrink-0 shadow">
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-amber-300 leading-tight">კურსი დასრულებულია!</p>
-                  <p className="text-[10px] text-slate-300 truncate">სერტიფიკატი გაცემულია</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  loadEarnedCertificate();
-                  setShowCompletionCelebration(true);
-                }}
-                className="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-[11px] shrink-0 cursor-pointer shadow transition-all active:scale-95 flex items-center gap-1"
-              >
-                <Award className="w-3 h-3" />
-                <span>სერტიფიკატი</span>
-              </button>
-            </div>
-          )}
-
-          {/* Modules Accordion */}
-          <div className="space-y-3 overflow-y-auto max-h-[750px] pr-1">
-            {courseContent?.sections?.map((section, sIdx) => {
-              const isSecUnlocked = isSectionUnlocked(sIdx);
-              const prevSec = sIdx > 0 ? courseContent?.sections?.[sIdx - 1] : null;
-
-              return (
-                <div
-                  key={section.id || sIdx}
-                  className={`rounded-2xl border overflow-hidden transition-all ${
-                    !isSecUnlocked
-                      ? 'bg-slate-900/90 border-slate-700/40 opacity-75'
-                      : 'bg-slate-800/80 border-slate-700/60'
-                  }`}
-                >
-                  <div className={`p-3.5 border-b flex items-center justify-between ${
-                    !isSecUnlocked
-                      ? 'bg-slate-950/60 border-slate-800'
-                      : 'bg-slate-800 border-slate-700/60'
-                  }`}>
-                    <div className="flex items-center gap-2 truncate pr-2">
-                      {!isSecUnlocked ? (
-                        <span className="p-1 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
-                          <Lock className="w-3.5 h-3.5" />
-                        </span>
-                      ) : (
-                        <span className="p-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-                          <BookOpen className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                      <div className="truncate">
-                        <span className="font-bold text-xs text-slate-200 block truncate">{section.title}</span>
-                        {!isSecUnlocked && (
-                          <span className="text-[10px] text-amber-400 font-semibold block">
-                            🔒 ჩაკეტილია (ჩააბარეთ {prevSec?.title?.split(':')[0] || 'წინა მოდულის'} გამოცდა)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                      {section.lessons?.length || 0} ლექცია
-                    </span>
-                  </div>
-
-                  <div className="divide-y divide-slate-700/40">
-                    {section.lessons?.map((lesson, lIdx) => {
-                      const isCurrent = activeLesson?.id === lesson.id;
-                      const isDone = completedLessonIds.has(lesson.id);
-                      const isUnlocked = isLessonUnlocked(lesson.id);
-                      const type = lesson.lessonType || 'Video';
-
-                      return (
-                        <button
-                          key={lesson.id || lIdx}
-                          onClick={() => handleLessonSwitch(lesson)}
-                          className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
-                            !isUnlocked
-                              ? 'opacity-60 cursor-not-allowed hover:bg-transparent'
-                              : isCurrent
-                              ? 'bg-totc-teal/15 text-white font-medium border-l-4 border-totc-teal'
-                              : 'hover:bg-slate-700/40 text-slate-300'
-                          }`}
-                        >
-                          {/* Type Icon & Completion Indicator */}
-                          <div className="mt-0.5 shrink-0">
-                            {isDone ? (
-                              <CheckCircle className="w-4 h-4 text-emerald-400" />
-                            ) : !isUnlocked ? (
-                              <Lock className="w-4 h-4 text-slate-500" />
-                            ) : type === 'Quiz' ? (
-                              <HelpCircle className="w-4 h-4 text-purple-400" />
-                            ) : type === 'Assignment' ? (
-                              <Code className="w-4 h-4 text-amber-400" />
-                            ) : isCurrent ? (
-                              <Play className="w-4 h-4 text-totc-teal fill-totc-teal animate-pulse" />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full border border-slate-500" />
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1.5">
-                              <p className={`text-xs line-clamp-2 ${isCurrent ? 'font-bold text-totc-cyan' : ''}`}>
-                                {lesson.title}
-                              </p>
-                              {!isUnlocked && (
-                                <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[9px] font-bold shrink-0 flex items-center gap-1">
-                                  <Lock className="w-2.5 h-2.5" />
-                                  <span>დაბლოკილია</span>
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                type === 'Quiz'
-                                  ? 'bg-purple-500/20 text-purple-300'
-                                  : type === 'Assignment'
-                                  ? 'bg-amber-500/20 text-amber-300'
-                                  : 'bg-slate-700 text-slate-300'
-                              }`}>
-                                {type}
-                              </span>
-                              <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {lesson.durationMinutes || 15} წთ
-                              </span>
-                              {lesson.resources && lesson.resources.length > 0 && (
-                                <span className="text-[10px] text-totc-cyan font-semibold flex items-center gap-0.5">
-                                  <Download className="w-2.5 h-2.5" />
-                                  {lesson.resources.length}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Right Column: Player Curriculum Sidebar (4 Cols) */}
+        <PlayerCurriculumSidebar
+          courseContent={courseContent}
+          allLessons={allLessons}
+          isOpenAccessCourse={isOpenAccessCourse}
+          isCourseFullyCompleted={isCourseFullyCompleted}
+          loadEarnedCertificate={loadEarnedCertificate}
+          setShowCompletionCelebration={setShowCompletionCelebration}
+          isSectionUnlocked={isSectionUnlocked}
+          isLessonUnlocked={isLessonUnlocked}
+          activeLesson={activeLesson}
+          completedLessonIds={completedLessonIds}
+          handleLessonSwitch={handleLessonSwitch}
+        />
 
       </div>
 
-      {/* STRIKE WARNING & DISQUALIFICATION OVERLAY MODAL */}
-      {strikeModal.isOpen && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
-          <div className={`max-w-md w-full p-6 sm:p-7 rounded-3xl border shadow-2xl space-y-5 text-center ${
-            strikeModal.strikes >= 3
-              ? 'bg-red-950/95 border-red-500/60'
-              : 'bg-slate-900 border-amber-500/60'
-          }`}>
-            <div className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-lg ${
-              strikeModal.strikes >= 3
-                ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
-            }`}>
-              {strikeModal.strikes >= 3 ? (
-                <ShieldAlert className="w-8 h-8" />
-              ) : (
-                <AlertTriangle className="w-8 h-8" />
-              )}
-            </div>
+      {/* Completion & Certificate Celebration Modal + Proctor Strike Modal */}
+      <CourseCompletionModal
+        strikeModal={strikeModal}
+        setStrikeModal={setStrikeModal}
+        handleRetakeQuiz={handleRetakeQuiz}
+        showCompletionCelebration={showCompletionCelebration}
+        setShowCompletionCelebration={setShowCompletionCelebration}
+        earnedCertificate={earnedCertificate}
+        resolvedUser={resolvedUser}
+        courseContent={courseContent}
+        activeCourse={activeCourse}
+        copiedCertLink={copiedCertLink}
+        handleCopyCertLink={handleCopyCertLink}
+        handleDownloadPdf={handleDownloadPdf}
+        setActivePage={setActivePage}
+      />
 
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg text-white">
-                {strikeModal.strikes >= 3
-                  ? '❌ გამოცდა გაუქმებულია (დისკვალიფიკაცია)'
-                  : `⚠️ საგამოცდო წესების დარღვევა (${strikeModal.strikes} / 3)`}
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {strikeModal.message}
-              </p>
-            </div>
-
-            <div className="pt-2">
-              {strikeModal.strikes >= 3 ? (
-                <button
-                  onClick={() => {
-                    setStrikeModal({ isOpen: false, strikes: 0, message: '' });
-                    handleRetakeQuiz();
-                  }}
-                  className="w-full py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>გასაგებია (საგამოცდო პაუზაზე გადასვლა)</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => setStrikeModal({ isOpen: false, strikes: strikeModal.strikes, message: '' })}
-                  className="w-full py-3 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-lg transition-all"
-                >
-                  გასაგებია, ვაგრძელებ გამოცდას
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          COURSE COMPLETION & ACCREDITED CERTIFICATE CELEBRATION MODAL
-          ========================================================================= */}
-      {showCompletionCelebration && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in">
-          <div className="max-w-4xl w-full my-auto bg-slate-900 border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col">
-            
-            {/* Modal Header */}
-            <div className="p-6 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-teal-500/20 border-b border-slate-800 flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 text-amber-300 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
-                  <Trophy className="w-7 h-7 animate-bounce" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
-                      კურსი დასრულებულია 100%
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
-                      ოფიციალური სერტიფიკატი
-                    </span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-white mt-1">
-                    🎉 გილოცავთ! თქვენ წარმატებით დაასრულეთ კურსი!
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 mt-0.5">
-                    თქვენ წარმატებით გაიარეთ ყველა მოდული, პრაქტიკული დავალება და გამოცდა. თქვენი აკრედიტებული სერტიფიკატი გაცემულია.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCompletionCelebration(false)}
-                className="w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all shrink-0 cursor-pointer"
-                title="დახურვა"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Certificate Canvas / Card Preview */}
-            <div className="p-4 sm:p-8 bg-slate-950/60 overflow-x-auto flex justify-center">
-              <div className="w-full max-w-3xl bg-[#FAF9F6] text-slate-900 rounded-2xl border-8 border-slate-900 shadow-2xl p-6 sm:p-10 relative overflow-hidden select-none">
-                
-                {/* Decorative Inner Border Frame */}
-                <div className="absolute inset-2 sm:inset-3 border-2 border-amber-500/40 pointer-events-none rounded-xl" />
-                <div className="absolute inset-3 sm:inset-4 border border-dashed border-slate-300 pointer-events-none rounded-lg" />
-
-                {/* Certificate Content */}
-                <div className="relative z-10 text-center space-y-4">
-                  
-                  {/* Top Accreditation Strip */}
-                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-5 h-5 text-totc-teal" />
-                      <span className="font-extrabold text-xs tracking-widest uppercase text-slate-800">TOTC ONLINE ACADEMY</span>
-                    </div>
-                    <div className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                      № {earnedCertificate?.certificateNumber || 'TOTC-2026-ARCH'}
-                    </div>
-                  </div>
-
-                  {/* Main Title */}
-                  <div className="pt-2">
-                    <h1 className="font-serif font-black text-2xl sm:text-3xl text-slate-900 tracking-wide uppercase">
-                      აკადემიური სერტიფიკატი
-                    </h1>
-                    <p className="text-xs sm:text-sm font-serif italic text-amber-700/90 font-medium">
-                      Certificate of Course Completion & Mastery
-                    </p>
-                  </div>
-
-                  {/* Student Name */}
-                  <div className="pt-2 pb-1">
-                    <p className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">
-                      წინამდებარე სერტიფიკატი გადაეცემა:
-                    </p>
-                    <h2 className="text-2xl sm:text-4xl font-serif font-extrabold text-slate-900 mt-1 pb-1 inline-block border-b-2 border-slate-800 px-6 sm:px-12">
-                      {earnedCertificate?.studentName || resolvedUser?.fullName || 'Gloria Rose'}
-                    </h2>
-                  </div>
-
-                  {/* Course Details */}
-                  <div className="max-w-xl mx-auto space-y-1.5 pt-1">
-                    <p className="text-xs text-slate-600">
-                      რომელმაც 100%-ით წარმატებით დაასრულა აკრედიტებული სასწავლო პროგრამა:
-                    </p>
-                    <h3 className="text-base sm:text-xl font-extrabold text-totc-teal">
-                      {earnedCertificate?.courseTitle || courseContent?.title || activeCourse?.title || 'AWS Certified Solutions Architect & Cloud Operations'}
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      სასწავლო მოდულების, პრაქტიკული ლაბორატორიებისა და ფინალური საგამოცდო შეფასების სრული გავლით.
-                    </p>
-                  </div>
-
-                  {/* Signatures & Seal Bar */}
-                  <div className="grid grid-cols-3 items-end pt-6 sm:pt-8 border-t border-slate-200 mt-4">
-                    
-                    {/* Instructor Signature */}
-                    <div className="text-center space-y-1">
-                      <div className="font-serif italic font-bold text-slate-800 text-sm sm:text-base border-b border-slate-400 pb-1 mx-2 sm:mx-6">
-                        {earnedCertificate?.instructorName || courseContent?.instructorName || activeCourse?.instructorName || 'Lina Wilson'}
-                      </div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        ინსტრუქტორი
-                      </p>
-                    </div>
-
-                    {/* Official Golden Seal */}
-                    <div className="flex justify-center">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 border-4 border-amber-700/40 shadow-lg flex flex-col items-center justify-center text-amber-950 font-black leading-none transform rotate-[-6deg] hover:rotate-0 transition-transform cursor-pointer" title="აკადემიური დამოწმების ბეჭედი">
-                        <span className="text-[7px] sm:text-[8px] tracking-wider">★ TOTC ★</span>
-                        <span className="text-[9px] sm:text-[11px] font-extrabold my-0.5">OFFICIAL</span>
-                        <span className="text-[7px] sm:text-[8px] tracking-wider">VERIFIED</span>
-                      </div>
-                    </div>
-
-                    {/* Issue Date */}
-                    <div className="text-center space-y-1">
-                      <div className="font-medium text-slate-800 text-xs sm:text-sm border-b border-slate-400 pb-1 mx-2 sm:mx-6">
-                        {new Date(earnedCertificate?.issuedAt || Date.now()).toLocaleDateString('ka-GE', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        გაცემის თარიღი
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Verification Hash Footer */}
-                  <div className="pt-3 text-[9px] font-mono text-slate-400 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/60 mt-3">
-                    <span className="truncate">
-                      HASH: {earnedCertificate?.verificationHash || 'SHA-256:7e8b2a1c0d4e5f6a7b8c9d0e1f2a3b4c'}
-                    </span>
-                    <span className="text-emerald-700 font-bold flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      TOTC აკადემიური რეესტრით დამოწმებული
-                    </span>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Actions Footer */}
-            <div className="p-5 sm:p-6 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopyCertLink}
-                  className="px-4 py-2.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all flex items-center gap-2 border border-slate-700"
-                >
-                  {copiedCertLink ? (
-                    <>
-                      <CheckCheck className="w-4 h-4 text-emerald-400" />
-                      <span className="text-emerald-400">ბმული დაკოპირდა!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      <span>ვერიფიკაციის ბმული</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <button
-                  onClick={() => setShowCompletionCelebration(false)}
-                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-all cursor-pointer"
-                >
-                  მასალების გადახედვა
-                </button>
-
-                <button
-                  onClick={() => {
-                    setShowCompletionCelebration(false);
-                    setActivePage('certificate-detail', earnedCertificate);
-                  }}
-                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-                  title="გადადით სერტიფიკატის ოფიციალურ ცალკე გვერდზე"
-                >
-                  <Award className="w-4 h-4 text-slate-950" />
-                  <span>სერტიფიკატის გვერდი</span>
-                </button>
-
-                <button
-                  onClick={() => setActivePage('dashboard')}
-                  className="w-1/2 sm:w-auto px-5 py-2.5 rounded-full text-xs font-bold text-white bg-slate-700 hover:bg-slate-600 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <GraduationCap className="w-4 h-4" />
-                  <span>ჩემი კაბინეტი</span>
-                </button>
-
-                <button
-                  onClick={handleDownloadPdf}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-full text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <Printer className="w-4 h-4 text-slate-950" />
-                  <span>სერტიფიკატის ჩამოტვირთვა (PDF)</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 }

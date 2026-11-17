@@ -94,6 +94,8 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IInstructorCourseService, InstructorCourseService>();
 
 // Health Checks & Observability
 builder.Services.AddHealthChecks()
@@ -276,7 +278,7 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// 6. Global Exception Handler Middleware with RFC 7807 Problem Details and Stack Trace Masking
+// 6. Global Exception Handler Middleware with Semantic RFC 7807 Problem Details and Stack Trace Masking
 app.Use(async (context, next) =>
 {
     try
@@ -287,20 +289,84 @@ app.Use(async (context, next) =>
     {
         var traceId = context.TraceIdentifier;
         var logger = context.RequestServices.GetService<ILogger<Program>>();
-        logger?.LogError(ex, "[GLOBAL ERROR] An unhandled exception occurred. TraceId: {TraceId}", traceId);
+
+        if (context.Response.HasStarted)
+        {
+            logger?.LogWarning(ex, "[GLOBAL ERROR] Response already started, cannot write problem details. TraceId: {TraceId}", traceId);
+            throw;
+        }
+
+        // Semantic exception mapping to HTTP status codes & RFC specifications
+        int statusCode;
+        string title;
+        string type;
+        string detail = ex.Message;
+
+        switch (ex)
+        {
+            case UnauthorizedAccessException:
+                statusCode = StatusCodes.Status403Forbidden;
+                title = "Forbidden";
+                type = "https://tools.ietf.org/html/rfc7231#section-6.5.3";
+                break;
+
+            case KeyNotFoundException:
+                statusCode = StatusCodes.Status404NotFound;
+                title = "Not Found";
+                type = "https://tools.ietf.org/html/rfc7231#section-6.5.4";
+                break;
+
+            case ArgumentException or InvalidOperationException:
+                statusCode = StatusCodes.Status400BadRequest;
+                title = "Bad Request";
+                type = "https://tools.ietf.org/html/rfc7231#section-6.5.1";
+                break;
+
+            case QuizCooldownException cooldownEx:
+                statusCode = StatusCodes.Status429TooManyRequests;
+                title = "Too Many Requests";
+                type = "https://tools.ietf.org/html/rfc6585#section-4";
+                context.Response.Headers.Append("Retry-After", cooldownEx.RemainingCooldownSeconds.ToString());
+                break;
+
+            case SubscriptionPaymentRequiredException:
+                statusCode = StatusCodes.Status402PaymentRequired;
+                title = "Payment Required";
+                type = "https://tools.ietf.org/html/rfc7231#section-6.5.2";
+                break;
+
+            default:
+                statusCode = StatusCodes.Status500InternalServerError;
+                title = "An internal server error occurred.";
+                type = "https://tools.ietf.org/html/rfc7807";
+                if (!app.Environment.IsDevelopment())
+                {
+                    detail = "An unexpected error occurred while processing your request. Please contact support quoting your Trace ID.";
+                }
+                break;
+        }
+
+        if (statusCode >= 500)
+        {
+            logger?.LogError(ex, "[GLOBAL ERROR] An unhandled server error occurred ({StatusCode}). TraceId: {TraceId}", statusCode, traceId);
+        }
+        else
+        {
+            logger?.LogWarning(ex, "[GLOBAL HANDLER] Client error mapped ({StatusCode} {Title}): {Message}. TraceId: {TraceId}", statusCode, title, ex.Message, traceId);
+        }
 
         context.Response.ContentType = "application/problem+json";
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.StatusCode = statusCode;
 
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() && statusCode >= 500)
         {
             var devProblemDetails = new
             {
-                type = "https://tools.ietf.org/html/rfc7807",
-                title = "An internal server error occurred.",
-                status = StatusCodes.Status500InternalServerError,
-                detail = ex.Message,
-                traceId = traceId,
+                type,
+                title,
+                status = statusCode,
+                detail,
+                traceId,
                 exception = ex.GetType().Name,
                 stackTrace = ex.StackTrace
             };
@@ -308,15 +374,15 @@ app.Use(async (context, next) =>
         }
         else
         {
-            var prodProblemDetails = new
+            var problemDetails = new
             {
-                type = "https://tools.ietf.org/html/rfc7807",
-                title = "An internal server error occurred.",
-                status = StatusCodes.Status500InternalServerError,
-                detail = "An unexpected error occurred while processing your request. Please contact support quoting your Trace ID.",
-                traceId = traceId
+                type,
+                title,
+                status = statusCode,
+                detail,
+                traceId
             };
-            await context.Response.WriteAsJsonAsync(prodProblemDetails);
+            await context.Response.WriteAsJsonAsync(problemDetails);
         }
     }
 });
