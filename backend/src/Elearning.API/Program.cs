@@ -96,6 +96,7 @@ builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IInstructorCourseService, InstructorCourseService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Health Checks & Observability
 builder.Services.AddHealthChecks()

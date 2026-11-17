@@ -17,6 +17,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
   const [mode, setMode] = useState(initialMode);
   const [role, setRole] = useState('Student');
   const [submitted, setSubmitted] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +42,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     setMode(initialMode || 'login');
     setError('');
     setSubmitted(false);
+    setForgotSuccess(false);
   }, [initialMode, isOpen]);
 
   // Load Google Auth Config when modal opens
@@ -161,6 +163,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     setLoading(true);
 
     try {
+      if (mode === 'forgot-password') {
+        await api.auth.forgotPassword(form.email);
+        setForgotSuccess(true);
+        return;
+      }
+
       if (mode === 'login') {
         const res = await api.auth.login(form.email, form.password);
         if (onAuthSuccess) onAuthSuccess(res.user);
@@ -208,10 +216,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
               <span className="font-bold text-xl tracking-wider">TOTC</span>
             </div>
             <h3 className="font-poppins font-bold text-2xl leading-snug">
-              {mode === 'login' ? 'მოგესალმებით უკან!' : 'დაიწყეთ სწავლა დღესვე'}
+              {mode === 'login' ? 'მოგესალმებით უკან!' : mode === 'forgot-password' ? 'პაროლის აღდგენა' : 'დაიწყეთ სწავლა დღესვე'}
             </h3>
             <p className="text-white/80 text-sm leading-relaxed">
-              შემოუერთდით ათასობით სტუდენტსა და ინსტრუქტორს ინტერაქტიულ ვირტუალურ საკლასო ოთახში.
+              {mode === 'forgot-password'
+                ? 'გაიარეთ მარტივი ვერიფიკაცია და უსაფრთხოდ განაახლეთ თქვენი ანგარიშის პაროლი.'
+                : 'შემოუერთდით ათასობით სტუდენტსა და ინსტრუქტორს ინტერაქტიულ ვირტუალურ საკლასო ოთახში.'}
             </p>
           </div>
 
@@ -229,7 +239,85 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
 
         {/* Right Side Form */}
         <div className="w-full md:w-7/12 p-6 sm:p-8 flex flex-col justify-center max-h-[85vh] overflow-y-auto">
-          {/* Mode Switch Tabs */}
+          {mode === 'forgot-password' ? (
+            <div className="space-y-4">
+              <div className="text-center space-y-1 mb-2">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-totc-teal mx-auto flex items-center justify-center font-bold mb-2">
+                  <Key className="w-6 h-6" />
+                </div>
+                <h4 className="font-poppins font-bold text-xl text-totc-navy">პაროლის აღდგენა</h4>
+                <p className="text-xs text-totc-gray max-w-xs mx-auto">
+                  შეიყვანეთ თქვენი ელ-ფოსტის მისამართი და გამოგიგზავნით აღდგენის ბმულს.
+                </p>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {forgotSuccess ? (
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-3 text-center animate-in fade-in">
+                  <CheckCircle className="w-10 h-10 text-emerald-600 mx-auto" />
+                  <h5 className="font-bold text-sm text-emerald-900">აღდგენის ბმული გაგზავნილია</h5>
+                  <p className="text-xs leading-relaxed text-emerald-800">
+                    თუ მითითებული ელ-ფოსტა რეგისტრირებულია სისტემაში, პაროლის აღდგენის ინსტრუქცია გაგზავნილია.
+                  </p>
+                  <p className="text-[11px] text-emerald-600">
+                    გთხოვთ შეამოწმოთ თქვენი საფოსტო ყუთი (და Spam საქაღალდე).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setForgotSuccess(false); setError(''); }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-totc-teal text-white font-bold text-xs hover:bg-totc-teal-dark transition-colors shadow-sm"
+                  >
+                    შესვლაზე დაბრუნება
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-totc-navy uppercase tracking-wider mb-1">
+                      ელ-ფოსტა
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
+                      <input
+                        type="email"
+                        required
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="student@example.com"
+                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-200 text-xs sm:text-sm focus:outline-none focus:border-totc-teal"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 rounded-full text-white font-semibold text-sm bg-totc-teal hover:bg-totc-teal-dark transition-colors shadow-md active:scale-98 mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {loading ? 'იგზავნება...' : 'აღდგენის ბმულის გაგზავნა'}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('login'); setError(''); setForgotSuccess(false); }}
+                      className="text-xs font-semibold text-totc-teal hover:underline inline-flex items-center gap-1"
+                    >
+                      ← შესვლაზე დაბრუნება
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Mode Switch Tabs */}
           <div className="flex items-center justify-center gap-2 p-1 bg-gray-100 rounded-full mb-5 max-w-xs mx-auto shrink-0">
             <button
               onClick={() => { setMode('login'); setSubmitted(false); }}
@@ -451,9 +539,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
                     <input type="checkbox" className="rounded text-totc-teal focus:ring-totc-teal" />
                     <span>დამახსოვრება</span>
                   </label>
-                  <a href="#" className="hover:text-totc-teal transition-colors">
-                    დაგავიწყდათ პაროლი?
-                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot-password'); setError(''); setForgotSuccess(false); }}
+                    className="hover:text-totc-teal transition-colors font-medium text-xs text-totc-gray"
+                  >
+                    პაროლი დაგავიწყდა?
+                  </button>
                 </div>
               )}
 
@@ -470,6 +562,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
               </button>
             </form>
           )}
+          </>
+        )}
         </div>
 
       </div>

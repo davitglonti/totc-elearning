@@ -24,6 +24,10 @@ public class User : BaseEntity
     public string? SubscriptionPlan { get; set; } // "Pro", "Enterprise"
     public DateTime? SubscriptionExpiresAt { get; set; }
 
+    // Password Reset
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
     // Navigation properties
     public ICollection<Course> AuthoredCourses { get; set; } = new List<Course>();
     public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();

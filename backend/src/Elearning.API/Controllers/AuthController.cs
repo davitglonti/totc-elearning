@@ -115,4 +115,34 @@ public class AuthController : BaseApiController
             return BadRequest(new { message = $"Google authentication error: {ex.Message}" });
         }
     }
+
+    /// <summary>
+    /// Request a password reset email. Anti-enumeration: returns 200 OK regardless of user existence.
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        await _authService.ForgotPasswordAsync(dto);
+        return Ok(new { message = "თუ ელ-ფოსტა რეგისტრირებულია, აღდგენის ბმული გაგზავნილია." });
+    }
+
+    /// <summary>
+    /// Reset password using a valid, unexpired one-time cryptographic token.
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        try
+        {
+            await _authService.ResetPasswordAsync(dto);
+            return Ok(new { message = "პაროლი წარმატებით შეიცვალა." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

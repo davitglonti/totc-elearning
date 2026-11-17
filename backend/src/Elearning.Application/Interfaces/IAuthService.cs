@@ -13,4 +13,6 @@ public interface IAuthService
     Task<UserProfileDto> GetProfileAsync(Guid userId);
     Task<UserProfileDto> UpdateProfileAsync(Guid userId, UpdateProfileDto dto);
     Task<InstructorPublicProfileDto> GetInstructorPublicProfileAsync(string idOrName);
+    Task ForgotPasswordAsync(ForgotPasswordDto dto);
+    Task ResetPasswordAsync(ResetPasswordDto dto);
 }

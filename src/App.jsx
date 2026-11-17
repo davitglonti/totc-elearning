@@ -20,6 +20,7 @@ const InstructorDashboardPage = lazy(() => import('./pages/InstructorDashboardPa
 const CreateCoursePage = lazy(() => import('./pages/CreateCoursePage'));
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const InstructorProfilePage = lazy(() => import('./pages/InstructorProfilePage'));
 const CertificateDetailPage = lazy(() => import('./pages/CertificateDetailPage'));
 
@@ -63,6 +64,10 @@ const getPathForPage = (page, course, playCourse, instructor) => {
       return '/login';
     case 'register':
       return '/register';
+    case 'forgot-password':
+      return '/forgot-password';
+    case 'reset-password':
+      return '/reset-password';
     case 'instructor-profile': {
       const name = instructor?.fullName || instructor?.instructorName || instructor?.name || (typeof instructor === 'string' ? instructor : 'profile');
       return `/instructor/${slugify(name, instructor?.id)}`;
@@ -116,6 +121,7 @@ export default function App() {
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [selectedCertificateData, setSelectedCertificateData] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [resetPasswordToken, setResetPasswordToken] = useState('');
   const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
   const [securityNotice, setSecurityNotice] = useState('');
 
@@ -218,7 +224,14 @@ export default function App() {
         return;
       }
 
-      if (path === '/login') {
+      if (path === '/reset-password' || path.startsWith('/reset-password')) {
+        const params = new URLSearchParams(window.location.search);
+        const tok = params.get('token') || params.get('resetToken') || '';
+        setResetPasswordToken(tok);
+        setActivePage('reset-password');
+      } else if (path === '/forgot-password') {
+        setActivePage('forgot-password');
+      } else if (path === '/login') {
         setActivePage('login');
       } else if (path === '/register') {
         setActivePage('register');
@@ -340,6 +353,8 @@ export default function App() {
         setSelectedInstructor(extraData);
       } else if (targetPage === 'certificate-detail') {
         setSelectedCertificateData(extraData);
+      } else if (targetPage === 'reset-password' && typeof extraData === 'string') {
+        setResetPasswordToken(extraData);
       }
     } else if (targetPage === 'course-player' && selectedCourse && !activeCourseToPlay) {
       setActiveCourseToPlay(selectedCourse);
@@ -532,6 +547,22 @@ export default function App() {
               initialMode="register"
               setActivePage={handleSafePageTransition}
               onAuthSuccess={handleAuthSuccess}
+            />
+          )}
+
+          {activePage === 'forgot-password' && (
+            <AuthPage
+              initialMode="forgot-password"
+              setActivePage={handleSafePageTransition}
+              onAuthSuccess={handleAuthSuccess}
+            />
+          )}
+
+          {activePage === 'reset-password' && (
+            <ResetPasswordPage
+              token={resetPasswordToken}
+              setActivePage={handleSafePageTransition}
+              openAuthModal={openAuthModal}
             />
           )}
 

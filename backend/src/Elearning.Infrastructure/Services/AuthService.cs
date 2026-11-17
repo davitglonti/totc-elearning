@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Elearning.Application.DTOs;
 using Elearning.Application.Interfaces;
 using Elearning.Domain.Entities;
@@ -6,23 +8,47 @@ using Elearning.Infrastructure.Data;
 using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elearning.Infrastructure.Services;
 
 /// <summary>
-/// Implements user registration, login, Google authentication, and profile services.
+/// Implements user registration, login, Google authentication, profile services, and password recovery.
 /// </summary>
 public class AuthService : IAuthService
 {
     private readonly ElearningDbContext _context;
     private readonly ITokenService _tokenService;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(ElearningDbContext context, ITokenService tokenService, IConfiguration configuration)
+    public AuthService(
+        ElearningDbContext context,
+        ITokenService tokenService,
+        IConfiguration configuration,
+        IEmailService emailService,
+        ILogger<AuthService> logger)
     {
         _context = context;
         _tokenService = tokenService;
         _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Constructor overload ensuring backwards compatibility with existing unit test suites.
+    /// </summary>
+    public AuthService(ElearningDbContext context, ITokenService tokenService, IConfiguration configuration)
+        : this(context, tokenService, configuration, new NullEmailService(), NullLogger<AuthService>.Instance)
+    {
+    }
+
+    private class NullEmailService : IEmailService
+    {
+        public Task SendPasswordResetEmailAsync(string toEmail, string resetToken, string recipientName) => Task.CompletedTask;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -340,6 +366,78 @@ public class AuthService : IAuthService
             ReviewsCount = allReviews.Count,
             AuthoredCourses = courseDtos
         };
+    }
+
+    public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Email))
+        {
+            return;
+        }
+
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
+
+        if (user == null)
+        {
+            // Anti-enumeration: Silent return ensures attackers cannot harvest valid email addresses
+            _logger.LogInformation("[AuthService] Password reset requested for non-existent email: {Email}", normalizedEmail);
+            return;
+        }
+
+        // Generate cryptographically secure 32-byte random token
+        var tokenBytes = new byte[32];
+        RandomNumberGenerator.Fill(tokenBytes);
+        var rawToken = Convert.ToHexString(tokenBytes).ToLowerInvariant();
+
+        // Store SHA-256 hash in database with strict 30-minute UTC expiry
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+        user.PasswordResetTokenHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddMinutes(30);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Dispatch transactional reset email
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, rawToken, user.FullName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[AuthService] Error occurred while sending password reset email to {Email}", user.Email);
+        }
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Token))
+        {
+            throw new InvalidOperationException("აღდგენის ტოკენი არასწორია ან ვადაგასულია.");
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+        {
+            throw new InvalidOperationException("ახალი პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან.");
+        }
+
+        // Compute SHA-256 hash of incoming raw token
+        var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(dto.Token.Trim()))).ToLowerInvariant();
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.PasswordResetTokenHash == tokenHash);
+        if (user == null || !user.PasswordResetTokenExpiresAt.HasValue || user.PasswordResetTokenExpiresAt.Value <= DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("აღდგენის ტოკენი არასწორია ან ვადაგასულია.");
+        }
+
+        // Apply new hashed password using BCrypt and invalidate one-time reset token
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("[AuthService] Password reset successfully completed for user {UserId} ({Email})", user.Id, user.Email);
     }
 
     private static UserProfileDto MapToProfile(User user)

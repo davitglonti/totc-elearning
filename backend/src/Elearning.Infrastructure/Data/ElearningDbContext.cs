@@ -55,6 +55,8 @@ public class ElearningDbContext : DbContext
             entity.Property(u => u.Email).IsRequired().HasMaxLength(256);
             entity.Property(u => u.FullName).IsRequired().HasMaxLength(150);
             entity.Property(u => u.ConcurrencyStamp).IsConcurrencyToken().HasMaxLength(64);
+            entity.Property(u => u.PasswordResetTokenHash).HasMaxLength(128);
+            entity.HasIndex(u => u.PasswordResetTokenHash);
         });
 
         // Category

@@ -59,6 +59,7 @@ export default function AuthPage({
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
   // Form inputs
   const [fullName, setFullName] = useState('');
@@ -217,6 +218,13 @@ export default function AuthPage({
     setLoading(true);
 
     try {
+      if (mode === 'forgot-password') {
+        await api.auth.forgotPassword(email);
+        setForgotSuccess(true);
+        setSuccessMsg('თუ ელ-ფოსტა რეგისტრირებულია, აღდგენის ბმული გაგზავნილია.');
+        return;
+      }
+
       if (mode === 'login') {
         const res = await api.auth.login(email, password);
         if (onAuthSuccess) onAuthSuccess(res.user);
@@ -267,6 +275,8 @@ export default function AuthPage({
             <h1 className="font-poppins font-bold text-3xl xl:text-4xl leading-tight">
               {mode === 'login'
                 ? 'მოგესალმებით თქვენს ინტერაქტიულ საკლასო ოთახში.'
+                : mode === 'forgot-password'
+                ? 'პაროლის უსაფრთხო აღდგენა.'
                 : 'დაიწყეთ სწავლა ან სწავლება თანამედროვე ინსტრუმენტებით.'}
             </h1>
             <p className="text-white/80 text-sm xl:text-base leading-relaxed">
@@ -347,49 +357,53 @@ export default function AuthPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-totc-navy tracking-tight">
-                  {mode === 'login' ? 'ანგარიშში შესვლა' : 'შექმენით TOTC ანგარიში'}
+                  {mode === 'login' ? 'ანგარიშში შესვლა' : mode === 'forgot-password' ? 'პაროლის აღდგენა' : 'შექმენით TOTC ანგარიში'}
                 </h2>
                 <p className="text-totc-gray text-sm mt-1">
                   {mode === 'login'
                     ? 'შეიყვანეთ თქვენი მონაცემები ან შედით Google-ით.'
+                    : mode === 'forgot-password'
+                    ? 'შეიყვანეთ თქვენი რეგისტრირებული ელ-ფოსტის მისამართი და გამოგიგზავნით აღდგენის ბმულს.'
                     : 'აირჩიეთ სტუდენტის ან ინსტრუქტორის სტატუსი.'}
                 </p>
               </div>
             </div>
 
             {/* Mode Switcher Tabs */}
-            <div className="mt-6 flex p-1.5 bg-gray-100 rounded-full max-w-sm">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setError('');
-                  setSuccessMsg('');
-                }}
-                className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
-                  mode === 'login'
-                    ? 'bg-totc-teal text-white shadow-sm'
-                    : 'text-totc-gray hover:text-totc-navy'
-                }`}
-              >
-                შესვლა
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('register');
-                  setError('');
-                  setSuccessMsg('');
-                }}
-                className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
-                  mode === 'register'
-                    ? 'bg-totc-teal text-white shadow-sm'
-                    : 'text-totc-gray hover:text-totc-navy'
-                }`}
-              >
-                რეგისტრაცია
-              </button>
-            </div>
+            {mode !== 'forgot-password' && (
+              <div className="mt-6 flex p-1.5 bg-gray-100 rounded-full max-w-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                    setSuccessMsg('');
+                  }}
+                  className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+                    mode === 'login'
+                      ? 'bg-totc-teal text-white shadow-sm'
+                      : 'text-totc-gray hover:text-totc-navy'
+                  }`}
+                >
+                  შესვლა
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError('');
+                    setSuccessMsg('');
+                  }}
+                  className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+                    mode === 'register'
+                      ? 'bg-totc-teal text-white shadow-sm'
+                      : 'text-totc-gray hover:text-totc-navy'
+                  }`}
+                >
+                  რეგისტრაცია
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Alerts */}
@@ -407,7 +421,78 @@ export default function AuthPage({
             </div>
           )}
 
-          {/* REAL CRYPTOGRAPHIC GOOGLE OAUTH 2.0 SECTION */}
+          {mode === 'forgot-password' ? (
+            <div className="space-y-6 animate-in fade-in">
+              {forgotSuccess ? (
+                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-4 text-center animate-in fade-in">
+                  <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto" />
+                  <h4 className="font-bold text-lg text-emerald-900">აღდგენის ბმული გაგზავნილია</h4>
+                  <p className="text-sm leading-relaxed text-emerald-800">
+                    თუ მითითებული ელ-ფოსტა რეგისტრირებულია სისტემაში, პაროლის აღდგენის ინსტრუქცია და ბმული წარმატებით გაიგზავნა.
+                  </p>
+                  <p className="text-xs text-emerald-600">
+                    გთხოვთ შეამოწმოთ თქვენი საფოსტო ყუთი (მათ შორის Spam საქაღალდე).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setForgotSuccess(false);
+                      setError('');
+                      setSuccessMsg('');
+                    }}
+                    className="w-full py-3 px-6 rounded-xl bg-totc-teal text-white font-bold text-sm hover:bg-totc-teal-dark transition-colors shadow-md"
+                  >
+                    ავტორიზაციის გვერდზე დაბრუნება
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleStandardSubmit} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
+                      ელ-ფოსტის მისამართი *
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-4 rounded-xl bg-totc-teal text-white font-bold text-base hover:bg-totc-teal-dark transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {loading ? 'იგზავნება...' : 'აღდგენის ბმულის გაგზავნა'}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setError('');
+                        setSuccessMsg('');
+                        setForgotSuccess(false);
+                      }}
+                      className="text-sm font-semibold text-totc-teal hover:underline inline-flex items-center gap-1.5"
+                    >
+                      ← შესვლაზე დაბრუნება
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* REAL CRYPTOGRAPHIC GOOGLE OAUTH 2.0 SECTION */}
           <div className="space-y-3">
             {isGoogleConfigured ? (
               <div className="space-y-2">
@@ -579,10 +664,15 @@ export default function AuthPage({
                 {mode === 'login' && (
                   <button
                     type="button"
-                    onClick={() => alert('პაროლის აღდგენის ბმული გამოგზავნილია თქვენს ელ-ფოსტაზე.')}
+                    onClick={() => {
+                      setMode('forgot-password');
+                      setError('');
+                      setSuccessMsg('');
+                      setForgotSuccess(false);
+                    }}
                     className="text-xs font-semibold text-totc-teal hover:underline"
                   >
-                    დაგავიწყდათ პაროლი?
+                    პაროლი დაგავიწყდა?
                   </button>
                 )}
               </div>
@@ -720,6 +810,8 @@ export default function AuthPage({
               </p>
             )}
           </div>
+          </>
+        )}
 
         </div>
       </div>
