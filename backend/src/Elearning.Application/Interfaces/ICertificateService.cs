@@ -1,4 +1,5 @@
 using Elearning.Application.DTOs;
+using Elearning.Domain.Entities;
 
 namespace Elearning.Application.Interfaces;
 
@@ -14,4 +15,5 @@ public interface ICertificateService
     Task<CertificateVerificationDto> VerifyCertificateAsync(string verificationHash);
     Task<CertificateDto> IssueCertificateAsync(Guid userId, Guid courseId);
     Task<string?> GenerateCertificateHtmlAsync(string certificateNumber);
+    Certificate CreateCertificateEntity(Guid userId, Guid courseId);
 }

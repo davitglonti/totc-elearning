@@ -116,9 +116,10 @@ namespace Elearning.Infrastructure.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("VerificationHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CourseId")
                         .IsUnique();
 
                     b.ToTable("Certificates");

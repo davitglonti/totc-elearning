@@ -77,6 +77,7 @@ public class QuizService : IQuizService
     {
         var quiz = await _context.Quizzes
             .Include(q => q.Lesson).ThenInclude(l => l!.Section).ThenInclude(s => s!.Course)
+            .Include(q => q.Section).ThenInclude(s => s!.Course)
             .Include(q => q.Questions)
                 .ThenInclude(qu => qu.Options)
             .FirstOrDefaultAsync(q => q.Id == quizId);
@@ -84,14 +85,15 @@ public class QuizService : IQuizService
         if (quiz == null)
             throw new KeyNotFoundException("Quiz not found.");
 
-        var courseId = quiz.Lesson?.Section?.CourseId;
+        var courseId = quiz.Lesson?.Section?.CourseId ?? quiz.Section?.CourseId;
+        var courseInstructorId = quiz.Lesson?.Section?.Course?.InstructorId ?? quiz.Section?.Course?.InstructorId;
 
         // Verify access / enrollment
         if (courseId.HasValue)
         {
             var user = await _context.Users.FindAsync(userId);
             var isSubscribed = user != null && user.IsSubscribed && (user.SubscriptionExpiresAt == null || user.SubscriptionExpiresAt > DateTime.UtcNow);
-            var isInstructorOrAdmin = user != null && (user.Role == UserRole.Admin || quiz.Lesson?.Section?.Course?.InstructorId == user.Id);
+            var isInstructorOrAdmin = user != null && (user.Role == UserRole.Admin || courseInstructorId == user.Id);
             var isEnrolled = await _context.Enrollments.AnyAsync(e => e.CourseId == courseId.Value && e.UserId == userId);
 
             if (!isEnrolled && !isSubscribed && !isInstructorOrAdmin && !(quiz.Lesson?.IsFreePreview ?? false))
@@ -122,7 +124,7 @@ public class QuizService : IQuizService
         }
 
         // 2. Score calculation
-        var feedbacks = new List<QuestionFeedbackDto>();
+        var evaluatedQuestions = new List<(QuizQuestion Question, Guid? SelectedOptionId, Guid? CorrectOptionId, bool IsCorrect)>();
         int correctCount = 0;
 
         foreach (var question in quiz.Questions)
@@ -133,19 +135,27 @@ public class QuizService : IQuizService
             bool isCorrect = correctOption != null && selectedOptionId == correctOption.Id;
             if (isCorrect) correctCount++;
 
-            feedbacks.Add(new QuestionFeedbackDto
-            {
-                QuestionId = question.Id,
-                SelectedOptionId = selectedOptionId != Guid.Empty ? selectedOptionId : null,
-                CorrectOptionId = correctOption?.Id ?? Guid.Empty,
-                IsCorrect = isCorrect,
-                Explanation = question.Explanation
-            });
+            evaluatedQuestions.Add((
+                question,
+                selectedOptionId != Guid.Empty ? selectedOptionId : null,
+                correctOption?.Id,
+                isCorrect
+            ));
         }
 
         int total = quiz.Questions.Count;
         int scorePercentage = total > 0 ? (int)Math.Round((double)correctCount / total * 100) : 0;
         bool passed = scorePercentage >= quiz.PassingScorePercentage;
+
+        // Only expose correct answers and explanations when passed to prevent answer harvesting on failed attempts
+        var feedbacks = evaluatedQuestions.Select(item => new QuestionFeedbackDto
+        {
+            QuestionId = item.Question.Id,
+            SelectedOptionId = item.SelectedOptionId,
+            CorrectOptionId = passed ? item.CorrectOptionId : null,
+            IsCorrect = item.IsCorrect,
+            Explanation = passed ? item.Question.Explanation : null
+        }).ToList();
 
         // 3. Persist attempt record to DB
         var attempt = new QuizAttempt
@@ -161,38 +171,14 @@ public class QuizService : IQuizService
         _context.QuizAttempts.Add(attempt);
         await _context.SaveChangesAsync();
 
-        // 4. If passed and linked to a lesson, complete the lesson
+        // 4. If passed and linked to a lesson, complete the lesson via EnrollmentService
         if (passed && quiz.LessonId.HasValue)
         {
-            try
+            await _enrollmentService.CompleteLessonAsync(quiz.LessonId.Value, userId, new CompleteLessonDto
             {
-                await _enrollmentService.CompleteLessonAsync(quiz.LessonId.Value, userId, new CompleteLessonDto
-                {
-                    MarkAsComplete = true,
-                    LastWatchedPositionSeconds = 0
-                });
-            }
-            catch (Exception)
-            {
-                // Ensure lesson progress is directly marked complete in DB even if prior sequential check threw
-                var progress = await _context.LessonProgresses.FirstOrDefaultAsync(lp => lp.LessonId == quiz.LessonId.Value && lp.UserId == userId);
-                if (progress == null)
-                {
-                    _context.LessonProgresses.Add(new LessonProgress
-                    {
-                        LessonId = quiz.LessonId.Value,
-                        UserId = userId,
-                        IsCompleted = true,
-                        CompletedAt = DateTime.UtcNow
-                    });
-                }
-                else if (!progress.IsCompleted)
-                {
-                    progress.IsCompleted = true;
-                    progress.CompletedAt = DateTime.UtcNow;
-                }
-                await _context.SaveChangesAsync();
-            }
+                MarkAsComplete = true,
+                LastWatchedPositionSeconds = 0
+            });
         }
 
         var totalAttemptsCount = await _context.QuizAttempts.CountAsync(qa => qa.QuizId == quizId && qa.UserId == userId);

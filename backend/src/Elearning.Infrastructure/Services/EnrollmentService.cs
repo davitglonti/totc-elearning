@@ -13,10 +13,12 @@ namespace Elearning.Infrastructure.Services;
 public class EnrollmentService : IEnrollmentService
 {
     private readonly ElearningDbContext _context;
+    private readonly ICertificateService? _certificateService;
 
-    public EnrollmentService(ElearningDbContext context)
+    public EnrollmentService(ElearningDbContext context, ICertificateService? certificateService = null)
     {
         _context = context;
+        _certificateService = certificateService;
     }
 
     public async Task<List<MyCourseDto>> GetUserCoursesAsync(Guid userId)
@@ -256,100 +258,120 @@ public class EnrollmentService : IEnrollmentService
             }
         }
 
-        var progress = await _context.LessonProgresses.FirstOrDefaultAsync(lp => lp.LessonId == lessonId && lp.UserId == userId);
-        if (progress == null)
+        await using var transaction = _context.Database.IsRelational() && _context.Database.CurrentTransaction == null
+            ? await _context.Database.BeginTransactionAsync()
+            : null;
+
+        try
         {
-            progress = new LessonProgress
+            var progress = await _context.LessonProgresses.FirstOrDefaultAsync(lp => lp.LessonId == lessonId && lp.UserId == userId);
+            if (progress == null)
             {
-                LessonId = lessonId,
-                UserId = userId,
-                IsCompleted = dto.MarkAsComplete,
-                LastWatchedPositionSeconds = dto.LastWatchedPositionSeconds,
-                CompletedAt = dto.MarkAsComplete ? DateTime.UtcNow : null
-            };
-            _context.LessonProgresses.Add(progress);
-        }
-        else
-        {
-            progress.LastWatchedPositionSeconds = dto.LastWatchedPositionSeconds;
-            if (dto.MarkAsComplete && !progress.IsCompleted)
-            {
-                progress.IsCompleted = true;
-                progress.CompletedAt = DateTime.UtcNow;
-            }
-        }
-
-        // Check if all lessons are now complete to mark enrollment completed and issue Certificate
-        if (isEnrolled && dto.MarkAsComplete)
-        {
-            var allLessonIds = await _context.Lessons
-                .Where(l => l.Section!.CourseId == courseId)
-                .Select(l => l.Id)
-                .ToListAsync();
-
-            var completedLessonCount = await _context.LessonProgresses
-                .CountAsync(lp => lp.UserId == userId && lp.IsCompleted && allLessonIds.Contains(lp.LessonId));
-
-            if (completedLessonCount >= allLessonIds.Count)
-            {
-                // Verify all course assessments/quizzes/final exams are passed before completing enrollment and issuing certificate
-                var sectionIds = await _context.Sections
-                    .Where(s => s.CourseId == courseId)
-                    .Select(s => s.Id)
-                    .ToListAsync();
-
-                var allCourseQuizzes = await _context.Quizzes
-                    .Where(q => (q.LessonId != null && allLessonIds.Contains(q.LessonId.Value)) ||
-                                (q.SectionId != null && sectionIds.Contains(q.SectionId.Value)))
-                    .ToListAsync();
-
-                var allQuizzesPassed = true;
-                if (allCourseQuizzes.Count > 0)
+                progress = new LessonProgress
                 {
-                    var quizIds = allCourseQuizzes.Select(q => q.Id).ToList();
-                    var passedQuizIds = await _context.QuizAttempts
-                        .Where(qa => qa.UserId == userId && qa.Passed && quizIds.Contains(qa.QuizId))
-                        .Select(qa => qa.QuizId)
-                        .Distinct()
+                    LessonId = lessonId,
+                    UserId = userId,
+                    IsCompleted = dto.MarkAsComplete,
+                    LastWatchedPositionSeconds = dto.LastWatchedPositionSeconds,
+                    CompletedAt = dto.MarkAsComplete ? DateTime.UtcNow : null
+                };
+                _context.LessonProgresses.Add(progress);
+            }
+            else
+            {
+                progress.LastWatchedPositionSeconds = dto.LastWatchedPositionSeconds;
+                if (dto.MarkAsComplete && !progress.IsCompleted)
+                {
+                    progress.IsCompleted = true;
+                    progress.CompletedAt = DateTime.UtcNow;
+                }
+            }
+
+            // Persist lesson progress before querying completed counts so the newly completed final lesson is included.
+            await _context.SaveChangesAsync();
+
+            // Check if all lessons are now complete to mark enrollment completed and issue Certificate
+            if (isEnrolled && dto.MarkAsComplete)
+            {
+                var allLessonIds = await _context.Lessons
+                    .Where(l => l.Section!.CourseId == courseId)
+                    .Select(l => l.Id)
+                    .ToListAsync();
+
+                var completedLessonCount = await _context.LessonProgresses
+                    .CountAsync(lp => lp.UserId == userId && lp.IsCompleted && allLessonIds.Contains(lp.LessonId));
+
+                if (allLessonIds.Count > 0 && completedLessonCount >= allLessonIds.Count)
+                {
+                    // Verify all course assessments/quizzes/final exams are passed before completing enrollment and issuing certificate
+                    var sectionIds = await _context.Sections
+                        .Where(s => s.CourseId == courseId)
+                        .Select(s => s.Id)
                         .ToListAsync();
 
-                    allQuizzesPassed = allCourseQuizzes.All(q => passedQuizIds.Contains(q.Id));
-                }
+                    var allCourseQuizzes = await _context.Quizzes
+                        .Where(q => (q.LessonId != null && allLessonIds.Contains(q.LessonId.Value)) ||
+                                    (q.SectionId != null && sectionIds.Contains(q.SectionId.Value)))
+                        .ToListAsync();
 
-                if (allQuizzesPassed)
-                {
-                    var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == userId);
-                    if (enrollment != null && !enrollment.IsCompleted)
+                    var allQuizzesPassed = true;
+                    if (allCourseQuizzes.Count > 0)
                     {
-                        enrollment.IsCompleted = true;
-                        enrollment.CompletedAt = DateTime.UtcNow;
+                        var quizIds = allCourseQuizzes.Select(q => q.Id).ToList();
+                        var passedQuizIds = await _context.QuizAttempts
+                            .Where(qa => qa.UserId == userId && qa.Passed && quizIds.Contains(qa.QuizId))
+                            .Select(qa => qa.QuizId)
+                            .Distinct()
+                            .ToListAsync();
+
+                        allQuizzesPassed = allCourseQuizzes.All(q => passedQuizIds.Contains(q.Id));
                     }
 
-                    // Automatically generate Certificate upon 100% course and assessment completion
-                    var certExists = await _context.Certificates.AnyAsync(c => c.UserId == userId && c.CourseId == courseId);
-                    if (!certExists)
+                    if (allQuizzesPassed)
                     {
-                        var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
-                        var rawHash = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";
-                        var hashBytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(rawHash));
-                        var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
-
-                        _context.Certificates.Add(new Certificate
+                        var hasCompletionChanges = false;
+                        var enrollment = await _context.Enrollments.FirstOrDefaultAsync(e => e.CourseId == courseId && e.UserId == userId);
+                        if (enrollment != null && !enrollment.IsCompleted)
                         {
-                            UserId = userId,
-                            CourseId = courseId,
-                            CertificateNumber = serialNumber,
-                            VerificationHash = verificationHash,
-                            IssuedAt = DateTime.UtcNow,
-                            PdfUrl = $"/api/certificates/{serialNumber}/download"
-                        });
+                            enrollment.IsCompleted = true;
+                            enrollment.CompletedAt = DateTime.UtcNow;
+                            hasCompletionChanges = true;
+                        }
+
+                        // Automatically generate Certificate upon 100% course and assessment completion
+                        var certExists = await _context.Certificates.AnyAsync(c => c.UserId == userId && c.CourseId == courseId);
+                        if (!certExists)
+                        {
+                            var certificate = _certificateService != null
+                                ? _certificateService.CreateCertificateEntity(userId, courseId)
+                                : CertificateService.BuildCertificateEntity(userId, courseId);
+                            _context.Certificates.Add(certificate);
+                            hasCompletionChanges = true;
+                        }
+
+                        if (hasCompletionChanges)
+                        {
+                            await _context.SaveChangesAsync();
+                        }
                     }
                 }
             }
-        }
 
-        await _context.SaveChangesAsync();
-        return true;
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
+
+            return true;
+        }
+        catch
+        {
+            if (transaction != null)
+            {
+                await transaction.RollbackAsync();
+            }
+            throw;
+        }
     }
 
     public async Task<bool> EnrollUserAsync(Guid userId, Guid courseId)

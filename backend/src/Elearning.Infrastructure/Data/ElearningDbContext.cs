@@ -222,6 +222,7 @@ public class ElearningDbContext : DbContext
 
             entity.HasIndex(c => c.CertificateNumber).IsUnique();
             entity.HasIndex(c => c.VerificationHash).IsUnique();
+            entity.HasIndex(c => new { c.UserId, c.CourseId }).IsUnique();
 
             entity.HasOne(c => c.User)
                   .WithMany(u => u.Certificates)

@@ -172,20 +172,7 @@ public class CertificateService : ICertificateService
         }
 
         // 4. Generate unique serial number and cryptographic verification hash
-        var serialNumber = $"TOTC-2026-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
-        var rawHashPayload = $"{userId:N}:{courseId:N}:{serialNumber}:{DateTime.UtcNow:O}";
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawHashPayload));
-        var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
-
-        var certificate = new Certificate
-        {
-            UserId = userId,
-            CourseId = courseId,
-            CertificateNumber = serialNumber,
-            VerificationHash = verificationHash,
-            IssuedAt = DateTime.UtcNow,
-            PdfUrl = $"/api/certificates/{serialNumber}/download"
-        };
+        var certificate = CreateCertificateEntity(userId, courseId);
 
         _context.Certificates.Add(certificate);
 
@@ -203,6 +190,28 @@ public class CertificateService : ICertificateService
         certificate.Course = course;
 
         return MapToDto(certificate);
+    }
+
+    public Certificate CreateCertificateEntity(Guid userId, Guid courseId)
+        => BuildCertificateEntity(userId, courseId);
+
+    public static Certificate BuildCertificateEntity(Guid userId, Guid courseId)
+    {
+        var issuedAt = DateTime.UtcNow;
+        var serialNumber = $"TOTC-{issuedAt.Year}-{Guid.NewGuid():N}"[..17].ToUpperInvariant();
+        var rawHashPayload = $"{userId:N}:{courseId:N}:{serialNumber}:{issuedAt:O}";
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawHashPayload));
+        var verificationHash = Convert.ToHexString(hashBytes).ToLowerInvariant()[..32];
+
+        return new Certificate
+        {
+            UserId = userId,
+            CourseId = courseId,
+            CertificateNumber = serialNumber,
+            VerificationHash = verificationHash,
+            IssuedAt = issuedAt,
+            PdfUrl = $"/api/certificates/{serialNumber}/download"
+        };
     }
 
     public async Task<string?> GenerateCertificateHtmlAsync(string certificateNumber)

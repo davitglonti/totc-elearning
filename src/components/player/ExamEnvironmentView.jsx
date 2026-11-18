@@ -402,7 +402,7 @@ export function ExamEnvironmentView({
               </div>
 
               {/* Explanation Feedback */}
-              {feedback && (
+              {feedback && feedback.explanation && (
                 <div className={`mt-4 p-3 rounded-xl text-xs flex items-start gap-2 ${
                   feedback.isCorrect
                     ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'

@@ -46,7 +46,7 @@ public class QuestionFeedbackDto
 {
     public Guid QuestionId { get; set; }
     public Guid? SelectedOptionId { get; set; }
-    public Guid CorrectOptionId { get; set; }
+    public Guid? CorrectOptionId { get; set; }
     public bool IsCorrect { get; set; }
-    public string Explanation { get; set; } = string.Empty;
+    public string? Explanation { get; set; }
 }
