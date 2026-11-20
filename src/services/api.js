@@ -11,6 +11,7 @@ import { instructorApi } from './api/instructorApi';
 import { adminApi } from './api/adminApi';
 import { certificatesApi } from './api/certificatesApi';
 import { settingsApi, paymentsApi, promoCodesApi, subscriptionsApi } from './api/settingsApi';
+import { corporateInquiriesApi } from './api/corporateInquiriesApi';
 
 export {
   request,
@@ -30,6 +31,7 @@ export {
   paymentsApi,
   promoCodesApi,
   subscriptionsApi,
+  corporateInquiriesApi,
 };
 
 export const api = {
@@ -48,6 +50,7 @@ export const api = {
   subscriptions: subscriptionsApi,
   quizzes: quizzesApi,
   admin: adminApi,
+  corporateInquiries: corporateInquiriesApi,
 };
 
 export default api;

@@ -4,7 +4,7 @@ import {
   CheckCircle, BookOpen, DollarSign, CreditCard, 
   RefreshCw, AlertCircle, X, ArrowUpRight, CheckSquare,
   Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles, UserPlus,
-  Menu, ChevronRight, Database
+  Menu, ChevronRight, Database, Building2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { adminApi } from '../services/api/adminApi';
@@ -20,6 +20,7 @@ import {
   AdminSystemTab,
   AdminCmsSettingsTab,
   AdminMembershipCmsTab,
+  AdminCorporateInquiriesTab,
   CourseReviewModal,
   CreateInstructorModal
 } from '../components/admin';
@@ -37,6 +38,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const [coursesList, setCoursesList] = useState([]);
   const [ordersList, setOrdersList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
+  const [corporateInquiriesList, setCorporateInquiriesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
@@ -131,12 +133,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const loadAdminData = async () => {
     try {
       setRefreshing(true);
-      const [statsData, usersData, coursesData, ordersData, categoriesData] = await Promise.all([
+      const [statsData, usersData, coursesData, ordersData, categoriesData, inquiriesData] = await Promise.all([
         api.admin.getStats(),
         api.admin.getUsers(),
         api.admin.getCourses(),
         api.admin.getOrders(),
         api.categories.getAll(),
+        api.corporateInquiries.getAll().catch(() => []),
       ]);
 
       setStats(statsData);
@@ -144,6 +147,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       setCoursesList(coursesData || []);
       setOrdersList(ordersData || []);
       setCategoriesList(categoriesData || []);
+      setCorporateInquiriesList(inquiriesData || []);
     } catch (err) {
       console.error('Failed to load admin telemetry:', err);
       setActionMessage({ type: 'error', text: 'ადმინის API-სთან დაკავშირების შეცდომა: ' + err.message });
@@ -546,9 +550,16 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       ]
     },
     {
-      group: 'მომხმარებლები',
+      group: 'მომხმარებლები & ორგანიზაციები',
       items: [
         { id: 'users', label: 'მომხმარებლები & როლები', icon: Users, count: usersList.length, alert: false },
+        { 
+          id: 'corporate_inquiries', 
+          label: 'კორპორატიული მოთხოვნები', 
+          icon: Building2, 
+          count: corporateInquiriesList.length, 
+          alert: corporateInquiriesList.some(i => (i.status || 'New') === 'New') 
+        },
       ]
     },
     {
@@ -592,6 +603,12 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       category: 'მომხმარებლები',
       description: 'სტუდენტების, ინსტრუქტორებისა და ადმინისტრატორების მართვა, როლების მინიჭება და ახალი ინსტრუქტორის რეგისტრაცია.',
       icon: Users
+    },
+    corporate_inquiries: {
+      title: 'კორპორატიული შეთავაზების მოთხოვნები',
+      category: 'ორგანიზაციები & ბიზნესი',
+      description: 'ორგანიზაციებისა და უნივერსიტეტების მიერ გამოგზავნილი შეთავაზების მოთხოვნები, გუნდის ზომა, ინტერესები და სტატუსი.',
+      icon: Building2
     },
     courses: {
       title: 'კურსების კატალოგი',
@@ -1082,6 +1099,16 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             handleRoleChange={handleRoleChange}
             handleDeleteUser={handleDeleteUser}
             onOpenCreateInstructor={() => setIsCreateInstructorOpen(true)}
+          />
+        )}
+
+        {/* Tab 3.5: Corporate Inquiries */}
+        {activeTab === 'corporate_inquiries' && (
+          <AdminCorporateInquiriesTab 
+            inquiries={corporateInquiriesList}
+            setInquiries={setCorporateInquiriesList}
+            onReload={loadAdminData}
+            setActionMessage={setActionMessage}
           />
         )}
 

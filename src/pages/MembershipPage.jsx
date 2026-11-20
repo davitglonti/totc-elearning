@@ -39,12 +39,16 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
     .filter(p => p.isEnabled !== false)
     .map(plan => {
       const isFree = plan.planId === 'Free' || (Number(plan.monthlyPrice) === 0 && Number(plan.annualMonthlyPrice) === 0);
+      const isCorporate = plan.planId === 'Enterprise' || plan.id === 'enterprise' || plan.isCorporate || plan.planId?.toLowerCase?.() === 'enterprise';
       const curr = plan.currency || '₾';
 
       let displayPrice = `${curr}0`;
       let displayPeriod = plan.periodText || 'უფასო სამუდამოდ';
 
-      if (!isFree) {
+      if (isCorporate) {
+        displayPrice = 'მოთხოვნით';
+        displayPeriod = 'ინდივიდუალური გაანგარიშება';
+      } else if (!isFree) {
         if (annualBilling) {
           const mPrice = plan.annualMonthlyPrice !== undefined ? plan.annualMonthlyPrice : plan.monthlyPrice;
           const fullAnnual = plan.annualFullPrice || (mPrice * 12);
@@ -59,7 +63,7 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
       let btnStyle = 'bg-gray-100 text-totc-navy hover:bg-gray-200';
       if (plan.buttonStyle === 'primary' || plan.isPopular) {
         btnStyle = 'bg-totc-teal text-white hover:bg-totc-teal-dark shadow-lg shadow-totc-teal/30';
-      } else if (plan.buttonStyle === 'dark') {
+      } else if (plan.buttonStyle === 'dark' || isCorporate) {
         btnStyle = 'bg-totc-navy text-white hover:bg-slate-800 shadow-lg';
       } else if (plan.buttonStyle && plan.buttonStyle.includes(' ')) {
         btnStyle = plan.buttonStyle;
@@ -67,14 +71,23 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
 
       return {
         ...plan,
+        isCorporate,
         price: displayPrice,
         period: displayPeriod,
         buttonStyle: btnStyle,
-        buttonText: plan.buttonText || (isFree ? 'მიმდინარე უფასო პაკეტი' : `${plan.name}-ის გააქტიურება`)
+        buttonText: isCorporate
+          ? 'კორპორატიული შეთავაზების მიღება'
+          : (plan.buttonText || (isFree ? 'მიმდინარე უფასო პაკეტი' : `${plan.name}-ის გააქტიურება`))
       };
     });
 
   const handleSelectPlan = (plan) => {
+    if (plan.isCorporate || plan.planId === 'Enterprise' || plan.id === 'enterprise' || plan.planId?.toLowerCase?.() === 'enterprise') {
+      setActivePage('corporate-inquiry');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (plan.planId === 'Free') {
       if (!currentUser) openAuthModal('register');
       else setActivePage('courses');
@@ -369,12 +382,24 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                 </p>
               </div>
 
-              <button
-                onClick={() => setViewOtherPlans(true)}
-                className="px-5 py-2.5 rounded-full text-xs font-bold bg-white text-totc-navy border border-gray-300 hover:bg-gray-50 shadow-sm shrink-0"
-              >
-                სხვა პაკეტების შედარება
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => {
+                    setActivePage('corporate-inquiry');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold bg-totc-navy text-white hover:bg-slate-800 shadow-md flex items-center gap-1.5 transition-all"
+                >
+                  <span>კორპორატიული შეთავაზების მიღება</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewOtherPlans(true)}
+                  className="px-4 py-2.5 rounded-full text-xs font-bold bg-white text-totc-navy border border-gray-300 hover:bg-gray-50 shadow-sm"
+                >
+                  სხვა პაკეტების შედარება
+                </button>
+              </div>
             </div>
 
           </div>
@@ -461,12 +486,23 @@ export default function MembershipPage({ setActivePage, openAuthModal, currentUs
                     </div>
 
                     <div className="border-t border-b border-gray-100 py-6 space-y-1">
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-poppins font-black text-4xl sm:text-5xl text-totc-navy">
-                          {plan.price}
-                        </span>
-                        <span className="text-totc-gray text-xs font-medium">{plan.period}</span>
-                      </div>
+                      {plan.isCorporate ? (
+                        <div className="py-1">
+                          <span className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight block">
+                            მოთხოვნით
+                          </span>
+                          <span className="text-totc-teal text-xs font-bold mt-1 inline-flex items-center gap-1">
+                            ინდივიდუალური ტარიფი • გუნდზე მორგებული
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-poppins font-black text-4xl sm:text-5xl text-totc-navy">
+                            {plan.price}
+                          </span>
+                          <span className="text-totc-gray text-xs font-medium">{plan.period}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Features list */}

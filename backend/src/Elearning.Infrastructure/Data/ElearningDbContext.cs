@@ -30,6 +30,7 @@ public class ElearningDbContext : DbContext
     public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
     public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
+    public DbSet<CorporateInquiry> CorporateInquiries => Set<CorporateInquiry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

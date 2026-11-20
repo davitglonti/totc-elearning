@@ -23,6 +23,7 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const InstructorProfilePage = lazy(() => import('./pages/InstructorProfilePage'));
 const CertificateDetailPage = lazy(() => import('./pages/CertificateDetailPage'));
+const CorporateInquiryPage = lazy(() => import('./pages/CorporateInquiryPage'));
 
 function PageLoadingFallback() {
   return (
@@ -96,6 +97,9 @@ const getPathForPage = (page, course, playCourse, instructor) => {
       return '/admin';
     case 'membership':
       return '/membership';
+    case 'corporate-inquiry':
+    case 'corporate_inquiry':
+      return '/corporate-inquiry';
     case 'blog':
       return '/blog';
     case 'blog-detail':
@@ -251,6 +255,8 @@ export default function App() {
         setActivePage('admin-dashboard');
       } else if (path === '/membership') {
         setActivePage('membership');
+      } else if (path === '/corporate-inquiry' || path === '/corporateinquiry' || path === '/enterprise') {
+        setActivePage('corporate-inquiry');
       } else if (path.startsWith('/blog/')) {
         setActivePage('blog-detail');
       } else if (path === '/blog') {
@@ -618,6 +624,13 @@ export default function App() {
               openAuthModal={openAuthModal}
               currentUser={currentUser}
               onSubscriptionUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+            />
+          )}
+
+          {(activePage === 'corporate-inquiry' || activePage === 'corporate_inquiry') && (
+            <CorporateInquiryPage
+              setActivePage={handleSafePageTransition}
+              currentUser={currentUser}
             />
           )}
 

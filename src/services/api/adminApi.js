@@ -88,4 +88,22 @@ export const adminApi = {
       method: 'POST',
     });
   },
+
+  async getCorporateInquiries(status = 'ALL') {
+    const q = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
+    return request(`/corporate-inquiries${q}`);
+  },
+
+  async updateCorporateInquiryStatus(id, data) {
+    return request(`/corporate-inquiries/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteCorporateInquiry(id) {
+    return request(`/corporate-inquiries/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
