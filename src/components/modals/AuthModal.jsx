@@ -330,22 +330,24 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
           ) : (
             <>
               {/* Mode Switch Tabs */}
-              <div className="flex items-center justify-center gap-1 p-1 bg-slate-100 rounded-2xl mb-4 max-w-[240px] mx-auto shrink-0 shadow-inner">
+              <div className="flex items-center justify-center p-1 bg-slate-100 rounded-2xl mb-4 w-full shadow-inner">
                 <button
+                  type="button"
                   onClick={() => { setMode('login'); setSubmitted(false); setError(''); }}
-                  className={`flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
+                  className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 cursor-pointer ${
                     mode === 'login'
-                      ? 'bg-[#49BBBD] text-white shadow-[0_2px_8px_rgba(73,187,189,0.35)]'
+                      ? 'bg-white text-[#2F327D] shadow-sm'
                       : 'text-slate-500 hover:text-[#2F327D]'
                   }`}
                 >
                   შესვლა
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setMode('register'); setSubmitted(false); setError(''); }}
-                  className={`flex-1 py-1.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
+                  className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 cursor-pointer ${
                     mode === 'register'
-                      ? 'bg-[#49BBBD] text-white shadow-[0_2px_8px_rgba(73,187,189,0.35)]'
+                      ? 'bg-[#49BBBD] text-white shadow-sm'
                       : 'text-slate-500 hover:text-[#2F327D]'
                   }`}
                 >
