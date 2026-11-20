@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle, Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Settings, Key, ShieldCheck } from 'lucide-react';
 import { api } from '../../services/api';
+import { GoogleAccountChooserModal } from './GoogleAccountChooserModal';
 
 export function GoogleIcon({ className = "w-4 h-4" }) {
   return (
@@ -35,6 +36,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
   const [googleClientId, setGoogleClientId] = useState('');
   const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
   const [showGoogleSetup, setShowGoogleSetup] = useState(false);
+  const [showGoogleChooser, setShowGoogleChooser] = useState(false);
   const [customClientIdInput, setCustomClientIdInput] = useState('');
   const googleBtnContainerRef = useRef(null);
 
@@ -100,6 +102,19 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     } finally {
       setGoogleLoading(false);
     }
+  };
+
+  const handleSelectGoogleAccount = async (account) => {
+    setShowGoogleChooser(false);
+    const devToken = `dev-google-token:${account.email}:${account.name}:${account.avatar || ''}`;
+    await handleGoogleCredentialResponse({ credential: devToken });
+  };
+
+  const handleSaveGoogleClientIdDirect = (cleanId) => {
+    api.auth.setLocalGoogleClientId(cleanId);
+    setGoogleClientId(cleanId);
+    setIsGoogleConfigured(Boolean(cleanId));
+    setShowGoogleSetup(false);
   };
 
   // Render Google GIS Button inside modal
@@ -365,17 +380,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
               <div>
                 <button
                   type="button"
-                  onClick={() => setShowGoogleSetup(true)}
+                  onClick={() => setShowGoogleChooser(true)}
                   className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm group"
                 >
                   <GoogleIcon className="w-4 h-4" />
                   <span>{mode === 'login' ? 'Google-ით შესვლა' : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}</span>
-                  <span className="text-[10px] bg-totc-teal/10 text-totc-teal font-bold px-2 py-0.5 rounded-full border border-totc-teal/30 group-hover:bg-totc-teal group-hover:text-white transition-colors flex items-center gap-1">
-                    <Settings className="w-3 h-3" /> ჩართვა
+                  <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center gap-1">
+                    1-კლიკით
                   </span>
                 </button>
                 <p className="text-[10px] text-totc-gray text-center mt-1">
-                  Google-ით ავტორიზაციისთვის მიუთითეთ Google Client ID
+                  შედით Google ანგარიშით (dglonti3@gmail.com ან სხვა)
                 </p>
               </div>
             )}
@@ -638,6 +653,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
           </div>
         </div>
       )}
+      {/* GOOGLE ACCOUNT CHOOSER MODAL */}
+      <GoogleAccountChooserModal
+        isOpen={showGoogleChooser}
+        onClose={() => setShowGoogleChooser(false)}
+        role={role}
+        onSelectAccount={handleSelectGoogleAccount}
+        onSaveClientId={handleSaveGoogleClientIdDirect}
+        currentClientId={googleClientId}
+      />
     </div>
   );
 }

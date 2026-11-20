@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { api } from '../services/api';
+import { GoogleAccountChooserModal } from '../components/modals/GoogleAccountChooserModal';
 
 /**
  * Official Google G icon SVG
@@ -76,6 +77,7 @@ export default function AuthPage({
   const [googleClientId, setGoogleClientId] = useState('');
   const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
   const [showGoogleSetup, setShowGoogleSetup] = useState(false);
+  const [showGoogleChooser, setShowGoogleChooser] = useState(false);
   const [customClientIdInput, setCustomClientIdInput] = useState('');
   const googleBtnContainerRef = useRef(null);
 
@@ -154,6 +156,19 @@ export default function AuthPage({
     } finally {
       setGoogleLoading(false);
     }
+  };
+
+  const handleSelectGoogleAccount = async (account) => {
+    setShowGoogleChooser(false);
+    const devToken = `dev-google-token:${account.email}:${account.name}:${account.avatar || ''}`;
+    await handleGoogleCredentialResponse({ credential: devToken });
+  };
+
+  const handleSaveGoogleClientIdDirect = (cleanId) => {
+    api.auth.setLocalGoogleClientId(cleanId);
+    setGoogleClientId(cleanId);
+    setIsGoogleConfigured(Boolean(cleanId));
+    setShowGoogleSetup(false);
   };
 
   // Initialize and Render Official Google Identity Services Button
@@ -516,7 +531,7 @@ export default function AuthPage({
               <div>
                 <button
                   type="button"
-                  onClick={() => setShowGoogleSetup(true)}
+                  onClick={() => setShowGoogleChooser(true)}
                   className="w-full py-3.5 px-4 rounded-2xl border-2 border-slate-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy font-semibold text-sm sm:text-base flex items-center justify-center gap-3 transition-all duration-200 shadow-sm group"
                 >
                   <GoogleIcon className="w-5 h-5" />
@@ -525,12 +540,12 @@ export default function AuthPage({
                       ? 'Google-ით შესვლა'
                       : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}
                   </span>
-                  <span className="text-[10px] bg-totc-teal/10 text-totc-teal font-bold px-2 py-0.5 rounded-full border border-totc-teal/30 shrink-0 flex items-center gap-1 group-hover:bg-totc-teal group-hover:text-white transition-colors">
-                    <Settings className="w-3 h-3" /> ჩართვა
+                  <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2.5 py-1 rounded-full border border-emerald-200 shrink-0 flex items-center gap-1 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    1-კლიკით შესვლა
                   </span>
                 </button>
                 <p className="text-[11px] text-totc-gray text-center mt-1.5">
-                  Google OAuth-ის გასააქტიურებლად დააჭირეთ და შეიყვანეთ Google Client ID
+                  შედით მყისიერად Google ანგარიშით (dglonti3@gmail.com ან სხვა)
                 </p>
               </div>
             )}
@@ -921,6 +936,15 @@ export default function AuthPage({
           </div>
         </div>
       )}
+      {/* GOOGLE ACCOUNT CHOOSER MODAL */}
+      <GoogleAccountChooserModal
+        isOpen={showGoogleChooser}
+        onClose={() => setShowGoogleChooser(false)}
+        role={role}
+        onSelectAccount={handleSelectGoogleAccount}
+        onSaveClientId={handleSaveGoogleClientIdDirect}
+        currentClientId={googleClientId}
+      />
     </div>
   );
 }

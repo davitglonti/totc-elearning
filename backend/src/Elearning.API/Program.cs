@@ -160,6 +160,10 @@ var defaultOrigins = new List<string>
     "https://localhost",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
     "http://localhost:3000"
 };
 
@@ -181,6 +185,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(defaultOrigins.ToArray())
+            .SetIsOriginAllowed(origin =>
+            {
+                if (builder.Environment.IsDevelopment())
+                {
+                    if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                    {
+                        return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+                    }
+                }
+                return defaultOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+            })
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
