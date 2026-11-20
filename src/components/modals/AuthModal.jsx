@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle, Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Settings, Key, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle, Mail, Lock, User, AlertCircle, GraduationCap, Briefcase, Key } from 'lucide-react';
 import { api } from '../../services/api';
 import { GoogleAccountChooserModal } from './GoogleAccountChooserModal';
 
@@ -32,12 +32,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     bio: ''
   });
 
-  // Real Google OAuth 2.0 Integration State
+  // Google OAuth Integration State
   const [googleClientId, setGoogleClientId] = useState('');
   const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
-  const [showGoogleSetup, setShowGoogleSetup] = useState(false);
   const [showGoogleChooser, setShowGoogleChooser] = useState(false);
-  const [customClientIdInput, setCustomClientIdInput] = useState('');
   const googleBtnContainerRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +58,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
         if (activeId) {
           setGoogleClientId(activeId);
           setIsGoogleConfigured(true);
-          setCustomClientIdInput(activeId);
         }
       } catch (err) {
         console.warn('Failed to load auth config in modal:', err);
@@ -110,13 +107,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
     await handleGoogleCredentialResponse({ credential: devToken });
   };
 
-  const handleSaveGoogleClientIdDirect = (cleanId) => {
-    api.auth.setLocalGoogleClientId(cleanId);
-    setGoogleClientId(cleanId);
-    setIsGoogleConfigured(Boolean(cleanId));
-    setShowGoogleSetup(false);
-  };
-
   // Render Google GIS Button inside modal
   useEffect(() => {
     if (!googleClientId || !isOpen) return;
@@ -159,16 +149,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
       return () => clearInterval(timer);
     }
   }, [googleClientId, isOpen, mode, role]);
-
-  const handleSaveGoogleClientId = (e) => {
-    e.preventDefault();
-    if (!customClientIdInput.trim()) return;
-    const cleanId = customClientIdInput.trim();
-    api.auth.setLocalGoogleClientId(cleanId);
-    setGoogleClientId(cleanId);
-    setIsGoogleConfigured(true);
-    setShowGoogleSetup(false);
-  };
 
   if (!isOpen) return null;
 
@@ -356,49 +336,28 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
             </button>
           </div>
 
-          {/* REAL CRYPTOGRAPHIC GOOGLE OAUTH 2.0 SECTION */}
+          {/* GOOGLE SIGN-IN SECTION */}
           <div className="mb-4">
             {isGoogleConfigured ? (
-              <div className="space-y-1.5">
-                <div className="flex justify-center w-full py-1">
-                  <div ref={googleBtnContainerRef} className="min-h-[40px] flex justify-center w-full" />
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-totc-gray px-1">
-                  <span className="flex items-center gap-1 text-emerald-600 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Google ტოკენი ვერიფიცირებულია
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowGoogleSetup(true)}
-                    className="text-totc-teal hover:underline flex items-center gap-1 font-medium"
-                  >
-                    <Settings className="w-3 h-3" /> Client ID
-                  </button>
-                </div>
+              <div className="flex justify-center w-full py-1">
+                <div ref={googleBtnContainerRef} className="min-h-[40px] flex justify-center w-full" />
               </div>
             ) : (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowGoogleChooser(true)}
-                  className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm group"
-                >
-                  <GoogleIcon className="w-4 h-4" />
-                  <span>{mode === 'login' ? 'Google-ით შესვლა' : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}</span>
-                  <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white transition-colors flex items-center gap-1">
-                    1-კლიკით
-                  </span>
-                </button>
-                <p className="text-[10px] text-totc-gray text-center mt-1">
-                  შედით Google ანგარიშით (dglonti3@gmail.com ან სხვა)
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowGoogleChooser(true)}
+                disabled={loading || googleLoading}
+                className="w-full py-2.5 px-3 rounded-xl border border-gray-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+              >
+                <GoogleIcon className="w-4 h-4" />
+                <span>{mode === 'login' ? 'Google-ით შესვლა' : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}</span>
+              </button>
             )}
 
             {googleLoading && (
               <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs flex items-center justify-center gap-2 animate-pulse mt-2">
                 <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>მიმდინარეობს Google ვერიფიკაცია...</span>
+                <span>მიმდინარეობს Google ავტორიზაცია...</span>
               </div>
             )}
 
@@ -583,84 +542,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthSucces
 
       </div>
 
-      {/* GOOGLE SETUP POPUP IN MODAL */}
-      {showGoogleSetup && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setShowGoogleSetup(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 border border-totc-teal/20 flex items-center justify-center text-totc-teal">
-                <GoogleIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-base text-totc-navy">Google OAuth 2.0 Client ID</h4>
-                <p className="text-xs text-totc-gray">ნამდვილი კრიპტოგრაფიული ID Token ვერიფიკაცია</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 mb-4 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-amber-950">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Google Cloud Console-ის პარამეტრები
-              </div>
-              <p className="leading-relaxed">
-                Google Cloud-ში OAuth Client ID-ის შექმნისას დაამატეთ Authorized JavaScript origins-ში:{' '}
-                <code className="bg-amber-100 font-bold px-1 rounded font-mono">http://localhost:5173</code>
-              </p>
-            </div>
-
-            <form onSubmit={handleSaveGoogleClientId} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-totc-navy mb-1">
-                  ჩასვით თქვენი Google Client ID:
-                </label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={customClientIdInput}
-                    onChange={(e) => setCustomClientIdInput(e.target.value)}
-                    placeholder="მაგ: 1234567890-abc123xyz.apps.googleusercontent.com"
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 text-xs font-mono focus:border-totc-teal focus:ring-1 focus:ring-totc-teal"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowGoogleSetup(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100"
-                >
-                  გაუქმება
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-totc-teal hover:bg-teal-600 text-white text-xs font-bold transition-all flex items-center gap-1"
-                >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  შენახვა
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       {/* GOOGLE ACCOUNT CHOOSER MODAL */}
       <GoogleAccountChooserModal
         isOpen={showGoogleChooser}
         onClose={() => setShowGoogleChooser(false)}
         role={role}
         onSelectAccount={handleSelectGoogleAccount}
-        onSaveClientId={handleSaveGoogleClientIdDirect}
-        currentClientId={googleClientId}
       />
     </div>
   );
