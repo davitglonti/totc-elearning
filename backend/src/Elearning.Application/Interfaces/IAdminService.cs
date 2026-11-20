@@ -9,6 +9,7 @@ public interface IAdminService
 {
     Task<AdminStatsDto> GetStatsAsync();
     Task<List<AdminUserListItemDto>> GetUsersAsync();
+    Task<AdminUserListItemDto> CreateInstructorAsync(CreateInstructorDto dto);
     Task<bool> UpdateUserRoleAsync(Guid userId, string role);
     Task<bool> DeleteUserAsync(Guid userId, Guid currentAdminId);
     Task<List<AdminCourseListItemDto>> GetCoursesAsync();

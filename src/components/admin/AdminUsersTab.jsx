@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, UserPlus, Sparkles } from 'lucide-react';
 
 export function AdminUsersTab({
   userSearch,
@@ -11,17 +11,36 @@ export function AdminUsersTab({
   currentUser,
   handleRoleChange,
   handleDeleteUser,
+  onOpenCreateInstructor,
 }) {
   return (
     <div className="bg-white rounded-[28px] p-6 sm:p-8 border border-gray-100 shadow-sm space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="font-poppins font-bold text-xl text-totc-navy">რეგისტრირებული მომხმარებლების მართვა</h3>
-          <p className="text-xs text-totc-gray">მართეთ პლატფორმის ანგარიშები, შეცვალეთ როლები ან წაშალეთ მომხმარებლები.</p>
+          <h3 className="font-poppins font-bold text-xl text-totc-navy flex items-center gap-2">
+            <span>რეგისტრირებული მომხმარებლების მართვა</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-totc-gray">
+              {usersList.length}
+            </span>
+          </h3>
+          <p className="text-xs text-totc-gray mt-1">
+            მართეთ პლატფორმის ანგარიშები, შეცვალეთ როლები ან დაამატეთ ახალი ინსტრუქტორები.
+          </p>
         </div>
 
-        {/* Filters */}
+        {/* Actions & Filters */}
         <div className="flex flex-wrap items-center gap-3">
+          {onOpenCreateInstructor && (
+            <button
+              type="button"
+              onClick={onOpenCreateInstructor}
+              className="px-4 py-2.5 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-[#3da8aa] transition-all shadow-sm hover:shadow flex items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>+ ახალი ინსტრუქტორის დამატება</span>
+            </button>
+          )}
+
           <div className="relative">
             <Search className="w-4 h-4 text-totc-gray absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -80,24 +99,38 @@ export function AdminUsersTab({
                     </div>
                   </td>
 
-                  {/* Interactive Role Switcher */}
+                  {/* Interactive Role Switcher & 1-Click Promote */}
                   <td className="py-3.5 px-4">
-                    <select
-                      value={user.role}
-                      disabled={isSelf}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border focus:outline-none cursor-pointer transition-colors ${
-                        user.role === 'Admin'
-                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                          : user.role === 'Instructor'
-                          ? 'bg-purple-50 text-purple-700 border-purple-200'
-                          : 'bg-teal-50 text-totc-teal border-teal-200'
-                      } ${isSelf ? 'opacity-80 cursor-not-allowed' : ''}`}
-                    >
-                      <option value="Student">სტუდენტი</option>
-                      <option value="Instructor">ინსტრუქტორი</option>
-                      <option value="Admin">ადმინისტრატორი</option>
-                    </select>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={user.role}
+                        disabled={isSelf}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold border focus:outline-none cursor-pointer transition-colors ${
+                          user.role === 'Admin'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : user.role === 'Instructor'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : 'bg-teal-50 text-totc-teal border-teal-200'
+                        } ${isSelf ? 'opacity-80 cursor-not-allowed' : ''}`}
+                      >
+                        <option value="Student">სტუდენტი</option>
+                        <option value="Instructor">ინსტრუქტორი</option>
+                        <option value="Admin">ადმინისტრატორი</option>
+                      </select>
+
+                      {user.role === 'Student' && !isSelf && (
+                        <button
+                          type="button"
+                          onClick={() => handleRoleChange(user.id, 'Instructor')}
+                          title="ინსტრუქტორად დაწინაურება 1 დაწკაპუნებით"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-all shadow-2xs hover:scale-105 shrink-0"
+                        >
+                          <Sparkles className="w-3 h-3 text-purple-600" />
+                          <span>ინსტრუქტორად დაწინაურება</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
 
                   <td className="py-3.5 px-4">

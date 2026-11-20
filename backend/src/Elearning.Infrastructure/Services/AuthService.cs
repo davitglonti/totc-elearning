@@ -53,10 +53,16 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
-        // Enforce role restriction: Only Student (0) or Instructor (1) are permitted for public self-registration
+        // Enforce role restriction: Only Student (0) is permitted for public self-registration.
+        // Direct registration as Instructor or Administrator is strictly prohibited.
         if (dto.Role == UserRole.Admin || (int)dto.Role > 1 || (int)dto.Role < 0)
         {
             throw new InvalidOperationException("Direct registration as Administrator is strictly prohibited. Administrator accounts can only be provisioned via database seed or by an existing Administrator from the Admin panel.");
+        }
+
+        if (dto.Role == UserRole.Instructor)
+        {
+            throw new InvalidOperationException("Direct registration as Instructor is strictly prohibited. Instructor accounts can only be provisioned by an Administrator from the Admin panel.");
         }
 
         var existing = await _context.Users.AnyAsync(u => u.Email.ToLower() == dto.Email.ToLower());
@@ -65,21 +71,19 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("A user with this email address already exists.");
         }
 
-        var defaultAvatar = dto.Role == UserRole.Instructor
-            ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-            : "/assets/testimonial_avatar.png";
+        var defaultAvatar = "/assets/testimonial_avatar.png";
 
         var user = new User
         {
             FullName = dto.FullName.Trim(),
             Email = dto.Email.Trim().ToLower(),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            Role = dto.Role,
+            Role = UserRole.Student,
             AvatarUrl = !string.IsNullOrWhiteSpace(dto.AvatarUrl) ? dto.AvatarUrl.Trim() : defaultAvatar,
-            Headline = dto.Headline?.Trim(),
-            Bio = dto.Bio?.Trim(),
-            Education = dto.Education?.Trim(),
-            Experience = dto.Experience?.Trim(),
+            Headline = null,
+            Bio = null,
+            Education = null,
+            Experience = null,
             Website = dto.Website?.Trim()
         };
 
@@ -112,10 +116,15 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> GoogleAuthAsync(GoogleAuthDto dto)
     {
-        // 1. Enforce that Administrator accounts cannot be self-provisioned via Google
+        // 1. Enforce that Administrator and Instructor accounts cannot be self-provisioned via Google
         if (dto.Role == UserRole.Admin || (int)dto.Role > 1 || (int)dto.Role < 0)
         {
             throw new InvalidOperationException("Direct registration as Administrator is strictly prohibited.");
+        }
+
+        if (dto.Role == UserRole.Instructor)
+        {
+            throw new InvalidOperationException("Direct registration as Instructor is strictly prohibited. Instructor accounts can only be provisioned by an Administrator.");
         }
 
         if (string.IsNullOrWhiteSpace(dto.IdToken))
@@ -199,22 +208,20 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            // Register new Student or Instructor
-            var defaultAvatar = dto.Role == UserRole.Instructor
-                ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                : "/assets/testimonial_avatar.png";
+            // Public registration via Google ALWAYS creates Student accounts
+            var defaultAvatar = "/assets/testimonial_avatar.png";
 
             user = new User
             {
                 FullName = verifiedFullName,
                 Email = verifiedEmail,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N")),
-                Role = dto.Role,
+                Role = UserRole.Student,
                 AvatarUrl = !string.IsNullOrWhiteSpace(verifiedAvatar) ? verifiedAvatar : defaultAvatar,
-                Headline = dto.Role == UserRole.Instructor ? dto.Headline?.Trim() : null,
-                Bio = dto.Role == UserRole.Instructor ? dto.Bio?.Trim() : null,
-                Education = dto.Role == UserRole.Instructor ? dto.Education?.Trim() : null,
-                Experience = dto.Role == UserRole.Instructor ? dto.Experience?.Trim() : null
+                Headline = null,
+                Bio = null,
+                Education = null,
+                Experience = null
             };
 
             _context.Users.Add(user);

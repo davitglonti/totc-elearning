@@ -3,9 +3,10 @@ import {
   Shield, Users, Server, Activity, ExternalLink, 
   CheckCircle, BookOpen, DollarSign, CreditCard, 
   RefreshCw, AlertCircle, X, ArrowUpRight, CheckSquare,
-  Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles
+  Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles, UserPlus
 } from 'lucide-react';
 import { api } from '../services/api';
+import { adminApi } from '../services/api/adminApi';
 import { useSettings, defaultHomeContent } from '../context/SettingsContext';
 
 import { 
@@ -18,8 +19,11 @@ import {
   AdminSystemTab,
   AdminCmsSettingsTab,
   AdminMembershipCmsTab,
-  CourseReviewModal
+  CourseReviewModal,
+  CreateInstructorModal
 } from '../components/admin';
+
+export { CreateInstructorModal };
 
 export default function AdminDashboardPage({ currentUser, setActivePage, setSelectedCourse }) {
   const [activeTab, setActiveTab] = useState('overview');
@@ -63,6 +67,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
   const [userRoleFilter, setUserRoleFilter] = useState('ALL');
   const [courseSearch, setCourseSearch] = useState('');
   const [courseStatusFilter, setCourseStatusFilter] = useState('ALL');
+
+  // Create Instructor Modal state
+  const [isCreateInstructorOpen, setIsCreateInstructorOpen] = useState(false);
 
   // Inspection / Review Modal for Pending Courses
   const [reviewModalCourse, setReviewModalCourse] = useState(null);
@@ -244,6 +251,24 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
       setStats(updatedStats);
     } catch (err) {
       setActionMessage({ type: 'error', text: 'მომხმარებლის წაშლა ვერ მოხერხდა: ' + err.message });
+    }
+  };
+
+  // Handle instructor created via modal
+  const handleInstructorCreated = async (createdInstructor) => {
+    setActionMessage({ 
+      type: 'success', 
+      text: `✓ ახალი ინსტრუქტორი „${createdInstructor?.fullName || 'ინსტრუქტორი'}“ წარმატებით შეიქმნა!` 
+    });
+    try {
+      const [statsData, usersData] = await Promise.all([
+        api.admin.getStats(),
+        api.admin.getUsers(),
+      ]);
+      if (statsData) setStats(statsData);
+      if (usersData) setUsersList(usersData);
+    } catch (err) {
+      console.warn('Could not refresh telemetry after instructor creation:', err);
     }
   };
 
@@ -505,6 +530,15 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              onClick={() => setIsCreateInstructorOpen(true)}
+              className="px-5 py-3 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-[#3da8aa] transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0 cursor-pointer"
+              title="ახალი ინსტრუქტორის დამატება"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>+ ახალი ინსტრუქტორის დამატება</span>
+            </button>
+
+            <button
               onClick={loadAdminData}
               disabled={refreshing}
               className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
@@ -707,6 +741,7 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             currentUser={currentUser}
             handleRoleChange={handleRoleChange}
             handleDeleteUser={handleDeleteUser}
+            onOpenCreateInstructor={() => setIsCreateInstructorOpen(true)}
           />
         )}
 
@@ -810,6 +845,13 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         setRejectionFeedback={setRejectionFeedback}
         handleApproveCourse={handleApproveCourse}
         handleConfirmReject={handleConfirmReject}
+      />
+
+      {/* Create Instructor Modal */}
+      <CreateInstructorModal
+        isOpen={isCreateInstructorOpen}
+        onClose={() => setIsCreateInstructorOpen(false)}
+        onSuccess={handleInstructorCreated}
       />
 
     </div>

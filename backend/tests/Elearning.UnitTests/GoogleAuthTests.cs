@@ -112,6 +112,53 @@ public class GoogleAuthTests
     }
 
     [Fact]
+    public async Task GoogleAuthAsync_WithInstructorRole_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var config = CreateConfiguration();
+        var tokenService = new TokenService(config);
+        var authService = new AuthService(context, tokenService, config);
+
+        var dto = new GoogleAuthDto
+        {
+            IdToken = "dev-google-token:instructor_wannabe@gmail.com:Wannabe",
+            Role = UserRole.Instructor
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => authService.GoogleAuthAsync(dto));
+        Assert.Contains("Instructor is strictly prohibited", ex.Message);
+    }
+
+    [Fact]
+    public async Task GoogleAuthAsync_NewUser_AlwaysAssignsStudentRole()
+    {
+        // Arrange
+        using var context = CreateInMemoryDbContext();
+        var config = CreateConfiguration();
+        var tokenService = new TokenService(config);
+        var authService = new AuthService(context, tokenService, config);
+
+        var dto = new GoogleAuthDto
+        {
+            IdToken = "dev-google-token:newstudent@gmail.com:New Student",
+            Role = UserRole.Student,
+            Headline = "Attempted Headline"
+        };
+
+        // Act
+        var result = await authService.GoogleAuthAsync(dto);
+
+        // Assert
+        Assert.Equal("Student", result.User.Role);
+        var userInDb = await context.Users.FirstOrDefaultAsync(u => u.Email == "newstudent@gmail.com");
+        Assert.NotNull(userInDb);
+        Assert.Equal(UserRole.Student, userInDb.Role);
+        Assert.Null(userInDb.Headline);
+    }
+
+    [Fact]
     public async Task GoogleAuthAsync_InProductionWithDevToken_ThrowsUnauthorizedAccessException()
     {
         // Arrange

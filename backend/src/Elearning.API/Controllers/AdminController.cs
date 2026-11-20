@@ -45,6 +45,30 @@ public class AdminController : BaseApiController
     }
 
     /// <summary>
+    /// Provision a new instructor account directly from the admin panel (Administrator only).
+    /// </summary>
+    [HttpPost("instructors")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(AdminUserListItemDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateInstructor([FromBody] CreateInstructorDto dto)
+    {
+        try
+        {
+            var created = await _adminService.CreateInstructorAsync(dto);
+            return StatusCode(StatusCodes.Status201Created, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Update a user's platform authorization role.
     /// </summary>
     [HttpPut("users/{id:guid}/role")]

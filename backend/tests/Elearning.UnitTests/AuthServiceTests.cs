@@ -83,6 +83,54 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task RegisterAsync_DirectInstructorRegistration_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var dto = new RegisterDto
+        {
+            FullName = "Attempted Instructor",
+            Email = "newinst@example.com",
+            Password = "Password123!",
+            Role = UserRole.Instructor // Forbidden for public self-registration
+        };
+
+        // Act
+        var act = async () => await _authService.RegisterAsync(dto);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Instructor is strictly prohibited*");
+    }
+
+    [Fact]
+    public async Task RegisterAsync_PublicRegistration_AlwaysEnforcesStudentRole()
+    {
+        // Arrange
+        var dto = new RegisterDto
+        {
+            FullName = "Standard Student",
+            Email = "student101@example.com",
+            Password = "SecurePassword123!",
+            Role = UserRole.Student,
+            Headline = "Attempted Headline",
+            Bio = "Attempted Bio"
+        };
+
+        // Act
+        var result = await _authService.RegisterAsync(dto);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.User.Role.Should().Be("Student");
+
+        var userInDb = await _context.Users.FirstOrDefaultAsync(u => u.Email == "student101@example.com");
+        userInDb.Should().NotBeNull();
+        userInDb!.Role.Should().Be(UserRole.Student);
+        userInDb.Headline.Should().BeNull();
+        userInDb.Bio.Should().BeNull();
+    }
+
+    [Fact]
     public async Task RegisterAsync_DuplicateEmail_ThrowsInvalidOperationException()
     {
         // Arrange

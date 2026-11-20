@@ -8,3 +8,4 @@ export { AdminSystemTab } from './AdminSystemTab';
 export { AdminCmsSettingsTab, AdminCategoriesTab, AdminHomeCmsTab, AdminSettingsTab } from './AdminCmsSettingsTab';
 export { AdminMembershipCmsTab } from './AdminMembershipCmsTab';
 export { CourseReviewModal } from './CourseReviewModal';
+export { CreateInstructorModal } from './CreateInstructorModal';

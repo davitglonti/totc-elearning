@@ -1,6 +1,25 @@
+using System.ComponentModel.DataAnnotations;
 using Elearning.Domain.Enums;
 
 namespace Elearning.Application.DTOs;
+
+public class CreateInstructorDto
+{
+    [Required(ErrorMessage = "Full name is required.")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Invalid email address format.")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password is required.")]
+    [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
+    public string Password { get; set; } = string.Empty;
+
+    public string? Headline { get; set; }
+    public string? Bio { get; set; }
+    public string? AvatarUrl { get; set; }
+}
 
 public class AdminStatsDto
 {

@@ -6,16 +6,17 @@ import {
   GraduationCap,
   Sparkles,
   BookOpen,
-  Briefcase,
   Award,
-  CheckCircle,
+  CheckCircle2,
   AlertCircle,
   ArrowRight,
   ShieldCheck,
-  Globe,
   Video,
-  Key,
-  X
+  KeyRound,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Check
 } from 'lucide-react';
 import { api } from '../services/api';
 import { GoogleAccountChooserModal } from '../components/modals/GoogleAccountChooserModal';
@@ -53,23 +54,17 @@ export default function AuthPage({
   openAuthModal
 }) {
   const [mode, setMode] = useState(initialMode);
-  const [role, setRole] = useState('Student'); // 'Student' or 'Instructor'
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Form inputs
+  // Form inputs (strictly student public registration)
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // Instructor-specific inputs
-  const [headline, setHeadline] = useState('');
-  const [education, setEducation] = useState('');
-  const [experience, setExperience] = useState('');
-  const [bio, setBio] = useState('');
 
   // Google OAuth 2.0 Integration State
   const [googleClientId, setGoogleClientId] = useState('');
@@ -118,6 +113,7 @@ export default function AuthPage({
     setMode(initialMode || 'login');
     setError('');
     setSuccessMsg('');
+    setForgotSuccess(false);
   }, [initialMode]);
 
   /**
@@ -130,19 +126,13 @@ export default function AuthPage({
     setGoogleLoading(true);
 
     try {
-      const extra = role === 'Instructor' ? {
-        headline: headline.trim() || undefined,
-        education: education.trim() || undefined,
-        experience: experience.trim() || undefined
-      } : {};
-
+      // Public registration / login is strictly for students
       const res = await api.auth.googleLogin({
         idToken: response.credential,
-        role: role,
-        ...extra
+        role: 'Student'
       });
 
-      setSuccessMsg(`🎉 Google-ით ავტორიზაცია წარმატებით დასრულდა (${res.user.fullName})! გადამისამართება...`);
+      setSuccessMsg(`🎉 Google-ით ავტორიზაცია წარმატებით დასრულდა (${res.user?.fullName || ''})! გადამისამართება...`);
       if (onAuthSuccess) {
         setTimeout(() => onAuthSuccess(res.user), 600);
       }
@@ -200,7 +190,7 @@ export default function AuthPage({
       }, 250);
       return () => clearInterval(timer);
     }
-  }, [googleClientId, mode, role, headline, education, experience]);
+  }, [googleClientId, mode]);
 
   const handleStandardSubmit = async (e) => {
     e.preventDefault();
@@ -210,25 +200,18 @@ export default function AuthPage({
 
     try {
       if (mode === 'forgot-password') {
-        await api.auth.forgotPassword(email);
+        await api.auth.forgotPassword(email.trim());
         setForgotSuccess(true);
         setSuccessMsg('თუ ელ-ფოსტა რეგისტრირებულია, აღდგენის ბმული გაგზავნილია.');
         return;
       }
 
       if (mode === 'login') {
-        const res = await api.auth.login(email, password);
+        const res = await api.auth.login(email.trim(), password);
         if (onAuthSuccess) onAuthSuccess(res.user);
       } else {
-        // Registering either as Student or Instructor
-        const extra = role === 'Instructor' ? {
-          headline: headline.trim() || 'ინსტრუქტორი და საგნის სპეციალისტი',
-          education: education.trim(),
-          experience: experience.trim(),
-          bio: bio.trim(),
-        } : {};
-
-        const res = await api.auth.register(fullName, email, password, role, extra);
+        // Public registration is strictly for students
+        const res = await api.auth.register(fullName.trim(), email.trim(), password, 'Student');
         if (onAuthSuccess) onAuthSuccess(res.user);
       }
     } catch (err) {
@@ -241,128 +224,136 @@ export default function AuthPage({
   return (
     <div className="min-h-screen bg-slate-50 flex items-stretch">
       {/* Left Column: TOTC Visual Brand & Showcase (hidden on small devices) */}
-      <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-totc-teal via-[#1da599] to-totc-navy p-12 text-white flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-[#2F327D] via-[#242766] to-[#14163c] p-12 text-white flex-col justify-between relative overflow-hidden">
         {/* Decorative background glows */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-totc-cyan/20 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-[#49BBBD]/25 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 rounded-full bg-[#23BDEE]/20 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full bg-white/5 blur-2xl pointer-events-none" />
 
         {/* Brand Header */}
         <div className="relative z-10">
           <div
             onClick={() => setActivePage('home')}
-            className="flex items-center gap-3 cursor-pointer group w-fit"
+            className="flex items-center gap-3.5 cursor-pointer group w-fit"
           >
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center transform rotate-45 group-hover:rotate-90 transition-transform duration-300">
-              <span className="font-poppins font-black text-white text-sm -rotate-45">T</span>
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#49BBBD] to-[#23BDEE] flex items-center justify-center transform rotate-45 group-hover:rotate-90 transition-transform duration-300 shadow-lg shadow-[#49BBBD]/30">
+              <span className="font-poppins font-black text-white text-base -rotate-45">T</span>
             </div>
-            <span className="font-poppins font-bold text-2xl tracking-wider text-white">TOTC</span>
+            <div className="flex flex-col">
+              <span className="font-poppins font-extrabold text-2xl tracking-wider text-white">TOTC</span>
+              <span className="text-[10px] uppercase font-bold tracking-widest text-[#49BBBD]">E-Learning</span>
+            </div>
           </div>
 
           <div className="mt-12 space-y-4">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold uppercase tracking-wider backdrop-blur-sm inline-flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>ახალი თაობის ინტერაქტიული ონლაინ სწავლება</span>
+            <span className="px-4 py-1.5 rounded-full bg-white/10 text-white text-xs font-semibold uppercase tracking-wider backdrop-blur-md inline-flex items-center gap-2 border border-white/15">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>ახალი თაობის ინტერაქტიული სწავლება</span>
             </span>
-            <h1 className="font-poppins font-bold text-3xl xl:text-4xl leading-tight">
+            <h1 className="font-poppins font-bold text-3xl xl:text-4xl leading-tight text-white drop-shadow-sm">
               {mode === 'login'
-                ? 'მოგესალმებით თქვენს ინტერაქტიულ საკლასო ოთახში.'
+                ? 'მოგესალმებით თქვენს სასწავლო სივრცეში.'
                 : mode === 'forgot-password'
-                ? 'პაროლის უსაფრთხო აღდგენა.'
-                : 'დაიწყეთ სწავლა ან სწავლება თანამედროვე ინსტრუმენტებით.'}
+                ? 'პაროლის სწრაფი და უსაფრთხო აღდგენა.'
+                : 'დაიწყეთ სწავლა TOTC-ის სტუდენტურ საზოგადოებაში.'}
             </h1>
-            <p className="text-white/80 text-sm xl:text-base leading-relaxed">
-              განავითარეთ კარიერა მაღალი ხარისხის ვიდეო გაკვეთილებით, ინტერაქტიული ტესტებით, ჩამოსატვირთი მასალებითა და ვერიფიცირებული სერტიფიკატებით.
+            <p className="text-white/80 text-sm xl:text-base leading-relaxed max-w-md">
+              განავითარეთ თქვენი უნარები მაღალი ხარისხის ვიდეო გაკვეთილებით, ინტერაქტიული ტესტებითა და ვერიფიცირებული სერტიფიკატებით.
             </p>
           </div>
         </div>
 
-        {/* Feature Highlights Pills */}
+        {/* Feature Highlights Pills (Strictly student benefits) */}
         <div className="relative z-10 space-y-3.5 my-8">
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
-            <div className="w-10 h-10 rounded-xl bg-emerald-400/20 text-emerald-300 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 hover:bg-white/[0.12] transition-colors">
+            <div className="w-11 h-11 rounded-xl bg-[#49BBBD]/25 text-[#49BBBD] flex items-center justify-center shrink-0 border border-[#49BBBD]/30">
               <Video className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Bunny CDN Ultra HD ვიდეო ფლეიერი</p>
-              <p className="text-xs text-white/70">შეუფერხებელი 1080p, 720p, 480p ხარისხის კონტროლი.</p>
+              <p className="text-sm font-bold text-white">Bunny CDN Ultra HD ფლეიერი</p>
+              <p className="text-xs text-white/70">შეუფერხებელი 1080p ხარისხი და რეგულირებადი სიჩქარე.</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
-            <div className="w-10 h-10 rounded-xl bg-cyan-400/20 text-cyan-300 flex items-center justify-center shrink-0">
-              <GraduationCap className="w-5 h-5" />
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 hover:bg-white/[0.12] transition-colors">
+            <div className="w-11 h-11 rounded-xl bg-cyan-400/25 text-cyan-300 flex items-center justify-center shrink-0 border border-cyan-400/30">
+              <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">თანმიმდევრული გაკვეთილები და ტესტები</p>
-              <p className="text-xs text-white/70">გააზრებული სასწავლო პროცესი ეტაპობრივი პროგრესით.</p>
+              <p className="text-sm font-bold text-white">ინტერაქტიული ტესტები და პრაქტიკა</p>
+              <p className="text-xs text-white/70">შეამოწმეთ ცოდნა თითოეული მოდულის ბოლოს რეალური უკუკავშირით.</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
-            <div className="w-10 h-10 rounded-xl bg-purple-400/20 text-purple-300 flex items-center justify-center shrink-0">
-              <Briefcase className="w-5 h-5" />
+          <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 hover:bg-white/[0.12] transition-colors">
+            <div className="w-11 h-11 rounded-xl bg-amber-400/25 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30">
+              <Award className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">ინსტრუქტორის სტუდია და საჯარო პროფილი</p>
-              <p className="text-xs text-white/70">წარმოადგინეთ თქვენი კვალიფიკაცია, გამოცდილება და კურსები.</p>
+              <p className="text-sm font-bold text-white">ვერიფიცირებული სერტიფიკატები</p>
+              <p className="text-xs text-white/70">ოფიციალური დიპლომი და QR-ვერიფიკაცია წარმატებული დასრულებისთვის.</p>
             </div>
           </div>
         </div>
 
         {/* Footer info */}
         <div className="relative z-10 flex items-center justify-between text-xs text-white/60 pt-6 border-t border-white/15">
-          <span>© 2026 TOTC ელექტრონული სწავლება</span>
+          <span>© 2026 TOTC E-Learning. ყველა უფლება დაცულია.</span>
           <div className="flex items-center gap-3">
-            <span className="hover:text-white cursor-pointer">კონფიდენციალურობა</span>
+            <span onClick={() => setActivePage('home')} className="hover:text-white cursor-pointer transition-colors">მთავარი</span>
             <span>•</span>
-            <span className="hover:text-white cursor-pointer">წესები</span>
+            <span className="hover:text-white cursor-pointer transition-colors">კონფიდენციალურობა</span>
+            <span>•</span>
+            <span className="hover:text-white cursor-pointer transition-colors">წესები</span>
           </div>
         </div>
       </div>
 
       {/* Right Column: Interactive Form */}
       <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-12 overflow-y-auto">
-        <div className="max-w-xl w-full mx-auto space-y-8">
+        <div className="max-w-md w-full mx-auto space-y-7">
           
           {/* Mobile Top Brand (visible on mobile only) */}
-          <div className="lg:hidden flex items-center justify-between pb-4 border-b border-gray-100">
+          <div className="lg:hidden flex items-center justify-between pb-4 border-b border-slate-200">
             <button
               onClick={() => setActivePage('home')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2.5"
             >
-              <div className="w-8 h-8 rounded-lg bg-totc-teal flex items-center justify-center transform rotate-45">
+              <div className="w-9 h-9 rounded-xl bg-[#49BBBD] flex items-center justify-center transform rotate-45 shadow-md shadow-[#49BBBD]/30">
                 <span className="font-bold text-white text-xs -rotate-45">T</span>
               </div>
-              <span className="font-poppins font-black text-xl text-totc-navy">TOTC</span>
+              <div className="flex flex-col text-left">
+                <span className="font-poppins font-black text-xl text-[#2F327D] leading-none">TOTC</span>
+                <span className="text-[9px] uppercase font-bold text-[#49BBBD] tracking-wider">E-Learning</span>
+              </div>
             </button>
             <button
               onClick={() => setActivePage('home')}
-              className="text-xs font-semibold text-totc-teal hover:underline"
+              className="text-xs font-semibold text-[#49BBBD] hover:underline flex items-center gap-1"
             >
-              ← მთავარ გვერდზე
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>მთავარ გვერდზე</span>
             </button>
           </div>
 
           {/* Heading and Mode Switcher */}
           <div>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-totc-navy tracking-tight">
-                  {mode === 'login' ? 'ანგარიშში შესვლა' : mode === 'forgot-password' ? 'პაროლის აღდგენა' : 'შექმენით TOTC ანგარიში'}
-                </h2>
-                <p className="text-totc-gray text-sm mt-1">
-                  {mode === 'login'
-                    ? 'შეიყვანეთ თქვენი მონაცემები ან შედით Google-ით.'
-                    : mode === 'forgot-password'
-                    ? 'შეიყვანეთ თქვენი რეგისტრირებული ელ-ფოსტის მისამართი და გამოგიგზავნით აღდგენის ბმულს.'
-                    : 'აირჩიეთ სტუდენტის ან ინსტრუქტორის სტატუსი.'}
-                </p>
-              </div>
+            <div className="space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#2F327D] tracking-tight font-poppins">
+                {mode === 'login' ? 'ანგარიშში შესვლა' : mode === 'forgot-password' ? 'პაროლის აღდგენა' : 'სტუდენტის რეგისტრაცია'}
+              </h2>
+              <p className="text-slate-500 text-sm">
+                {mode === 'login'
+                  ? 'შეიყვანეთ მონაცემები ან გამოიყენეთ სწრაფი Google ავტორიზაცია.'
+                  : mode === 'forgot-password'
+                  ? 'შეიყვანეთ რეგისტრირებული ელ-ფოსტის მისამართი აღდგენის ბმულის მისაღებად.'
+                  : 'შექმენით სტუდენტის უფასო ანგარიში და დაიწყეთ სწავლა დღესვე.'}
+              </p>
             </div>
 
             {/* Mode Switcher Tabs */}
             {mode !== 'forgot-password' && (
-              <div className="mt-6 flex p-1.5 bg-gray-100 rounded-full max-w-sm">
+              <div className="mt-6 flex p-1.5 bg-slate-100 rounded-2xl max-w-xs shadow-inner">
                 <button
                   type="button"
                   onClick={() => {
@@ -370,10 +361,10 @@ export default function AuthPage({
                     setError('');
                     setSuccessMsg('');
                   }}
-                  className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 ${
                     mode === 'login'
-                      ? 'bg-totc-teal text-white shadow-sm'
-                      : 'text-totc-gray hover:text-totc-navy'
+                      ? 'bg-[#49BBBD] text-white shadow-[0_4px_12px_rgba(73,187,189,0.3)]'
+                      : 'text-slate-500 hover:text-[#2F327D]'
                   }`}
                 >
                   შესვლა
@@ -385,10 +376,10 @@ export default function AuthPage({
                     setError('');
                     setSuccessMsg('');
                   }}
-                  className={`flex-1 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+                  className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all duration-200 ${
                     mode === 'register'
-                      ? 'bg-totc-teal text-white shadow-sm'
-                      : 'text-totc-gray hover:text-totc-navy'
+                      ? 'bg-[#49BBBD] text-white shadow-[0_4px_12px_rgba(73,187,189,0.3)]'
+                      : 'text-slate-500 hover:text-[#2F327D]'
                   }`}
                 >
                   რეგისტრაცია
@@ -399,29 +390,31 @@ export default function AuthPage({
 
           {/* Alerts */}
           {error && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3 animate-shake">
+            <div className="p-4 rounded-2xl bg-red-50/90 border border-red-200/90 text-red-700 text-sm flex items-center gap-3 animate-shake">
               <AlertCircle className="w-5 h-5 shrink-0 text-red-500" />
-              <span className="font-medium">{error}</span>
+              <span className="font-medium text-xs sm:text-sm">{error}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3 animate-in fade-in">
-              <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600" />
-              <span className="font-medium">{successMsg}</span>
+            <div className="p-4 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 text-emerald-800 text-sm flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+              <span className="font-medium text-xs sm:text-sm">{successMsg}</span>
             </div>
           )}
 
           {mode === 'forgot-password' ? (
-            <div className="space-y-6 animate-in fade-in">
+            <div className="space-y-6">
               {forgotSuccess ? (
-                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 space-y-4 text-center animate-in fade-in">
-                  <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto" />
-                  <h4 className="font-bold text-lg text-emerald-900">აღდგენის ბმული გაგზავნილია</h4>
+                <div className="p-6 sm:p-8 rounded-3xl bg-emerald-50/80 border border-emerald-200/90 text-emerald-900 space-y-4 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <h4 className="font-poppins font-bold text-xl text-emerald-950">აღდგენის ბმული გაგზავნილია</h4>
                   <p className="text-sm leading-relaxed text-emerald-800">
-                    თუ მითითებული ელ-ფოსტა რეგისტრირებულია სისტემაში, პაროლის აღდგენის ინსტრუქცია და ბმული წარმატებით გაიგზავნა.
+                    თუ მითითებული ელ-ფოსტა რეგისტრირებულია სისტემაში, პაროლის აღდგენის ინსტრუქცია და უსაფრთხო ბმული გაგზავნილია.
                   </p>
-                  <p className="text-xs text-emerald-600">
+                  <p className="text-xs text-emerald-600 bg-emerald-100/50 py-2 px-3 rounded-xl">
                     გთხოვთ შეამოწმოთ თქვენი საფოსტო ყუთი (მათ შორის Spam საქაღალდე).
                   </p>
                   <button
@@ -432,26 +425,26 @@ export default function AuthPage({
                       setError('');
                       setSuccessMsg('');
                     }}
-                    className="w-full py-3 px-6 rounded-xl bg-totc-teal text-white font-bold text-sm hover:bg-totc-teal-dark transition-colors shadow-md"
+                    className="w-full py-3.5 px-6 rounded-2xl bg-[#49BBBD] hover:bg-[#3DA5A7] text-white font-bold text-sm transition-all shadow-[0_6px_20px_rgba(73,187,189,0.3)] mt-2"
                   >
                     ავტორიზაციის გვერდზე დაბრუნება
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleStandardSubmit} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#2F327D] uppercase tracking-wider">
                       ელ-ფოსტის მისამართი *
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
+                      <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="name@example.com"
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#49BBBD] focus:ring-4 focus:ring-[#49BBBD]/15 transition-all shadow-sm"
                       />
                     </div>
                   </div>
@@ -459,7 +452,7 @@ export default function AuthPage({
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-4 rounded-xl bg-totc-teal text-white font-bold text-base hover:bg-totc-teal-dark transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-4 rounded-2xl bg-[#49BBBD] hover:bg-[#3DA5A7] text-white font-bold text-base transition-all shadow-[0_8px_25px_rgba(73,187,189,0.35)] hover:shadow-[0_12px_28px_rgba(73,187,189,0.45)] flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.99]"
                   >
                     {loading ? 'იგზავნება...' : 'აღდგენის ბმულის გაგზავნა'}
                   </button>
@@ -473,9 +466,10 @@ export default function AuthPage({
                         setSuccessMsg('');
                         setForgotSuccess(false);
                       }}
-                      className="text-sm font-semibold text-totc-teal hover:underline inline-flex items-center gap-1.5"
+                      className="text-sm font-semibold text-[#49BBBD] hover:text-[#3DA5A7] transition-colors inline-flex items-center gap-1.5"
                     >
-                      ← შესვლაზე დაბრუნება
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>შესვლაზე დაბრუნება</span>
                     </button>
                   </div>
                 </form>
@@ -483,305 +477,190 @@ export default function AuthPage({
             </div>
           ) : (
             <>
-              {/* GOOGLE SIGN-IN SECTION */}
-          <div className="space-y-3">
-            {isGoogleConfigured ? (
-              <div className="flex justify-center w-full py-1">
-                <div ref={googleBtnContainerRef} className="min-h-[44px] flex justify-center w-full" />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowGoogleChooser(true)}
-                disabled={loading || googleLoading}
-                className="w-full py-3.5 px-4 rounded-2xl border-2 border-slate-200 hover:border-totc-teal hover:bg-slate-50 text-totc-navy font-semibold text-sm sm:text-base flex items-center justify-center gap-3 transition-all duration-200 shadow-sm"
-              >
-                <GoogleIcon className="w-5 h-5" />
-                <span>
-                  {mode === 'login'
-                    ? 'Google-ით შესვლა'
-                    : `Google-ით რეგისტრაცია (${role === 'Instructor' ? 'ინსტრუქტორი' : 'სტუდენტი'})`}
-                </span>
-              </button>
-            )}
-
-            {googleLoading && (
-              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs flex items-center justify-center gap-2 animate-pulse">
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                <span>მიმდინარეობს Google ავტორიზაცია...</span>
-              </div>
-            )}
-
-            <div className="relative my-4 text-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200" />
-              </div>
-              <span className="relative px-4 bg-slate-50 text-xs font-semibold text-totc-gray uppercase tracking-wider">
-                ან გაიარეთ ავტორიზაცია ელ-ფოსტით
-              </span>
-            </div>
-          </div>
-
-          {/* ROLE SELECTOR: Student vs Instructor (on Register mode) */}
-          {mode === 'register' && (
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider">
-                აირჩიეთ თქვენი სტატუსი:
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Student Option */}
-                <button
-                  type="button"
-                  onClick={() => setRole('Student')}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between ${
-                    role === 'Student'
-                      ? 'border-totc-teal bg-totc-teal/5 shadow-sm'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-totc-teal flex items-center justify-center font-bold">
-                      <GraduationCap className="w-5 h-5" />
-                    </div>
-                    {role === 'Student' && (
-                      <span className="w-5 h-5 rounded-full bg-totc-teal text-white flex items-center justify-center text-xs">
-                        ✓
-                      </span>
-                    )}
+              {/* GOOGLE 1-CLICK SIGN-IN SECTION */}
+              <div className="space-y-3">
+                {isGoogleConfigured ? (
+                  <div className="flex justify-center w-full py-1">
+                    <div ref={googleBtnContainerRef} className="min-h-[44px] flex justify-center w-full" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-totc-navy text-sm">🎓 სტუდენტი</h4>
-                    <p className="text-xs text-totc-gray mt-0.5">
-                      მსურს კურსების ყურება, სწავლა და ტესტების გავლა.
-                    </p>
-                  </div>
-                </button>
-
-                {/* Instructor Option */}
-                <button
-                  type="button"
-                  onClick={() => setRole('Instructor')}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between ${
-                    role === 'Instructor'
-                      ? 'border-purple-600 bg-purple-50/50 shadow-sm'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    {role === 'Instructor' && (
-                      <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs">
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-totc-navy text-sm">👨‍🏫 ინსტრუქტორი</h4>
-                    <p className="text-xs text-totc-gray mt-0.5">
-                      მსურს კურსების შექმნა და სტუდენტებისთვის სწავლება.
-                    </p>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Main Credentials Form */}
-          <form onSubmit={handleStandardSubmit} className="space-y-4">
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
-                  სახელი და გვარი *
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="მაგ. დავით ბერიძე"
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider mb-1.5">
-                ელ-ფოსტა *
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-totc-navy uppercase tracking-wider">
-                  პაროლი *
-                </label>
-                {mode === 'login' && (
+                ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      setMode('forgot-password');
-                      setError('');
-                      setSuccessMsg('');
-                      setForgotSuccess(false);
-                    }}
-                    className="text-xs font-semibold text-totc-teal hover:underline"
+                    onClick={() => setShowGoogleChooser(true)}
+                    disabled={loading || googleLoading}
+                    className="w-full py-3.5 px-4 rounded-2xl border border-slate-200/90 bg-white hover:border-[#49BBBD] hover:bg-slate-50 text-slate-700 font-semibold text-sm sm:text-base flex items-center justify-center gap-3 transition-all duration-200 shadow-sm hover:shadow"
                   >
-                    პაროლი დაგავიწყდა?
+                    <GoogleIcon className="w-5 h-5 shrink-0" />
+                    <span>
+                      {mode === 'login' ? 'Google-ით შესვლა' : 'Google-ით სწრაფი რეგისტრაცია'}
+                    </span>
                   </button>
                 )}
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="•••••••• (მინიმუმ 6 სიმბოლო)"
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-totc-teal focus:ring-2 focus:ring-totc-teal/20"
-                />
-              </div>
-            </div>
 
-            {/* INSTRUCTOR-SPECIFIC SPECIALTY / BIO FIELDS */}
-            {mode === 'register' && role === 'Instructor' && (
-              <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-4 animate-in fade-in">
-                <div className="flex items-center gap-2 text-purple-900 font-bold text-xs uppercase tracking-wide">
-                  <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span>ინსტრუქტორის კვალიფიკაცია და საჯარო პროფილი</span>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-purple-900 mb-1">
-                    წოდება / სპეციალობა *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={headline}
-                    onChange={(e) => setHeadline(e.target.value)}
-                    placeholder="მაგ. Senior Cloud Architect & AI Researcher"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-purple-900 mb-1">
-                      განათლება
-                    </label>
-                    <input
-                      type="text"
-                      value={education}
-                      onChange={(e) => setEducation(e.target.value)}
-                      placeholder="მაგ. კომპიუტერული მეცნიერების მაგისტრი"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
-                    />
+                {googleLoading && (
+                  <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-xs flex items-center justify-center gap-2 animate-pulse">
+                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <span>მიმდინარეობს Google ავტორიზაცია...</span>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-purple-900 mb-1">
-                      გამოცდილება
+                )}
+
+                <div className="relative my-4 text-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200" />
+                  </div>
+                  <span className="relative px-4 bg-slate-50 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    ან გააგრძელეთ ელ-ფოსტით
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Credentials Form (Strictly Student Registration) */}
+              <form onSubmit={handleStandardSubmit} className="space-y-4">
+                {mode === 'register' && (
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-[#2F327D] uppercase tracking-wider">
+                      სახელი და გვარი *
                     </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="მაგ. დავით ბერიძე"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#49BBBD] focus:ring-4 focus:ring-[#49BBBD]/15 transition-all shadow-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#2F327D] uppercase tracking-wider">
+                    ელ-ფოსტა *
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
                     <input
-                      type="text"
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      placeholder="მაგ. 10+ წლიანი გამოცდილება IT სფეროში"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#49BBBD] focus:ring-4 focus:ring-[#49BBBD]/15 transition-all shadow-sm"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-purple-900 mb-1">
-                    მოკლე ბიოგრაფია
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="გაუზიარეთ სტუდენტებს თქვენი პროფესიული გამოცდილება და მიღწევები..."
-                    className="w-full px-3.5 py-2 rounded-xl border border-purple-200 bg-white text-xs sm:text-sm focus:outline-none focus:border-purple-600 resize-none"
-                  />
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-[#2F327D] uppercase tracking-wider">
+                      პაროლი *
+                    </label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot-password');
+                          setError('');
+                          setSuccessMsg('');
+                          setForgotSuccess(false);
+                        }}
+                        className="text-xs font-semibold text-[#49BBBD] hover:text-[#3DA5A7] transition-colors"
+                      >
+                        დაგავიწყდათ პაროლი?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="•••••••• (მინიმუმ 6 სიმბოლო)"
+                      className="w-full pl-12 pr-12 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#49BBBD] focus:ring-4 focus:ring-[#49BBBD]/15 transition-all shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
+
+                {mode === 'register' && (
+                  <div className="flex items-center gap-2 pt-1 text-xs text-slate-500">
+                    <ShieldCheck className="w-4 h-4 text-[#49BBBD] shrink-0" />
+                    <span>რეგისტრაცია უფასოა და გაძლევთ წვდომას სასწავლო მასალებზე.</span>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || googleLoading}
+                  className="w-full py-4 rounded-2xl font-bold text-base text-white bg-[#49BBBD] hover:bg-[#3DA5A7] transition-all duration-200 shadow-[0_8px_25px_rgba(73,187,189,0.35)] hover:shadow-[0_12px_28px_rgba(73,187,189,0.45)] flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50 mt-2"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>მუშავდება...</span>
+                    </div>
+                  ) : mode === 'login' ? (
+                    <>
+                      <span>სისტემაში შესვლა</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>სტუდენტის რეგისტრაცია</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Bottom Switch Link */}
+              <div className="text-center pt-2">
+                {mode === 'login' ? (
+                  <p className="text-sm text-slate-500">
+                    ჯერ არ გაქვთ ანგარიში?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('register');
+                        setError('');
+                        setSuccessMsg('');
+                      }}
+                      className="font-bold text-[#49BBBD] hover:text-[#3DA5A7] transition-colors hover:underline"
+                    >
+                      რეგისტრაცია
+                    </button>
+                  </p>
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    უკვე გაქვთ ანგარიში?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setError('');
+                        setSuccessMsg('');
+                      }}
+                      className="font-bold text-[#49BBBD] hover:text-[#3DA5A7] transition-colors hover:underline"
+                    >
+                      შესვლა
+                    </button>
+                  </p>
+                )}
               </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || googleLoading}
-              className={`w-full py-4 rounded-full font-bold text-base text-white transition-all duration-200 shadow-md flex items-center justify-center gap-2 active:scale-98 ${
-                role === 'Instructor' && mode === 'register'
-                  ? 'bg-purple-600 hover:bg-purple-700'
-                  : 'bg-totc-teal hover:bg-totc-teal-dark'
-              }`}
-            >
-              {loading ? (
-                <span>ანგარიშის დამუშავება...</span>
-              ) : mode === 'login' ? (
-                <>
-                  <span>სისტემაში შესვლა</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : role === 'Instructor' ? (
-                <>
-                  <span>ინსტრუქტორად რეგისტრაცია</span>
-                  <Sparkles className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  <span>უფასო ანგარიშის შექმნა</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Bottom Switch Link */}
-          <div className="text-center pt-2">
-            {mode === 'login' ? (
-              <p className="text-sm text-totc-gray">
-                ჯერ არ გაქვთ ანგარიში?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('register')}
-                  className="font-bold text-totc-teal hover:underline"
-                >
-                  რეგისტრაცია
-                </button>
-              </p>
-            ) : (
-              <p className="text-sm text-totc-gray">
-                უკვე გაქვთ ანგარიში?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="font-bold text-totc-teal hover:underline"
-                >
-                  შესვლა
-                </button>
-              </p>
-            )}
-          </div>
-          </>
-        )}
+            </>
+          )}
 
         </div>
       </div>
@@ -790,7 +669,7 @@ export default function AuthPage({
       <GoogleAccountChooserModal
         isOpen={showGoogleChooser}
         onClose={() => setShowGoogleChooser(false)}
-        role={role}
+        role="Student"
         onSelectAccount={handleSelectGoogleAccount}
       />
     </div>

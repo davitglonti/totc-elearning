@@ -76,6 +76,58 @@ public class AdminService : IAdminService
             .ToListAsync();
     }
 
+    public async Task<AdminUserListItemDto> CreateInstructorAsync(CreateInstructorDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.FullName))
+            throw new ArgumentException("Full name is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Email))
+            throw new ArgumentException("Email is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 6)
+            throw new ArgumentException("Password must be at least 6 characters long.");
+
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        var existing = await _context.Users.AnyAsync(u => u.Email.ToLower() == normalizedEmail);
+        if (existing)
+        {
+            throw new InvalidOperationException("A user with this email address already exists.");
+        }
+
+        var defaultAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80";
+
+        var user = new User
+        {
+            FullName = dto.FullName.Trim(),
+            Email = normalizedEmail,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Role = UserRole.Instructor,
+            AvatarUrl = !string.IsNullOrWhiteSpace(dto.AvatarUrl) ? dto.AvatarUrl.Trim() : defaultAvatar,
+            Headline = !string.IsNullOrWhiteSpace(dto.Headline) ? dto.Headline.Trim() : "EdTech Instructor",
+            Bio = !string.IsNullOrWhiteSpace(dto.Bio) ? dto.Bio.Trim() : "Expert instructor at TOTC LMS.",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return new AdminUserListItemDto
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            Role = user.Role.ToString(),
+            IsSubscribed = user.IsSubscribed,
+            SubscriptionPlan = user.SubscriptionPlan,
+            SubscriptionExpiresAt = user.SubscriptionExpiresAt,
+            AvatarUrl = user.AvatarUrl,
+            CreatedAt = user.CreatedAt,
+            AuthoredCoursesCount = 0,
+            EnrollmentsCount = 0
+        };
+    }
+
     public async Task<bool> UpdateUserRoleAsync(Guid userId, string role)
     {
         var user = await _context.Users.FindAsync(userId);

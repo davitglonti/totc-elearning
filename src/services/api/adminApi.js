@@ -16,6 +16,13 @@ export const adminApi = {
     });
   },
 
+  async createInstructor(data) {
+    return request('/admin/instructors', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   async deleteUser(userId) {
     return request(`/admin/users/${userId}`, {
       method: 'DELETE',
