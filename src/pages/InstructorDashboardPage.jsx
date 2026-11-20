@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, BookOpen, DollarSign, Star, Plus, Video, 
   CheckCircle, Trash2, Sparkles, Eye, EyeOff, Layers, 
-  Clock, AlertCircle, RefreshCw, ArrowUpRight, Edit3, Lock, Unlock
+  Clock, AlertCircle, RefreshCw, ArrowUpRight, Edit3, Lock, Unlock,
+  FileText
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
+import { InstructorFinanceTab } from '../components/instructor/InstructorFinanceTab';
 
 export default function InstructorDashboardPage({ currentUser, setActivePage, setSelectedCourse, onEditCourse }) {
+  const { settings } = useSettings();
+  const referralShare = settings?.instructorReferralShare ?? 80;
+  const organicShare = settings?.instructorOrganicShare ?? 60;
+
   const [summary, setSummary] = useState(null);
+  const [activeTab, setActiveTab] = useState('courses');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
@@ -185,7 +193,45 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
           </div>
         </div>
 
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              activeTab === 'courses'
+                ? 'bg-totc-navy text-white shadow-md'
+                : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-50 border border-gray-100'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>ჩემი კურსები</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === 'courses' ? 'bg-white/20 text-white' : 'bg-gray-100 text-totc-gray'
+            }`}>
+              {courses.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('finance')}
+            className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 ${
+              activeTab === 'finance'
+                ? 'bg-totc-navy text-white shadow-md'
+                : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-50 border border-gray-100'
+            }`}
+          >
+            <DollarSign className="w-4 h-4" />
+            <span>თანხის გაყოფის წესები და ანაზღაურება</span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              activeTab === 'finance' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-700'
+            }`}>
+              {referralShare}% / {organicShare}% წილი
+            </span>
+          </button>
+        </div>
+
         {/* Curriculum Management Table */}
+        {activeTab === 'courses' && (
         <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden mb-12">
           <div className="p-6 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -402,6 +448,12 @@ export default function InstructorDashboardPage({ currentUser, setActivePage, se
             )}
           </div>
         </div>
+        )}
+
+        {/* Tab 2: Financial Terms & Conditions (80/20 Payout) */}
+        {activeTab === 'finance' && (
+          <InstructorFinanceTab summary={summary} currentUser={currentUser} />
+        )}
 
       </div>
     </div>

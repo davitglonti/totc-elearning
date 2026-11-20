@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Layers, Plus, Search, Edit3, Trash2, Layout, ExternalLink, RotateCcw, 
   Save, Home, Activity, Cloud, HelpCircle, School, Award, MessageSquare, 
-  Newspaper, Sparkles, Image, Globe, Tag, Mail, Phone, X 
+  Newspaper, Sparkles, Image, Globe, Tag, Mail, Phone, X,
+  Percent, DollarSign, Calendar, Clock, ShieldCheck, Users, Crown, ShoppingCart
 } from 'lucide-react';
 import { defaultHomeContent } from '../../context/SettingsContext';
 
@@ -1135,6 +1136,206 @@ export function AdminSettingsTab({
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-totc-teal outline-none text-xs text-totc-navy"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* 5. Revenue Sharing & Financial Policy Controls */}
+          <div className="space-y-6 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-poppins font-bold text-base text-totc-navy flex items-center gap-2">
+                  <Percent className="w-4 h-4 text-totc-teal" />
+                  <span>ფინანსური წესები და შემოსავლის გაყოფა (Revenue Share)</span>
+                </h4>
+                <p className="text-xs text-totc-gray mt-0.5">
+                  მართეთ ინსტრუქტორთა ანაზღაურების პროცენტები, გაყოფის წესები და გატანის პირობები.
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+                ადმინისტრაციული კონტროლი
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Option A: Instructor Referral (ლექტორის მოყვანილი) */}
+              <div className="p-5 rounded-2xl bg-emerald-50/50 border border-emerald-150 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>როცა ლექტორმა მოიყვანა სტუდენტი (რეფერალი)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/70 text-emerald-900">
+                    {settingsForm.instructorReferralShare || 80} / {100 - (settingsForm.instructorReferralShare || 80)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">ინსტრუქტორის წილი (%)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={settingsForm.instructorReferralShare ?? 80}
+                      onChange={(e) => {
+                        const val = Math.min(99, Math.max(1, parseInt(e.target.value) || 0));
+                        setSettingsForm({
+                          ...settingsForm,
+                          instructorReferralShare: val,
+                          platformReferralShare: 100 - val
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-black text-emerald-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">პლატფორმის წილი (%)</label>
+                    <input
+                      type="number"
+                      disabled
+                      value={100 - (settingsForm.instructorReferralShare ?? 80)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 text-xs font-bold text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  მოქმედებს, როცა სტუდენტი ყიდულობს კურსს ინსტრუქტორის პირადი რეფერალური ბმულით.
+                </p>
+              </div>
+
+              {/* Option B: Organic Platform Discovery (პლატფორმაზე ნაპოვნი) */}
+              <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-150 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-800 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-blue-600" />
+                    <span>როცა სტუდენტმა პლატფორმაზე ნახა (ორგანული)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-200/70 text-blue-900">
+                    {settingsForm.instructorOrganicShare || 60} / {100 - (settingsForm.instructorOrganicShare || 60)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">ინსტრუქტორის წილი (%)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={settingsForm.instructorOrganicShare ?? 60}
+                      onChange={(e) => {
+                        const val = Math.min(99, Math.max(1, parseInt(e.target.value) || 0));
+                        setSettingsForm({
+                          ...settingsForm,
+                          instructorOrganicShare: val,
+                          platformOrganicShare: 100 - val
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-blue-200 bg-white text-xs font-black text-blue-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">პლატფორმის წილი (%)</label>
+                    <input
+                      type="number"
+                      disabled
+                      value={100 - (settingsForm.instructorOrganicShare ?? 60)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 text-xs font-bold text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  მოქმედებს, როცა სტუდენტი პოულობს კურსს TOTC-ის კატალოგიდან, რეკლამიდან ან ძიებიდან (ნაგულისხმევი 60/40).
+                </p>
+              </div>
+
+              {/* Option C: Subscription Pool Share */}
+              <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-150 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-800 flex items-center gap-1.5">
+                    <Crown className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>საერთო გამოწერის ფონდის წილი (Subscription Pool)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-200/70 text-indigo-900">
+                    {settingsForm.subscriptionPoolShare || 80}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">საინსტრუქტორო ფონდი (%)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={settingsForm.subscriptionPoolShare ?? 80}
+                      onChange={(e) => {
+                        const val = Math.min(99, Math.max(1, parseInt(e.target.value) || 0));
+                        setSettingsForm({
+                          ...settingsForm,
+                          subscriptionPoolShare: val,
+                          platformSubscriptionShare: 100 - val
+                        });
+                      }}
+                      className="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-white text-xs font-black text-indigo-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">პლატფორმის საკომისიო (%)</label>
+                    <input
+                      type="number"
+                      disabled
+                      value={100 - (settingsForm.subscriptionPoolShare ?? 80)}
+                      className="w-full px-3 py-2 rounded-xl border border-gray-200 bg-gray-100 text-xs font-bold text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  მთლიანი გამოწერებიდან რა წილი განაწილდება ინსტრუქტორებზე Watch-Time პროპორციით.
+                </p>
+              </div>
+
+              {/* Option D: Payout Parameters */}
+              <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-150 space-y-3">
+                <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-600" />
+                  <span>გატანის ზღვარი და განრიგი</span>
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 block mb-1">მინ. ზღვარი (₾)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={settingsForm.minimumPayoutThreshold ?? 50}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, minimumPayoutThreshold: Number(e.target.value) || 50 })}
+                      className="w-full px-2.5 py-2 rounded-xl border border-amber-200 bg-white text-xs font-bold text-amber-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 block mb-1">ჩარიცხვის დღეები</label>
+                    <input
+                      type="text"
+                      value={settingsForm.payoutScheduleDays || '5-10'}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, payoutScheduleDays: e.target.value })}
+                      placeholder="5-10"
+                      className="w-full px-2.5 py-2 rounded-xl border border-amber-200 bg-white text-xs font-bold text-amber-800 text-center"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-700 block mb-1">Refund ბუფერი (დღე)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={settingsForm.refundBufferDays ?? 14}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, refundBufferDays: Number(e.target.value) || 14 })}
+                      className="w-full px-2.5 py-2 rounded-xl border border-amber-200 bg-white text-xs font-bold text-amber-800 text-center"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  მინიმალური თანხა გატანისთვის, ყოველთვიური ჩარიცხვის ფანჯარა და თანხის დაბრუნების ბუფერი.
+                </p>
+              </div>
+
             </div>
           </div>
 

@@ -20,6 +20,17 @@ public class SettingsService : ISettingsService
     private const string KeyHomeContent = "SiteSetting:HomeContent";
     private const string KeyMembershipContent = "SiteSetting:MembershipContent";
 
+    // Revenue Sharing and Payout Rules
+    private const string KeyInstructorReferralShare = "SiteSetting:InstructorReferralShare";
+    private const string KeyPlatformReferralShare = "SiteSetting:PlatformReferralShare";
+    private const string KeyInstructorOrganicShare = "SiteSetting:InstructorOrganicShare";
+    private const string KeyPlatformOrganicShare = "SiteSetting:PlatformOrganicShare";
+    private const string KeySubscriptionPoolShare = "SiteSetting:SubscriptionPoolShare";
+    private const string KeyPlatformSubscriptionShare = "SiteSetting:PlatformSubscriptionShare";
+    private const string KeyMinimumPayoutThreshold = "SiteSetting:MinimumPayoutThreshold";
+    private const string KeyPayoutScheduleDays = "SiteSetting:PayoutScheduleDays";
+    private const string KeyRefundBufferDays = "SiteSetting:RefundBufferDays";
+
     private static readonly string DefaultMembershipContentJson = """
     {
       "header": {
@@ -115,6 +126,12 @@ public class SettingsService : ISettingsService
 
         var dict = settingsList.ToDictionary(s => s.Key, s => s.Value);
 
+        int ParseIntOrDefault(string key, int defaultVal) =>
+            int.TryParse(dict.GetValueOrDefault(key), out var val) ? val : defaultVal;
+
+        decimal ParseDecimalOrDefault(string key, decimal defaultVal) =>
+            decimal.TryParse(dict.GetValueOrDefault(key), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : defaultVal;
+
         return new SiteSettingsDto
         {
             LogoUrl = dict.GetValueOrDefault(KeyLogoUrl, string.Empty),
@@ -127,7 +144,18 @@ public class SettingsService : ISettingsService
             HomeContentJson = dict.GetValueOrDefault(KeyHomeContent, string.Empty),
             MembershipContentJson = string.IsNullOrWhiteSpace(dict.GetValueOrDefault(KeyMembershipContent))
                 ? DefaultMembershipContentJson
-                : dict[KeyMembershipContent]
+                : dict[KeyMembershipContent],
+
+            // Revenue and Payout configurations
+            InstructorReferralShare = ParseIntOrDefault(KeyInstructorReferralShare, 80),
+            PlatformReferralShare = ParseIntOrDefault(KeyPlatformReferralShare, 20),
+            InstructorOrganicShare = ParseIntOrDefault(KeyInstructorOrganicShare, 60),
+            PlatformOrganicShare = ParseIntOrDefault(KeyPlatformOrganicShare, 40),
+            SubscriptionPoolShare = ParseIntOrDefault(KeySubscriptionPoolShare, 80),
+            PlatformSubscriptionShare = ParseIntOrDefault(KeyPlatformSubscriptionShare, 20),
+            MinimumPayoutThreshold = ParseDecimalOrDefault(KeyMinimumPayoutThreshold, 50m),
+            PayoutScheduleDays = dict.GetValueOrDefault(KeyPayoutScheduleDays, "5-10"),
+            RefundBufferDays = ParseIntOrDefault(KeyRefundBufferDays, 14)
         };
     }
 
@@ -163,6 +191,17 @@ public class SettingsService : ISettingsService
         Upsert(KeyFooterText, dto.FooterText);
         Upsert(KeyHomeContent, dto.HomeContentJson);
         Upsert(KeyMembershipContent, dto.MembershipContentJson);
+
+        // Revenue Share Settings
+        if (dto.InstructorReferralShare.HasValue) Upsert(KeyInstructorReferralShare, dto.InstructorReferralShare.Value.ToString());
+        if (dto.PlatformReferralShare.HasValue) Upsert(KeyPlatformReferralShare, dto.PlatformReferralShare.Value.ToString());
+        if (dto.InstructorOrganicShare.HasValue) Upsert(KeyInstructorOrganicShare, dto.InstructorOrganicShare.Value.ToString());
+        if (dto.PlatformOrganicShare.HasValue) Upsert(KeyPlatformOrganicShare, dto.PlatformOrganicShare.Value.ToString());
+        if (dto.SubscriptionPoolShare.HasValue) Upsert(KeySubscriptionPoolShare, dto.SubscriptionPoolShare.Value.ToString());
+        if (dto.PlatformSubscriptionShare.HasValue) Upsert(KeyPlatformSubscriptionShare, dto.PlatformSubscriptionShare.Value.ToString());
+        if (dto.MinimumPayoutThreshold.HasValue) Upsert(KeyMinimumPayoutThreshold, dto.MinimumPayoutThreshold.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (!string.IsNullOrWhiteSpace(dto.PayoutScheduleDays)) Upsert(KeyPayoutScheduleDays, dto.PayoutScheduleDays);
+        if (dto.RefundBufferDays.HasValue) Upsert(KeyRefundBufferDays, dto.RefundBufferDays.Value.ToString());
 
         await _context.SaveChangesAsync();
 

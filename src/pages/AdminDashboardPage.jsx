@@ -3,7 +3,8 @@ import {
   Shield, Users, Server, Activity, ExternalLink, 
   CheckCircle, BookOpen, DollarSign, CreditCard, 
   RefreshCw, AlertCircle, X, ArrowUpRight, CheckSquare,
-  Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles, UserPlus
+  Video, Layers, Settings as SettingsIcon, Layout, Bell, Sparkles, UserPlus,
+  Menu, ChevronRight, Database
 } from 'lucide-react';
 import { api } from '../services/api';
 import { adminApi } from '../services/api/adminApi';
@@ -27,6 +28,7 @@ export { CreateInstructorModal };
 
 export default function AdminDashboardPage({ currentUser, setActivePage, setSelectedCourse }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Real live data states from backend API
   const { settings: globalSettings, updateSettings: updateGlobalSettings, updateHomeContent: updateGlobalHomeContent } = useSettings();
@@ -59,6 +61,15 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
     contactEmail: 'support@totc.edu.ge',
     contactPhone: '+995 32 200 00 00',
     footerText: '',
+    instructorReferralShare: 80,
+    platformReferralShare: 20,
+    instructorOrganicShare: 60,
+    platformOrganicShare: 40,
+    subscriptionPoolShare: 80,
+    platformSubscriptionShare: 20,
+    minimumPayoutThreshold: 50,
+    payoutScheduleDays: '5-10',
+    refundBufferDays: 14,
   });
   const [savingSettings, setSavingSettings] = useState(false);
 
@@ -100,6 +111,15 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
         contactEmail: globalSettings.contactEmail || 'support@totc.edu.ge',
         contactPhone: globalSettings.contactPhone || '+995 32 200 00 00',
         footerText: globalSettings.footerText || 'ვირტუალური საკლასო ოთახი და ონლაინ განათლების სისტემა',
+        instructorReferralShare: globalSettings.instructorReferralShare ?? 80,
+        platformReferralShare: globalSettings.platformReferralShare ?? 20,
+        instructorOrganicShare: globalSettings.instructorOrganicShare ?? 60,
+        platformOrganicShare: globalSettings.platformOrganicShare ?? 40,
+        subscriptionPoolShare: globalSettings.subscriptionPoolShare ?? 80,
+        platformSubscriptionShare: globalSettings.platformSubscriptionShare ?? 20,
+        minimumPayoutThreshold: globalSettings.minimumPayoutThreshold ?? 50,
+        payoutScheduleDays: globalSettings.payoutScheduleDays || '5-10',
+        refundBufferDays: globalSettings.refundBufferDays ?? 14,
       });
       if (globalSettings.homeContent) {
         setHomeCmsForm(globalSettings.homeContent);
@@ -509,215 +529,535 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
     return matchesSearch && matchesStatus;
   });
 
+  // Categorized Navigation Suites for Clean Information Architecture
+  const navGroups = [
+    {
+      group: 'ანალიტიკა',
+      items: [
+        { id: 'overview', label: 'მიმოხილვა & ტელემეტრია', icon: Activity, count: null },
+      ]
+    },
+    {
+      group: 'აკადემია & კურსები',
+      items: [
+        { id: 'approvals', label: 'კურსების დამტკიცება', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
+        { id: 'courses', label: 'კურსების კატალოგი', icon: BookOpen, count: coursesList.length, alert: false },
+        { id: 'categories', label: 'კატეგორიები', icon: Layers, count: categoriesList.length, alert: false },
+      ]
+    },
+    {
+      group: 'მომხმარებლები',
+      items: [
+        { id: 'users', label: 'მომხმარებლები & როლები', icon: Users, count: usersList.length, alert: false },
+      ]
+    },
+    {
+      group: 'ფინანსები',
+      items: [
+        { id: 'orders', label: 'შეკვეთები & შემოსავალი', icon: CreditCard, count: ordersList.length, alert: false },
+      ]
+    },
+    {
+      group: 'კონტენტი & CMS',
+      items: [
+        { id: 'home_cms', label: 'მთავარი გვერდის CMS', icon: Layout, count: null, alert: false },
+        { id: 'membership_cms', label: 'გამოწერა & ტარიფები', icon: Sparkles, count: null, alert: false },
+        { id: 'settings', label: 'საიტის პარამეტრები & 80/20 წესები', icon: SettingsIcon, count: null, alert: false },
+      ]
+    },
+    {
+      group: 'ინფრასტრუქტურა & DEVOPS',
+      items: [
+        { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
+        { id: 'system', label: 'სისტემის არქიტექტურა', icon: Server, count: null, alert: false },
+      ]
+    }
+  ];
+
+  const activeTabMeta = {
+    overview: {
+      title: 'მიმოხილვა და ტელემეტრია',
+      category: 'ანალიტიკა',
+      description: 'პლატფორმის ძირითადი მეტრიკები, როლების განაწილება და ბოლო ტრანზაქციები.',
+      icon: Activity
+    },
+    approvals: {
+      title: 'კურსების დამტკიცება და მოდერაცია',
+      category: 'აკადემია & კურსები',
+      description: 'ინსტრუქტორების მიერ წარმოდგენილი კურსების სილაბუსის განხილვა, ვერიფიკაცია და გამოქვეყნება.',
+      icon: CheckSquare
+    },
+    users: {
+      title: 'მომხმარებლები და როლები',
+      category: 'მომხმარებლები',
+      description: 'სტუდენტების, ინსტრუქტორებისა და ადმინისტრატორების მართვა, როლების მინიჭება და ახალი ინსტრუქტორის რეგისტრაცია.',
+      icon: Users
+    },
+    courses: {
+      title: 'კურსების კატალოგი',
+      category: 'აკადემია & კურსები',
+      description: 'ყველა შექმნილი კურსის სრული სია, სტატუსების მართვა, რედაქტირება და წაშლა.',
+      icon: BookOpen
+    },
+    categories: {
+      title: 'სწავლების კატეგორიები',
+      category: 'აკადემია & კურსები',
+      description: 'კურსების თემატური კატეგორიების დამატება, რედაქტირება, ხატულები და სტრუქტურირება.',
+      icon: Layers
+    },
+    orders: {
+      title: 'შეკვეთები და შემოსავალი',
+      category: 'ფინანსები',
+      description: 'გაყიდვების ისტორია, სტუდენტების მიერ შეძენილი კურსები და ფინანსური ნაკადები.',
+      icon: CreditCard
+    },
+    home_cms: {
+      title: 'მთავარი გვერდის CMS',
+      category: 'კონტენტი & CMS',
+      description: 'მთავარი გვერდის ჰერო ბანერის, სტატისტიკის, ტექსტებისა და სექციების მართვა.',
+      icon: Layout
+    },
+    membership_cms: {
+      title: 'გამოწერა & ფასების CMS',
+      category: 'კონტენტი & CMS',
+      description: 'All-Access სააბონენტო პაკეტების, ფასების და პირობების მართვა.',
+      icon: Sparkles
+    },
+    settings: {
+      title: 'საიტის პარამეტრები & 80/20 წესები',
+      category: 'კონტენტი & CMS',
+      description: 'პლატფორმის ლოგო, საკონტაქტო მონაცემები და ინსტრუქტორებთან შემოსავლის გაყოფის წესები (რეფერალი 80/20, ორგანული 60/40, საპრიზო ფონდი).',
+      icon: SettingsIcon
+    },
+    bunny: {
+      title: 'Bunny Stream CDN ინტეგრაცია',
+      category: 'ინფრასტრუქტურა',
+      description: 'ვიდეო ჰოსტინგის API გასაღებები, ბიბლიოთეკის ID, Pull Zone და პირდაპირი ტესტირება.',
+      icon: Video
+    },
+    system: {
+      title: 'სისტემის არქიტექტურა',
+      category: 'ინფრასტრუქტურა',
+      description: 'პლატფორმის სრული ტექნოლოგიური სტეკი, სერვისების ურთიერთქმედება და უსაფრთხოების ფენები.',
+      icon: Server
+    }
+  }[activeTab] || {
+    title: 'ადმინისტრირება',
+    category: 'მართვის ცენტრი',
+    description: '',
+    icon: Shield
+  };
+
+  const CurrentTabIcon = activeTabMeta.icon;
+
   return (
-    <div className="pt-28 pb-24 bg-[#F8FAFC] min-h-screen">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12">
+    <div className="pt-24 pb-24 bg-[#F8FAFC] min-h-screen">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Admin Header with Live Status & Controls */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 sm:p-8 rounded-[28px] border border-gray-100 shadow-sm">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-              <Shield className="w-3.5 h-3.5" />
-              სუპერ ადმინისტრატორის მართვის ცენტრი
+        {/* Mobile Header / Quick Switcher Bar (< lg) */}
+        <div className="lg:hidden mb-6 bg-white p-4 rounded-[22px] border border-gray-100 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-totc-navy transition-all shrink-0"
+              aria-label="მენიუს გახსნა"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-totc-navy text-totc-teal flex items-center justify-center font-black text-sm shrink-0">
+                <CurrentTabIcon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{activeTabMeta.category}</p>
+                <h2 className="text-xs sm:text-sm font-bold text-totc-navy truncate">{activeTabMeta.title}</h2>
+              </div>
             </div>
-            <h1 className="font-poppins font-black text-3xl sm:text-4xl text-totc-navy tracking-tight">
-              პლატფორმის ადმინისტრირება
-            </h1>
-            <p className="font-poppins text-totc-gray text-sm sm:text-base">
-              კურსების მოდერაცია და ვერიფიკაცია, მომხმარებელთა როლები, კატალოგის მართვა და ფინანსური ტრანზაქციები.
-            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsCreateInstructorOpen(true)}
-              className="px-5 py-3 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-[#3da8aa] transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0 cursor-pointer"
-              title="ახალი ინსტრუქტორის დამატება"
+              className="p-2.5 rounded-xl bg-totc-teal text-white hover:bg-[#3da8aa] transition-all shadow-sm"
+              title="+ ახალი ინსტრუქტორი"
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>+ ახალი ინსტრუქტორის დამატება</span>
+              <UserPlus className="w-4 h-4" />
             </button>
-
             <button
               onClick={loadAdminData}
               disabled={refreshing}
-              className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
-              title="სერვერის მონაცემების განახლება"
+              className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-totc-navy transition-all disabled:opacity-50"
+              title="განახლება"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              <span>მონაცემების განახლება</span>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
-
-            <a
-              href="http://localhost:5000/swagger"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-3 rounded-full font-bold text-xs bg-totc-navy text-white hover:bg-slate-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0"
-            >
-              <span>Swagger API</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
 
-        {/* Action Alert Banner */}
-        {actionMessage && (
-          <div className={`mb-6 p-4 rounded-2xl flex items-center justify-between border ${
-            actionMessage.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-              : 'bg-red-50 text-red-800 border-red-200'
-          }`}>
-            <div className="flex items-center gap-3 text-sm font-semibold">
-              {actionMessage.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
-              <span>{actionMessage.text}</span>
+        {/* Mobile Slide-Out Drawer / Backdrop (< lg) */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex">
+            <div 
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="relative w-80 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 p-5 overflow-y-auto">
+              <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-totc-navy text-totc-teal flex items-center justify-center font-black">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins font-black text-sm text-totc-navy">TOTC Admin Center</h3>
+                    <p className="text-[10px] font-semibold text-slate-400">სუპერ ადმინისტრატორი</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Navigation list in drawer */}
+              <nav className="space-y-4 flex-1">
+                {navGroups.map((group, gIdx) => (
+                  <div key={gIdx} className="space-y-1">
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-black tracking-wider text-slate-400 uppercase">
+                      {group.group}
+                    </div>
+                    <div className="space-y-0.5">
+                      {group.items.map(item => {
+                        const Icon = item.icon;
+                        const isActive = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setActiveTab(item.id);
+                              setMobileMenuOpen(false);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
+                              isActive
+                                ? 'bg-totc-navy text-white shadow-sm border-l-4 border-totc-teal'
+                                : 'text-slate-600 hover:text-totc-navy hover:bg-slate-100'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-totc-teal' : 'text-slate-400'}`} />
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                            {item.count !== null && item.count !== undefined && (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                                item.alert
+                                  ? 'bg-amber-500 text-white animate-pulse'
+                                  : isActive 
+                                    ? 'bg-white/20 text-white' 
+                                    : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {item.count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
+
+              <div className="pt-4 mt-4 border-t border-gray-100 text-[11px] text-slate-400">
+                🟢 სერვერი: 200 OK ({stats?.dbEngine || 'DB'})
+              </div>
             </div>
-            <button 
-              onClick={() => setActionMessage(null)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         )}
 
-        {/* Pending Courses Approval Alert Notification */}
-        {pendingCourses.length > 0 && (
-          <div className="mb-8 p-5 sm:p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[24px] text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
-                <Bell className="w-6 h-6 text-white animate-bounce" />
-              </div>
+        {/* Main 2-Column Dashboard Layout */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* Desktop Left Sidebar (Sticky w-72) */}
+          <aside className="hidden lg:block w-72 shrink-0 sticky top-24 self-start">
+            <div className="bg-white rounded-[26px] border border-gray-100 shadow-sm p-4 max-h-[calc(100vh-7.5rem)] overflow-y-auto flex flex-col justify-between">
+              
               <div>
-                <h3 className="font-poppins font-black text-lg">
-                  {pendingCourses.length} კურსი ელოდება განხილვას და ვერიფიკაციას
-                </h3>
-                <p className="text-xs text-white/90">
-                  ინსტრუქტორებმა წარადგინეს ახალი პროგრამები. შეამოწმეთ სილაბუსი და დაამტკიცეთ გამოსაქვეყნებლად.
+                {/* Brand Header */}
+                <div className="p-3.5 mb-3 rounded-2xl bg-gradient-to-br from-totc-navy via-slate-900 to-totc-navy text-white shadow-md">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md text-totc-teal flex items-center justify-center font-black shrink-0">
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">სუპერ ადმინი</span>
+                      </div>
+                      <h2 className="font-poppins font-black text-sm text-white truncate">
+                        TOTC Admin Center
+                      </h2>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grouped Sidebar Navigation */}
+                <nav className="space-y-4">
+                  {navGroups.map((group, gIdx) => (
+                    <div key={gIdx} className="space-y-1">
+                      <div className="px-3 pt-2 pb-1 text-[10px] font-black tracking-wider text-slate-400 uppercase">
+                        {group.group}
+                      </div>
+                      <div className="space-y-0.5">
+                        {group.items.map(item => {
+                          const Icon = item.icon;
+                          const isActive = activeTab === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition-all group ${
+                                isActive
+                                  ? 'bg-totc-navy text-white shadow-sm border-l-4 border-totc-teal'
+                                  : 'text-slate-600 hover:text-totc-navy hover:bg-slate-100/80'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                                  isActive ? 'text-totc-teal' : 'text-slate-400 group-hover:text-totc-navy'
+                                }`} />
+                                <span className="truncate">{item.label}</span>
+                              </div>
+                              {item.count !== null && item.count !== undefined && (
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
+                                  item.alert
+                                    ? 'bg-amber-500 text-white animate-pulse'
+                                    : isActive 
+                                      ? 'bg-white/20 text-white' 
+                                      : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
+                                }`}>
+                                  {item.count}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Sidebar Footer: Server Health & Links */}
+              <div className="mt-5 pt-4 border-t border-gray-100 space-y-2.5">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-bold text-slate-700">სერვერი: 200 OK</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-500">{stats?.dbEngine || 'DB Live'}</span>
+                </div>
+
+                <a
+                  href="http://localhost:5000/swagger"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2 px-3 rounded-xl text-[11px] font-bold text-slate-600 hover:text-totc-navy hover:bg-slate-100 flex items-center justify-between transition-all"
+                >
+                  <span className="flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5 text-totc-teal" />
+                    <span>Swagger API დოკუმენტაცია</span>
+                  </span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
+
+                <div className="px-3 py-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                  <span className="truncate">{currentUser?.email || 'admin@totc.com'}</span>
+                  <span className="font-bold text-totc-teal">Admin</span>
+                </div>
+              </div>
+
+            </div>
+          </aside>
+
+          {/* Right Main Content Area (flex-1) */}
+          <main className="flex-1 min-w-0 space-y-6">
+            
+            {/* Top Workspace Header Bar */}
+            <div className="bg-white p-6 sm:p-7 rounded-[26px] border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-bold text-totc-teal uppercase tracking-wider">
+                  <span className="text-slate-400">ადმინისტრირება</span>
+                  <ChevronRight className="w-3 h-3 text-slate-300" />
+                  <span className="text-slate-500">{activeTabMeta.category}</span>
+                  <ChevronRight className="w-3 h-3 text-slate-300" />
+                  <span className="text-totc-teal font-extrabold">{activeTabMeta.title}</span>
+                </div>
+                <h1 className="font-poppins font-black text-2xl sm:text-3xl text-totc-navy flex items-center gap-3">
+                  <CurrentTabIcon className="w-7 h-7 text-totc-teal shrink-0" />
+                  <span>{activeTabMeta.title}</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-totc-gray max-w-2xl">
+                  {activeTabMeta.description}
                 </p>
               </div>
+
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => setIsCreateInstructorOpen(true)}
+                  className="px-5 py-3 rounded-full font-bold text-xs bg-totc-teal text-white hover:bg-[#3da8aa] transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0 cursor-pointer"
+                  title="ახალი ინსტრუქტორის დამატება"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>+ ახალი ინსტრუქტორის დამატება</span>
+                </button>
+
+                <button
+                  onClick={loadAdminData}
+                  disabled={refreshing}
+                  className="px-4 py-3 rounded-full font-bold text-xs bg-gray-100 text-totc-navy hover:bg-gray-200 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
+                  title="სერვერის მონაცემების განახლება"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span>განახლება</span>
+                </button>
+
+                <a
+                  href="http://localhost:5000/swagger"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-3 rounded-full font-bold text-xs bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm flex items-center gap-2 shrink-0"
+                >
+                  <span>API Swagger</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
 
-            <button
-              onClick={() => setActiveTab('approvals')}
-              className="px-6 py-2.5 rounded-full font-bold text-xs bg-white text-orange-600 hover:bg-orange-50 transition-all shadow-md shrink-0 flex items-center gap-2"
-            >
-              <span>განხილვა ახლავე</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+            {/* Action Alert Banner */}
+            {actionMessage && (
+              <div className={`p-4 rounded-2xl flex items-center justify-between border ${
+                actionMessage.type === 'success' 
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                  : 'bg-red-50 text-red-800 border-red-200'
+              }`}>
+                <div className="flex items-center gap-3 text-sm font-semibold">
+                  {actionMessage.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+                  <span>{actionMessage.text}</span>
+                </div>
+                <button 
+                  onClick={() => setActionMessage(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
-        {/* 4 Real Metric Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სულ მომხმარებელი</p>
-              <h3 className="font-poppins font-black text-2xl text-totc-navy">
-                {stats ? stats.totalUsers : <span className="animate-pulse">...</span>}
-              </h3>
-              <p className="text-[11px] text-indigo-600 font-medium">
-                {stats ? `${stats.proSubscribers} Pro წევრი` : ''}
-              </p>
-            </div>
-          </div>
+            {/* Pending Courses Approval Alert Notification (when not already on approvals tab) */}
+            {pendingCourses.length > 0 && activeTab !== 'approvals' && (
+              <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[24px] text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                    <Bell className="w-6 h-6 text-white animate-bounce" />
+                  </div>
+                  <div>
+                    <h3 className="font-poppins font-black text-lg">
+                      {pendingCourses.length} კურსი ელოდება განხილვას და ვერიფიკაციას
+                    </h3>
+                    <p className="text-xs text-white/90">
+                      ინსტრუქტორებმა წარადგინეს ახალი პროგრამები. შეამოწმეთ სილაბუსი და დაამტკიცეთ გამოსაქვეყნებლად.
+                    </p>
+                  </div>
+                </div>
 
-          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-              <DollarSign className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">მთლიანი შემოსავალი</p>
-              <h3 className="font-poppins font-black text-2xl text-emerald-600">
-                {stats ? `₾${Number(stats.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
-              </h3>
-              <p className="text-[11px] text-totc-gray font-medium">
-                {stats ? `${stats.totalOrders} ტრანზაქცია` : ''}
-              </p>
-            </div>
-          </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('approvals');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-6 py-2.5 rounded-full font-bold text-xs bg-white text-orange-600 hover:bg-orange-50 transition-all shadow-md shrink-0 flex items-center gap-2"
+                >
+                  <span>განხილვა ახლავე</span>
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
-          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">კატალოგი და რიგი</p>
-              <h3 className="font-poppins font-black text-2xl text-totc-navy">
-                {stats ? `${stats.publishedCourses} აქტიური` : <span className="animate-pulse">...</span>}
-              </h3>
-              <p className="text-[11px] text-amber-600 font-bold">
-                {stats ? `${pendingCourses.length} მოლოდინში` : ''}
-              </p>
-            </div>
-          </div>
+            {/* If on Overview tab, show the 4 Real Metric Stat Cards */}
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სულ მომხმარებელი</p>
+                    <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                      {stats ? stats.totalUsers : <span className="animate-pulse">...</span>}
+                    </h3>
+                    <p className="text-[11px] text-indigo-600 font-medium">
+                      {stats ? `${stats.proSubscribers} Pro წევრი` : ''}
+                    </p>
+                  </div>
+                </div>
 
-          <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
-              <Server className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სერვერის სტატუსი</p>
-              <h3 className="font-poppins font-black text-lg text-emerald-600 flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>აქტიური (200 OK)</span>
-              </h3>
-              <p className="text-[11px] text-totc-gray font-medium">
-                {stats?.dbEngine || 'SQLite'}
-              </p>
-            </div>
-          </div>
-        </div>
+                <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">მთლიანი შემოსავალი</p>
+                    <h3 className="font-poppins font-black text-2xl text-emerald-600">
+                      {stats ? `₾${Number(stats.totalRevenue).toLocaleString()}` : <span className="animate-pulse">...</span>}
+                    </h3>
+                    <p className="text-[11px] text-totc-gray font-medium">
+                      {stats ? `${stats.totalOrders} ტრანზაქცია` : ''}
+                    </p>
+                  </div>
+                </div>
 
-        {/* Admin Navigation Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 border-b border-gray-200">
-          {[
-            { id: 'overview', label: 'მიმოხილვა და ტელემეტრია', icon: Activity, count: null },
-            { id: 'approvals', label: 'კურსების დამტკიცება', icon: CheckSquare, count: pendingCourses.length, alert: pendingCourses.length > 0 },
-            { id: 'users', label: 'მომხმარებლები და როლები', icon: Users, count: usersList.length, alert: false },
-            { id: 'courses', label: 'კურსების მართვა', icon: BookOpen, count: coursesList.length, alert: false },
-            { id: 'categories', label: 'კატეგორიები', icon: Layers, count: categoriesList.length, alert: false },
-            { id: 'home_cms', label: 'მთავარი გვერდის CMS', icon: Layout, count: null, alert: false },
-            { id: 'membership_cms', label: 'გამოწერა & ფასების CMS', icon: Sparkles, count: null, alert: false },
-            { id: 'settings', label: 'საიტის პარამეტრები & ლოგო', icon: SettingsIcon, count: null, alert: false },
-            { id: 'orders', label: 'შეკვეთები და შემოსავალი', icon: CreditCard, count: ordersList.length, alert: false },
-            { id: 'bunny', label: 'Bunny Stream CDN', icon: Video, count: null, alert: false },
-            { id: 'system', label: 'სისტემის არქიტექტურა', icon: Server, count: null, alert: false },
-          ].map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3 rounded-full text-xs sm:text-sm font-bold flex items-center gap-2.5 whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-totc-navy text-white shadow-md'
-                    : 'bg-white text-totc-gray hover:text-totc-navy hover:bg-gray-100 border border-gray-100'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-totc-teal' : 'text-gray-400'}`} />
-                <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                    tab.alert
-                      ? 'bg-amber-500 text-white animate-pulse'
-                      : isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-totc-navy'
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center text-totc-teal shrink-0">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">კატალოგი და რიგი</p>
+                    <h3 className="font-poppins font-black text-2xl text-totc-navy">
+                      {stats ? `${stats.publishedCourses} აქტიური` : <span className="animate-pulse">...</span>}
+                    </h3>
+                    <p className="text-[11px] text-amber-600 font-bold">
+                      {stats ? `${pendingCourses.length} მოლოდინში` : ''}
+                    </p>
+                  </div>
+                </div>
 
-        {/* Tab 1: Overview */}
-        {activeTab === 'overview' && (
-          <AdminOverviewTab stats={stats} ordersList={ordersList} />
-        )}
+                <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                    <Server className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-totc-gray uppercase tracking-wider">სერვერის სტატუსი</p>
+                    <h3 className="font-poppins font-black text-lg text-emerald-600 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>აქტიური (200 OK)</span>
+                    </h3>
+                    <p className="text-[11px] text-totc-gray font-medium">
+                      {stats?.dbEngine || 'SQLite'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 1: Overview */}
+            {activeTab === 'overview' && (
+              <AdminOverviewTab stats={stats} ordersList={ordersList} setActiveTab={setActiveTab} />
+            )}
 
         {/* Tab 2: Approvals */}
         {activeTab === 'approvals' && (
@@ -832,6 +1172,9 @@ export default function AdminDashboardPage({ currentUser, setActivePage, setSele
             }}
           />
         )}
+
+          </main>
+        </div>
 
       </div>
 
